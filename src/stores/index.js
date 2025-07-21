@@ -202,6 +202,11 @@ export const useGameStore = defineStore('gameCompat', () => {
     return market.productPrices[productId]?.price || 0;
   }
   
+  // 添加getProductPriceTrend方法
+  function getProductPriceTrend(productId) {
+    return market.getProductPriceTrend(productId);
+  }
+  
   function repayDebt(amount) {
     if (amount <= 0 || amount > player.money) {
       return { success: false, message: '无效的还款金额' };
@@ -338,6 +343,7 @@ export const useGameStore = defineStore('gameCompat', () => {
     getSaves,
     checkGameEnd,
     getCurrentProductPrice,
+    getProductPriceTrend, // 添加到返回的API中
     repayDebt,
     buyHouse,
     addNotification

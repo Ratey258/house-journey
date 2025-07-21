@@ -259,6 +259,7 @@ const notifications = computed(() => gameCoreStore.notifications);
 const gameResult = computed(() => gameCoreStore.gameResult);
 const player = computed(() => playerStore);
 const currentLocation = computed(() => marketStore.currentLocation);
+// 修复：使用正确的方式获取playerInventory
 const playerInventory = computed(() => playerStore.inventory || []);
 const gameState = computed(() => ({
   currentWeek: currentWeek.value,

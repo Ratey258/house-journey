@@ -33,19 +33,29 @@
             </td>
             <td>
               <div class="action-buttons">
-                <button 
-                  class="sell-btn" 
-                  @click="openTradePanel(item)"
-                >
-                  {{ $t('inventory.sell') }}
-                </button>
-                <button 
-                  class="quick-sell-btn" 
-                  @click="quickSell(item)"
-                  title="快速卖出1个"
-                >
-                  -1
-                </button>
+                <div class="button-group">
+                  <button 
+                    class="sell-btn" 
+                    @click="openTradePanel(item)"
+                  >
+                    {{ $t('inventory.sell') }}
+                  </button>
+                  <button 
+                    class="quick-sell-btn" 
+                    @click="quickSell(item)"
+                    title="快速卖出1个"
+                  >
+                    -1
+                  </button>
+                  <button 
+                    class="quick-sell-btn-10" 
+                    @click="quickSellMultiple(item, 10)"
+                    title="快速卖出10个"
+                    :disabled="item.quantity < 10"
+                  >
+                    -10
+                  </button>
+                </div>
               </div>
             </td>
           </tr>
@@ -66,12 +76,15 @@
     </div>
     
     <!-- 交易成功提示 -->
-    <div v-if="showTransactionToast" class="transaction-toast" :class="transactionToastClass">
-      <div class="toast-content">
-        <span class="toast-icon">{{ transactionToastIcon }}</span>
-        <span class="toast-message">{{ transactionToastMessage }}</span>
+    <transition name="fade">
+      <div v-if="showTransactionToast" class="transaction-toast" :class="transactionToastClass">
+        <div class="toast-content">
+          <span class="toast-icon">{{ transactionToastIcon }}</span>
+          <span class="toast-message">{{ transactionToastMessage }}</span>
+        </div>
+        <div class="toast-progress-bar"></div>
       </div>
-    </div>
+    </transition>
   </div>
 </template>
 
@@ -88,7 +101,8 @@ const gameStore = useGameStore();
 
 // 计算属性
 const player = computed(() => gameStore.player);
-const playerInventory = computed(() => gameStore.playerInventory);
+// 修复：使用正确的方式获取playerInventory
+const playerInventory = computed(() => gameStore.player.inventory || []);
 const currentLocation = computed(() => gameStore.currentLocation);
 
 // 响应式变量
@@ -174,63 +188,6 @@ const getProfitText = (item) => {
   return `${sign}${percentage.toFixed(1)}%`;
 };
 
-const getSellProfitClass = () => {
-  if (!selectedItem.value) return '';
-  const currentPrice = getCurrentPrice(selectedItem.value);
-  if (currentPrice > selectedItem.value.purchasePrice) return 'profit-positive';
-  if (currentPrice < selectedItem.value.purchasePrice) return 'profit-negative';
-  return '';
-};
-
-const getSellProfitText = () => {
-  if (!selectedItem.value) return '';
-  
-  const currentPrice = getCurrentPrice(selectedItem.value);
-  const diff = (currentPrice - selectedItem.value.purchasePrice) * sellQuantity.value;
-  
-  if (diff === 0) return '¥0';
-  
-  const sign = diff > 0 ? '+' : '';
-  return `${sign}¥${formatNumber(diff)}`;
-};
-
-const openSellModal = (item) => {
-  selectedItem.value = item;
-  sellQuantity.value = 1;
-  showSellModal.value = true;
-};
-
-const closeSellModal = () => {
-  showSellModal.value = false;
-  selectedItem.value = null;
-  sellQuantity.value = 1;
-};
-
-const incrementQuantity = () => {
-  if (selectedItem.value && sellQuantity.value < selectedItem.value.quantity) {
-    sellQuantity.value++;
-  }
-};
-
-const decrementQuantity = () => {
-  if (sellQuantity.value > 1) {
-    sellQuantity.value--;
-  }
-};
-
-const setMaxQuantity = () => {
-  if (selectedItem.value) {
-    sellQuantity.value = selectedItem.value.quantity;
-  }
-};
-
-const sellProduct = () => {
-  if (selectedItem.value && sellQuantity.value > 0) {
-    gameStore.sellProduct(selectedItem.value.productId, sellQuantity.value);
-    closeSellModal();
-  }
-};
-
 const openTradePanel = (item) => {
   // 将库存项转换为交易面板需要的商品格式
   const product = {
@@ -256,16 +213,36 @@ const handleTransactionComplete = (transaction) => {
   
   // 显示交易成功提示
   if (transaction.type === 'sell') {
-    transactionToastMessage.value = `成功卖出 ${transaction.quantity} 个 ${transaction.productId}`;
-    transactionToastClass.value = 'sell-success';
-    transactionToastIcon.value = '✓';
+    // 改进交易成功提示的格式，与市场界面一致
+    let message = `已出售 ${transaction.quantity} 个 ${transaction.productName || transaction.productId}`;
     
-    showTransactionToast.value = true;
+    if (transaction.income) {
+      message += `，获得 ${formatNumber(transaction.income)} 元`;
+    }
     
-    // 3秒后自动隐藏提示
-    setTimeout(() => {
-      showTransactionToast.value = false;
-    }, 3000);
+    if (transaction.profit) {
+      const profitText = transaction.profit > 0 
+        ? `，盈利 ${formatNumber(transaction.profit)}` 
+        : `，亏损 ${formatNumber(Math.abs(transaction.profit))}`;
+      message += profitText;
+    }
+    
+    transactionToastMessage.value = message;
+    transactionToastClass.value = 'sale-success';
+    transactionToastIcon.value = '💰';
+    
+    // 重置之前的提示（如果存在）
+    showTransactionToast.value = false;
+    
+    // 延迟一帧后显示，确保动画正确播放
+    requestAnimationFrame(() => {
+      showTransactionToast.value = true;
+      
+      // 3秒后自动隐藏提示
+      setTimeout(() => {
+        showTransactionToast.value = false;
+      }, 3000);
+    });
   }
 };
 
@@ -280,19 +257,83 @@ const calculateChangePercent = (item) => {
 
 const quickSell = (item) => {
   if (item.quantity > 0) {
-    gameStore.sellProduct(item.productId, 1);
+    const result = gameStore.sellProduct(item.productId, 1);
     
-    // 显示快速卖出成功提示
-    transactionToastMessage.value = `快速卖出 1 个 ${item.name}`;
-    transactionToastClass.value = 'sell-success';
-    transactionToastIcon.value = '✓';
-    
-    showTransactionToast.value = true;
-    
-    // 3秒后自动隐藏提示
-    setTimeout(() => {
+    if (result.success) {
+      // 改进交易成功提示的格式，与市场界面一致
+      let message = `已出售 1 个 ${item.name}`;
+      
+      if (result.income) {
+        message += `，获得 ${formatNumber(result.income)} 元`;
+      }
+      
+      if (result.profit) {
+        const profitText = result.profit > 0 
+          ? `，盈利 ${formatNumber(result.profit)}` 
+          : `，亏损 ${formatNumber(Math.abs(result.profit))}`;
+        message += profitText;
+      }
+      
+      transactionToastMessage.value = message;
+      transactionToastClass.value = 'sale-success';
+      transactionToastIcon.value = '💰';
+      
+      // 重置之前的提示（如果存在）
       showTransactionToast.value = false;
-    }, 3000);
+      
+      // 延迟一帧后显示，确保动画正确播放
+      requestAnimationFrame(() => {
+        showTransactionToast.value = true;
+        
+        // 3秒后自动隐藏提示
+        setTimeout(() => {
+          showTransactionToast.value = false;
+        }, 3000);
+      });
+    }
+  }
+};
+
+// 添加快速卖出多个物品的方法
+const quickSellMultiple = (item, quantity) => {
+  // 确保不会卖出超过拥有的数量
+  const sellAmount = Math.min(item.quantity, quantity);
+  
+  if (sellAmount > 0) {
+    const result = gameStore.sellProduct(item.productId, sellAmount);
+    
+    if (result.success) {
+      // 改进交易成功提示的格式，与市场界面一致
+      let message = `已出售 ${sellAmount} 个 ${item.name}`;
+      
+      if (result.income) {
+        message += `，获得 ${formatNumber(result.income)} 元`;
+      }
+      
+      if (result.profit) {
+        const profitText = result.profit > 0 
+          ? `，盈利 ${formatNumber(result.profit)}` 
+          : `，亏损 ${formatNumber(Math.abs(result.profit))}`;
+        message += profitText;
+      }
+      
+      transactionToastMessage.value = message;
+      transactionToastClass.value = 'sale-success';
+      transactionToastIcon.value = '💰';
+      
+      // 重置之前的提示（如果存在）
+      showTransactionToast.value = false;
+      
+      // 延迟一帧后显示，确保动画正确播放
+      requestAnimationFrame(() => {
+        showTransactionToast.value = true;
+        
+        // 3秒后自动隐藏提示
+        setTimeout(() => {
+          showTransactionToast.value = false;
+        }, 3000);
+      });
+    }
   }
 };
 </script>
@@ -315,17 +356,18 @@ const quickSell = (item) => {
   color: #2c3e50;
 }
 
-/* 移除了容量显示相关样式 */
-
 .inventory-container {
   overflow-x: auto;
-  overflow-y: auto; /* 添加垂直滚动 */
-  max-height: calc(100vh - 250px); /* 设置最大高度，确保有足够空间显示滚动条 */
-  scrollbar-width: thin; /* Firefox 滚动条样式 */
-  scrollbar-color: #cbd5e0 #f8f9fa; /* Firefox 滚动条颜色 */
-  flex: 1; /* 占用剩余空间 */
+  overflow-y: auto;
+  max-height: calc(100vh - 250px);
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f8f9fa;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* 自定义滚动条样式 (Webkit浏览器) */
@@ -345,12 +387,12 @@ const quickSell = (item) => {
 .inventory-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* 固定表格布局 */
+  table-layout: fixed;
 }
 
 .inventory-table th,
 .inventory-table td {
-  padding: 10px;
+  padding: 12px 10px;
   text-align: left;
   border-bottom: 1px solid #eee;
 }
@@ -358,28 +400,53 @@ const quickSell = (item) => {
 .inventory-table th {
   background-color: #f1f1f1;
   font-weight: 600;
+  color: #4a5568;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
 }
 
 .inventory-table tbody tr:hover {
   background-color: #f5f5f5;
 }
 
+.inventory-table th:last-child,
+.inventory-table td:last-child {
+  width: 200px;
+  text-align: left;
+}
+
 .price {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #2c3e50;
+  background: -webkit-linear-gradient(45deg, #2c3e50, #4a6fa5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .price-up {
   color: #e53e3e;
+  background: -webkit-linear-gradient(45deg, #c0392b, #e74c3c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .price-down {
   color: #38a169;
+  background: -webkit-linear-gradient(45deg, #27ae60, #2ecc71);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .trend-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 5px;
+  border-radius: 8px;
+  background-color: rgba(0,0,0,0.02);
 }
 
 .trend-icon {
@@ -423,52 +490,136 @@ const quickSell = (item) => {
 
 .profit {
   font-weight: 600;
+  font-family: var(--font-family-numbers, 'Arial', sans-serif);
+  font-size: 0.95rem;
+  padding: 4px 8px;
+  border-radius: 20px;
+  display: inline-block;
+  text-align: center;
 }
 
 .profit-positive {
-  color: #e53e3e;
+  background-color: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
 }
 
 .profit-negative {
-  color: #38a169;
-}
-
-.sell-btn {
-  background-color: #4299e1;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  flex: 1;
-}
-
-.quick-sell-btn {
-  background-color: #e53e3e;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 8px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  font-weight: bold;
-}
-
-.sell-btn:hover,
-.quick-sell-btn:hover {
-  filter: brightness(1.1);
+  background-color: rgba(46, 204, 113, 0.1);
+  color: #27ae60;
 }
 
 .action-buttons {
   display: flex;
-  gap: 5px;
+  flex-direction: row;
+  gap: 0.8rem;
+  min-height: 36px;
+  justify-content: flex-start;
+}
+
+.button-group {
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  transition: all 0.2s ease;
+}
+
+.button-group:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+}
+
+.sell-btn {
+  padding: 0.35rem 0.85rem;
+  background-color: #e67e22;
+  color: white;
+  border: none;
+  border-radius: 6px 0 0 6px;
+  cursor: pointer;
+  min-width: 60px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.sell-btn:hover:not(:disabled) {
+  background-color: #d35400;
+}
+
+.sell-btn:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.quick-sell-btn {
+  padding: 0.35rem 0.5rem;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  min-width: 40px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.quick-sell-btn:hover:not(:disabled) {
+  background-color: #c0392b;
+}
+
+.quick-sell-btn:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.quick-sell-btn-10 {
+  padding: 0.35rem 0.5rem;
+  background-color: #c0392b;
+  color: white;
+  border: none;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+  min-width: 40px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.quick-sell-btn-10:hover:not(:disabled) {
+  background-color: #a93226;
+}
+
+.quick-sell-btn-10:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .no-items {
   text-align: center;
-  padding: 20px;
-  color: #718096;
+  padding: 3rem;
+  color: #6c757d;
+  font-style: italic;
+  font-size: 1.1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin: 1rem;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .modal-backdrop {
@@ -481,125 +632,98 @@ const quickSell = (item) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
-}
-
-.modal-content {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  max-width: 90%;
-  width: 400px;
-}
-
-.product-info {
-  margin-bottom: 20px;
-}
-
-.product-info p {
-  margin: 8px 0;
-}
-
-.quantity-selector {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-  gap: 10px;
-}
-
-.quantity-input {
-  display: flex;
-  align-items: center;
-}
-
-.quantity-input input {
-  width: 60px;
-  text-align: center;
-  margin: 0 5px;
-  padding: 5px;
-}
-
-.quantity-input button,
-.max-btn {
-  background-color: #e2e8f0;
-  border: none;
-  padding: 5px 10px;
-  cursor: pointer;
-}
-
-.max-btn {
-  background-color: #4299e1;
-  color: white;
-  border-radius: 4px;
-}
-
-.total-income {
-  margin-bottom: 20px;
-  font-weight: bold;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.confirm-btn {
-  background-color: #4299e1;
-  color: white;
-}
-
-.cancel-btn {
-  background-color: #e2e8f0;
-  color: #4a5568;
+  z-index: 1000;
 }
 
 .transaction-toast {
   position: fixed;
-  bottom: 20px;
+  bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
   padding: 12px 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  animation: slide-up 0.3s ease-out, fade-out 0.3s ease-out 2.7s forwards;
+  border-radius: 10px;
+  background-color: rgba(44, 62, 80, 0.9);
+  color: white;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  min-width: 220px;
+  backdrop-filter: blur(4px);
+  animation: toast-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-align: center;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.buy-success {
-  background-color: #c6f6d5;
-  border-left: 4px solid #38a169;
+/* 进度条动画 */
+.toast-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.3);
 }
 
-.sell-success {
-  background-color: #fed7d7;
-  border-left: 4px solid #e53e3e;
+.toast-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  animation: progress 3s linear forwards;
+}
+
+@keyframes progress {
+  from { width: 100%; }
+  to { width: 0%; }
 }
 
 .toast-content {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
 }
 
 .toast-icon {
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .toast-message {
   font-size: 0.95rem;
-  color: #2d3748;
+  color: white;
+  font-weight: 500;
+  letter-spacing: 0.2px;
 }
 
-@keyframes slide-up {
+/* 淡入淡出过渡效果 */
+.fade-enter-active {
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.fade-leave-active {
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 20px);
+}
+
+.fade-enter-to, .fade-leave-from {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@keyframes toast-in {
   from {
     transform: translate(-50%, 20px);
     opacity: 0;
@@ -610,12 +734,44 @@ const quickSell = (item) => {
   }
 }
 
-@keyframes fade-out {
+@keyframes toast-out {
   from {
+    transform: translate(-50%, 0);
     opacity: 1;
   }
   to {
+    transform: translate(-50%, -20px);
     opacity: 0;
   }
+}
+
+.buy-success {
+  background-color: rgba(46, 204, 113, 0.9);
+  border-top: 3px solid #2ecc71;
+}
+
+.buy-success .toast-icon {
+  background-color: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+}
+
+.sale-success {
+  background-color: rgba(44, 62, 80, 0.9);
+  border-top: 3px solid #3498db;
+}
+
+.sale-success .toast-icon {
+  background-color: rgba(52, 152, 219, 0.2);
+  color: #3498db;
+}
+
+.purchase-failed {
+  background-color: rgba(44, 62, 80, 0.9);
+  border-top: 3px solid #e74c3c;
+}
+
+.purchase-failed .toast-icon {
+  background-color: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
 }
 </style> 
