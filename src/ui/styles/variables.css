@@ -1,0 +1,106 @@
+/**
+ * 设计系统变量
+ * 基于UI设计规范文档定义的变量
+ */
+
+:root {
+  /* 颜色系统 */
+  /* 主色调 */
+  --color-brand-blue: #3498DB;
+  --color-vivid-orange: #F39C12;
+  --color-white: #FFFFFF;
+  --color-dark-gray: #34495E;
+  
+  /* 辅助色 */
+  --color-success-green: #2ECC71;
+  --color-warning-orange: #F39C12;
+  --color-error-red: #E74C3C;
+  --color-info-blue: #3498DB;
+  
+  /* 中性色 */
+  --color-gray-100: #F7F9FA;
+  --color-gray-200: #E8ECEF;
+  --color-gray-300: #BDC3C7;
+  --color-gray-400: #95A5A6;
+  --color-gray-500: #7F8C8D;
+  
+  /* 渐变 */
+  --gradient-primary: linear-gradient(135deg, #3498DB, #2980B9);
+  
+  /* 排版系统 */
+  --font-family-base: "站酷快乐体", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-family-numbers: "Baloo 2", "DIN Alternate", sans-serif;
+  
+  /* 字号 */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 30px;
+  --font-size-3xl: 36px;
+  
+  /* 字重 */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  --font-weight-heavy: 700;
+  
+  /* 行高 */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.8;
+  
+  /* 间距系统 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+  --space-9: 64px;
+  --space-10: 80px;
+  
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+  
+  /* 过渡时间 */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+  --transition-very-slow: 500ms;
+  
+  /* 动效曲线 */
+  --ease-default: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  
+  /* 阴影 */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.2);
+  
+  /* 图标尺寸 */
+  --icon-size-sm: 16px;
+  --icon-size-md: 20px;
+  --icon-size-lg: 24px;
+  --icon-size-xl: 32px;
+  
+  /* Z-index层级 */
+  --z-index-base: 1;
+  --z-index-dropdown: 100;
+  --z-index-sticky: 200;
+  --z-index-fixed: 300;
+  --z-index-modal: 400;
+  --z-index-popover: 500;
+  --z-index-toast: 600;
+  --z-index-tooltip: 700;
+} 

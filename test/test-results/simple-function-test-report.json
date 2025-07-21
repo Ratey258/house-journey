@@ -1,0 +1,338 @@
+{
+  "summary": {
+    "total": 31,
+    "passed": 31,
+    "failed": 0,
+    "skipped": 0,
+    "duration": 22
+  },
+  "tests": [
+    {
+      "name": "文件存在性测试: ../src/core/services/priceSystem.js",
+      "passed": true,
+      "message": "文件存在",
+      "timestamp": "2025-07-19T10:46:02.542Z"
+    },
+    {
+      "name": "文件存在性测试: ../src/core/services/eventSystem.js",
+      "passed": true,
+      "message": "文件存在",
+      "timestamp": "2025-07-19T10:46:02.542Z"
+    },
+    {
+      "name": "文件存在性测试: ../src/core/models/player.js",
+      "passed": true,
+      "message": "文件存在",
+      "timestamp": "2025-07-19T10:46:02.542Z"
+    },
+    {
+      "name": "文件存在性测试: ../src/core/models/product.js",
+      "passed": true,
+      "message": "文件存在",
+      "timestamp": "2025-07-19T10:46:02.542Z"
+    },
+    {
+      "name": "文件存在性测试: ../src/core/models/event.js",
+      "passed": true,
+      "message": "文件存在",
+      "timestamp": "2025-07-19T10:46:02.543Z"
+    },
+    {
+      "name": "文件存在性测试: ../src/infrastructure/persistence/storageService.js",
+      "passed": true,
+      "message": "文件存在",
+      "timestamp": "2025-07-19T10:46:02.543Z"
+    },
+    {
+      "name": "文件存在性测试: ../src/core/services/gameLoopService.js",
+      "passed": true,
+      "message": "文件存在",
+      "timestamp": "2025-07-19T10:46:02.543Z"
+    },
+    {
+      "name": "价格系统文件内容测试",
+      "passed": true,
+      "message": "文件包含导出语句",
+      "timestamp": "2025-07-19T10:46:02.544Z"
+    },
+    {
+      "name": "价格计算函数测试",
+      "passed": true,
+      "message": "包含价格计算函数",
+      "timestamp": "2025-07-19T10:46:02.544Z"
+    },
+    {
+      "name": "批量价格更新函数测试",
+      "passed": true,
+      "message": "包含批量更新函数",
+      "timestamp": "2025-07-19T10:46:02.544Z"
+    },
+    {
+      "name": "事件系统文件内容测试",
+      "passed": true,
+      "message": "文件包含导出语句",
+      "timestamp": "2025-07-19T10:46:02.544Z"
+    },
+    {
+      "name": "事件系统类测试",
+      "passed": true,
+      "message": "包含事件系统类",
+      "timestamp": "2025-07-19T10:46:02.544Z"
+    },
+    {
+      "name": "事件生成函数测试",
+      "passed": true,
+      "message": "包含事件生成函数",
+      "timestamp": "2025-07-19T10:46:02.544Z"
+    },
+    {
+      "name": "项目结构测试",
+      "passed": true,
+      "message": "项目结构完整",
+      "timestamp": "2025-07-19T10:46:02.545Z"
+    },
+    {
+      "name": "代码质量测试: ../src/core/services/priceSystem.js",
+      "passed": true,
+      "message": "文件语法基本正确",
+      "timestamp": "2025-07-19T10:46:02.545Z"
+    },
+    {
+      "name": "代码质量测试: ../src/core/services/eventSystem.js",
+      "passed": true,
+      "message": "文件语法基本正确",
+      "timestamp": "2025-07-19T10:46:02.546Z"
+    },
+    {
+      "name": "代码质量测试: ../src/core/models/player.js",
+      "passed": true,
+      "message": "文件语法基本正确",
+      "timestamp": "2025-07-19T10:46:02.546Z"
+    },
+    {
+      "name": "代码质量测试: ../src/core/models/product.js",
+      "passed": true,
+      "message": "文件语法基本正确",
+      "timestamp": "2025-07-19T10:46:02.546Z"
+    },
+    {
+      "name": "代码质量测试: ../src/core/models/event.js",
+      "passed": true,
+      "message": "文件语法基本正确",
+      "timestamp": "2025-07-19T10:46:02.547Z"
+    },
+    {
+      "name": "package.json完整性测试",
+      "passed": true,
+      "message": "package.json配置完整",
+      "timestamp": "2025-07-19T10:46:02.548Z"
+    },
+    {
+      "name": "关键依赖检查",
+      "passed": true,
+      "message": "所有关键依赖都已安装",
+      "timestamp": "2025-07-19T10:46:02.548Z"
+    },
+    {
+      "name": "Vite配置测试",
+      "passed": true,
+      "message": "Vite配置包含Vue插件",
+      "timestamp": "2025-07-19T10:46:02.548Z"
+    },
+    {
+      "name": "Electron配置测试",
+      "passed": true,
+      "message": "Electron配置完整",
+      "timestamp": "2025-07-19T10:46:02.548Z"
+    },
+    {
+      "name": "资源目录测试: ../resources",
+      "passed": true,
+      "message": "资源目录存在",
+      "timestamp": "2025-07-19T10:46:02.549Z"
+    },
+    {
+      "name": "资源目录测试: ../resources/assets",
+      "passed": true,
+      "message": "资源目录存在",
+      "timestamp": "2025-07-19T10:46:02.549Z"
+    },
+    {
+      "name": "资源目录测试: ../resources/assets/images",
+      "passed": true,
+      "message": "资源目录存在",
+      "timestamp": "2025-07-19T10:46:02.549Z"
+    },
+    {
+      "name": "资源目录测试: ../resources/assets/sounds",
+      "passed": true,
+      "message": "资源目录存在",
+      "timestamp": "2025-07-19T10:46:02.550Z"
+    },
+    {
+      "name": "资源目录测试: ../resources/assets/icons",
+      "passed": true,
+      "message": "资源目录存在",
+      "timestamp": "2025-07-19T10:46:02.550Z"
+    },
+    {
+      "name": "关键资源测试: ../icon.ico",
+      "passed": true,
+      "message": "资源文件存在",
+      "timestamp": "2025-07-19T10:46:02.550Z"
+    },
+    {
+      "name": "关键资源测试: ../resources/logo.png",
+      "passed": true,
+      "message": "资源文件存在",
+      "timestamp": "2025-07-19T10:46:02.550Z"
+    },
+    {
+      "name": "关键资源测试: ../resources/splash.html",
+      "passed": true,
+      "message": "资源文件存在",
+      "timestamp": "2025-07-19T10:46:02.551Z"
+    }
+  ],
+  "details": {
+    "文件存在性测试: ../src/core/services/priceSystem.js": {
+      "filePath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\core\\services\\priceSystem.js",
+      "exists": true
+    },
+    "文件存在性测试: ../src/core/services/eventSystem.js": {
+      "filePath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\core\\services\\eventSystem.js",
+      "exists": true
+    },
+    "文件存在性测试: ../src/core/models/player.js": {
+      "filePath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\core\\models\\player.js",
+      "exists": true
+    },
+    "文件存在性测试: ../src/core/models/product.js": {
+      "filePath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\core\\models\\product.js",
+      "exists": true
+    },
+    "文件存在性测试: ../src/core/models/event.js": {
+      "filePath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\core\\models\\event.js",
+      "exists": true
+    },
+    "文件存在性测试: ../src/infrastructure/persistence/storageService.js": {
+      "filePath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\infrastructure\\persistence\\storageService.js",
+      "exists": true
+    },
+    "文件存在性测试: ../src/core/services/gameLoopService.js": {
+      "filePath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\core\\services\\gameLoopService.js",
+      "exists": true
+    },
+    "价格系统文件内容测试": {
+      "hasExport": true,
+      "contentLength": 16090
+    },
+    "价格计算函数测试": {
+      "hasCalculateFunction": true
+    },
+    "批量价格更新函数测试": {
+      "hasBatchFunction": true
+    },
+    "事件系统文件内容测试": {
+      "hasExport": true,
+      "contentLength": 22454
+    },
+    "事件系统类测试": {
+      "hasEventSystem": true
+    },
+    "事件生成函数测试": {
+      "hasGenerateEvent": true
+    },
+    "项目结构测试": {
+      "projectStructure": {
+        "src/core/services": true,
+        "src/core/models": true,
+        "src/infrastructure/persistence": true,
+        "src/stores": true,
+        "src/ui/components": true,
+        "src/i18n": true
+      }
+    },
+    "代码质量测试: ../src/core/services/priceSystem.js": {
+      "hasValidSyntax": true,
+      "hasComments": true,
+      "hasErrorHandling": true,
+      "contentLength": 16090
+    },
+    "代码质量测试: ../src/core/services/eventSystem.js": {
+      "hasValidSyntax": true,
+      "hasComments": true,
+      "hasErrorHandling": false,
+      "contentLength": 22454
+    },
+    "代码质量测试: ../src/core/models/player.js": {
+      "hasValidSyntax": true,
+      "hasComments": true,
+      "hasErrorHandling": false,
+      "contentLength": 6026
+    },
+    "代码质量测试: ../src/core/models/product.js": {
+      "hasValidSyntax": true,
+      "hasComments": true,
+      "hasErrorHandling": false,
+      "contentLength": 12202
+    },
+    "代码质量测试: ../src/core/models/event.js": {
+      "hasValidSyntax": true,
+      "hasComments": true,
+      "hasErrorHandling": false,
+      "contentLength": 59764
+    },
+    "package.json完整性测试": {
+      "hasName": "house-journey",
+      "hasVersion": "0.1.0",
+      "hasScripts": true,
+      "hasDependencies": true,
+      "hasDevDependencies": true
+    },
+    "关键依赖检查": {
+      "missingDependencies": []
+    },
+    "Vite配置测试": {
+      "hasVuePlugin": true,
+      "hasElectronConfig": true
+    },
+    "Electron配置测试": {
+      "hasAppId": true,
+      "hasProductName": true,
+      "hasWinConfig": true
+    },
+    "资源目录测试: ../resources": {
+      "dirPath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\resources",
+      "exists": true
+    },
+    "资源目录测试: ../resources/assets": {
+      "dirPath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\resources\\assets",
+      "exists": true
+    },
+    "资源目录测试: ../resources/assets/images": {
+      "dirPath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\resources\\assets\\images",
+      "exists": true
+    },
+    "资源目录测试: ../resources/assets/sounds": {
+      "dirPath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\resources\\assets\\sounds",
+      "exists": true
+    },
+    "资源目录测试: ../resources/assets/icons": {
+      "dirPath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\resources\\assets\\icons",
+      "exists": true
+    },
+    "关键资源测试: ../icon.ico": {
+      "resourcePath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\icon.ico",
+      "exists": true
+    },
+    "关键资源测试: ../resources/logo.png": {
+      "resourcePath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\resources\\logo.png",
+      "exists": true
+    },
+    "关键资源测试: ../resources/splash.html": {
+      "resourcePath": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\resources\\splash.html",
+      "exists": true
+    }
+  }
+}

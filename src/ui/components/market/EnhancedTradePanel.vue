@@ -1,0 +1,841 @@
+<template>
+  <div class="enhanced-trade-panel">
+    <!-- 交易类型选择器 -->
+    <div class="panel-header">
+      <h3>{{ selectedProduct ? selectedProduct.name : '交易' }}</h3>
+    <div class="trade-type-selector">
+      <button 
+        :class="['type-btn', { active: tradeType === 'buy' }]" 
+        @click="setTradeType('buy')"
+      >
+          购买
+      </button>
+      <button 
+        :class="['type-btn', { active: tradeType === 'sell' }]" 
+        @click="setTradeType('sell')"
+      >
+          出售
+      </button>
+      </div>
+    </div>
+    
+    <!-- 当前选中的商品信息 -->
+    <div v-if="selectedProduct" class="trade-detail">
+      <div class="price-info">
+        <div class="current-price">
+          <span>当前价格:</span>
+          <span class="price-value">{{ formatPrice(getCurrentPrice(selectedProduct.id)) }}</span>
+        </div>
+        
+        <mini-price-chart 
+          :history="getPriceHistory(selectedProduct.id)"
+          :height="40"
+        />
+      </div>
+      
+      <!-- 添加预计收益/成本信息 -->
+      <div class="prediction-info" v-if="tradeType === 'buy'">
+        <div class="prediction-badge" :class="getPredictionClass(selectedProduct)">
+          <span class="prediction-icon">{{ getPredictionIcon(selectedProduct) }}</span>
+          <span>{{ getPredictionText(selectedProduct) }}</span>
+        </div>
+      </div>
+      
+      <div class="trade-form">
+        <div class="form-row">
+        <div class="quantity-control">
+          <button @click="decreaseQuantity">-</button>
+          <input 
+            v-model.number="quantity" 
+            type="number" 
+            min="1" 
+            :max="maxTradeQuantity"
+          />
+          <button @click="increaseQuantity">+</button>
+          </div>
+          
+          <div class="quick-quantity">
+            <button @click="setQuantity(maxTradeQuantity / 4)">25%</button>
+            <button @click="setQuantity(maxTradeQuantity / 2)">50%</button>
+            <button @click="setQuantity(maxTradeQuantity)">最大</button>
+          </div>
+        </div>
+        
+        <div class="trade-summary">
+          <div class="summary-row">
+            <span>总计:</span>
+            <span class="total-value">{{ formatPrice(totalCost) }}</span>
+          </div>
+          
+          <div v-if="tradeType === 'sell' && getPurchasePrice()" class="summary-row">
+            <span>预计利润:</span>
+            <span :class="['profit-value', profitClass]">
+              {{ formatPrice(estimatedProfit) }}
+              ({{ profitPercent }}%)
+            </span>
+          </div>
+          
+          <!-- 添加持有量信息 -->
+          <div v-if="inventoryQuantity > 0" class="summary-row inventory-info">
+            <span>当前持有:</span>
+            <span>{{ inventoryQuantity }} 个</span>
+          </div>
+          
+          <!-- 添加平均购买价格信息 -->
+          <div v-if="tradeType === 'sell' && getPurchasePrice()" class="summary-row avg-price-info">
+            <span>平均买入价:</span>
+            <span>{{ formatPrice(getPurchasePrice()) }}</span>
+          </div>
+        </div>
+        
+        <div class="action-buttons">
+          <button class="cancel-btn" @click="$emit('close')">取消</button>
+        <button 
+          class="execute-trade-btn" 
+          :disabled="!canTrade" 
+          @click="openConfirmDialog"
+        >
+          {{ tradeType === 'buy' ? '购买' : '出售' }}
+        </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 交易结果反馈 -->
+    <transition name="feedback">
+      <div v-if="showFeedback" class="trade-feedback" :class="feedbackType">
+        <i :class="feedbackIcon"></i>
+        <span>{{ feedbackMessage }}</span>
+      </div>
+    </transition>
+    
+    <!-- 交易确认弹窗 -->
+    <transition name="confirm">
+    <div v-if="showConfirmDialog" class="confirm-dialog-backdrop" @click.self="cancelConfirmation">
+      <div class="confirm-dialog">
+        <h3>{{ tradeType === 'buy' ? '确认购买' : '确认出售' }}</h3>
+        <p>
+          {{ tradeType === 'buy' 
+            ? `确定要购买 ${quantity} 个 ${selectedProduct?.name} 吗？总价：${formatPrice(totalCost)}` 
+            : `确定要出售 ${quantity} 个 ${selectedProduct?.name} 吗？总收入：${formatPrice(totalCost)}` 
+          }}
+        </p>
+        <div class="confirm-buttons">
+          <button class="cancel-btn" @click="cancelConfirmation">取消</button>
+          <button class="confirm-btn" @click="confirmTrade">确认</button>
+        </div>
+      </div>
+    </div>
+    </transition>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch } from 'vue';
+import { useGameStore } from '../../../stores';
+import MiniPriceChart from './MiniPriceChart.vue';
+import { formatNumber, formatCurrency } from '@/infrastructure/utils';
+import { handleError, ErrorType, ErrorSeverity } from '../../../infrastructure/utils/errorHandler';
+
+const props = defineProps({
+  selectedProduct: {
+    type: Object,
+    default: null
+  }
+});
+
+const emit = defineEmits(['close']);
+
+// 状态
+const tradeType = ref('buy');
+const selectedProduct = ref(props.selectedProduct);
+const quantity = ref(1);
+const showFeedback = ref(false);
+const feedbackType = ref('success');
+const feedbackMessage = ref('');
+
+// 添加确认弹窗状态
+const showConfirmDialog = ref(false);
+
+// 获取store
+const gameStore = useGameStore();
+
+// 监听props变化，同步到本地状态
+watch(() => props.selectedProduct, (newProduct) => {
+  selectedProduct.value = newProduct;
+});
+
+// 计算属性
+const maxTradeQuantity = computed(() => {
+  if (!selectedProduct.value) return 0;
+  
+  if (tradeType.value === 'buy') {
+    const price = selectedProduct.value.currentPrice || getCurrentPrice(selectedProduct.value.id);
+    const maxByMoney = Math.floor(gameStore.player.money / price);
+    const maxBySpace = gameStore.player.capacity - gameStore.player.inventoryUsed;
+    return Math.max(0, Math.min(maxByMoney, maxBySpace));
+  } else {
+    // 出售时，最大数量为库存中该商品的总数量
+    return inventoryQuantity.value;
+  }
+});
+
+// 总成本
+const totalCost = computed(() => {
+  if (!selectedProduct.value) return 0;
+  const price = selectedProduct.value.currentPrice || getCurrentPrice(selectedProduct.value.id);
+  return price * quantity.value;
+});
+
+const estimatedProfit = computed(() => {
+  if (tradeType.value !== 'sell' || !selectedProduct.value) return 0;
+  
+  const currentPrice = getCurrentPrice(selectedProduct.value.id);
+  const purchasePrice = getPurchasePrice();
+  if (!purchasePrice) return 0;
+  
+  return quantity.value * (currentPrice - purchasePrice);
+});
+
+const profitPercent = computed(() => {
+  const purchasePrice = getPurchasePrice();
+  if (!purchasePrice) return '0';
+  
+  const currentPrice = getCurrentPrice(selectedProduct.value?.id);
+  const percent = ((currentPrice / purchasePrice - 1) * 100).toFixed(1);
+  return percent;
+});
+
+const profitClass = computed(() => {
+  const profit = parseFloat(profitPercent.value);
+  if (profit > 0) return 'profit-positive';
+  if (profit < 0) return 'profit-negative';
+  return '';
+});
+
+// 是否可以交易
+const canTrade = computed(() => {
+  if (!selectedProduct.value || quantity.value <= 0) return false;
+  
+  if (tradeType.value === 'buy') {
+    // 购买条件：有足够的钱和背包空间
+    const price = selectedProduct.value.currentPrice || getCurrentPrice(selectedProduct.value.id);
+    const totalCost = price * quantity.value;
+    
+    // 检查金钱是否足够
+    if (totalCost > gameStore.player.money) return false;
+    
+    // 检查背包空间是否足够
+    const freeSpace = gameStore.player.capacity - gameStore.player.inventoryUsed;
+    if (quantity.value > freeSpace) return false;
+    
+    return true;
+  } else {
+    // 出售条件：库存中有足够的商品数量
+    return inventoryQuantity.value >= quantity.value;
+  }
+});
+
+const feedbackIcon = computed(() => {
+  return feedbackType.value === 'success' ? 'icon-success' : 'icon-error';
+});
+
+// 获取库存中该商品的数量
+const inventoryQuantity = computed(() => {
+  if (!selectedProduct.value) return 0;
+  
+  return gameStore.player.inventory
+    .filter(item => item.productId === selectedProduct.value.id)
+    .reduce((total, item) => total + item.quantity, 0);
+});
+
+// 获取该商品的平均购买价格
+const getPurchasePrice = () => {
+  if (!selectedProduct.value) return 0;
+  
+  const inventoryItems = gameStore.player.inventory
+    .filter(item => item.productId === selectedProduct.value.id);
+  
+  if (inventoryItems.length === 0) return 0;
+  
+  const totalCost = inventoryItems.reduce(
+    (sum, item) => sum + (item.purchasePrice * item.quantity), 0
+  );
+  const totalQuantity = inventoryItems.reduce(
+    (sum, item) => sum + item.quantity, 0
+  );
+  
+  return totalQuantity > 0 ? totalCost / totalQuantity : 0;
+};
+
+// 获取价格趋势预测
+const getPredictionClass = (product) => {
+  if (!product) return '';
+  const trend = gameStore.productPrices[product.id]?.trend || 'stable';
+  
+  if (trend === 'rising') return 'prediction-up';
+  if (trend === 'falling') return 'prediction-down';
+  return 'prediction-stable';
+};
+
+const getPredictionIcon = (product) => {
+  if (!product) return '?';
+  const trend = gameStore.productPrices[product.id]?.trend || 'stable';
+  
+  if (trend === 'rising') return '📈';
+  if (trend === 'falling') return '📉';
+  return '📊';
+};
+
+const getPredictionText = (product) => {
+  if (!product) return '无法预测';
+  const trend = gameStore.productPrices[product.id]?.trend || 'stable';
+  
+  if (trend === 'rising') return '价格可能上涨，建议购买';
+  if (trend === 'falling') return '价格可能下跌，谨慎购买';
+  return '价格相对稳定';
+};
+
+// 交易类型切换
+const setTradeType = (type) => {
+  tradeType.value = type;
+  // 重置数量
+  quantity.value = 1;
+  // 隐藏反馈
+  showFeedback.value = false;
+};
+
+function increaseQuantity() {
+  quantity.value = Math.min(quantity.value + 1, maxTradeQuantity.value);
+}
+
+function decreaseQuantity() {
+  quantity.value = Math.max(1, quantity.value - 1);
+}
+
+function setQuantity(value) {
+  quantity.value = Math.max(1, Math.floor(value));
+}
+
+function getCurrentPrice(productId) {
+  return gameStore.getCurrentProductPrice(productId);
+}
+
+function getPriceHistory(productId) {
+  return gameStore.productPrices[productId]?.history || [];
+}
+
+function formatPrice(price) {
+  return formatCurrency(price);
+}
+
+/**
+ * 显示确认对话框
+ */
+function openConfirmDialog() {
+  if (!canTrade.value) return;
+  showConfirmDialog.value = true;
+}
+
+/**
+ * 取消确认
+ */
+function cancelConfirmation() {
+  showConfirmDialog.value = false;
+}
+
+/**
+ * 执行交易
+ */
+const executeTrade = () => {
+  if (!canTrade.value || !selectedProduct.value) return;
+  
+  try {
+    let result;
+    
+    if (tradeType.value === 'buy') {
+      // 购买操作
+      result = gameStore.buyProduct(selectedProduct.value.id, quantity.value);
+      
+      if (result.success) {
+        showFeedbackMessage('success', `成功购买 ${quantity.value} 个 ${selectedProduct.value.name}`);
+      } else {
+        showFeedbackMessage('error', result.message || '购买失败');
+      }
+    } else {
+      // 出售操作
+      result = gameStore.sellProduct(selectedProduct.value.id, quantity.value);
+    
+    if (result.success) {
+        const profitText = result.profit > 0 
+          ? `，获利 ${formatPrice(result.profit)}` 
+          : result.profit < 0 
+            ? `，亏损 ${formatPrice(Math.abs(result.profit))}` 
+            : '';
+        
+        showFeedbackMessage(
+          result.profit >= 0 ? 'success' : 'warning',
+          `成功出售 ${quantity.value} 个 ${selectedProduct.value.name}，获得 ${formatPrice(result.income)}${profitText}`
+        );
+    } else {
+        showFeedbackMessage('error', result.message || '出售失败');
+    }
+    }
+    
+    // 重置数量
+    quantity.value = 1;
+  } catch (error) {
+    console.error('交易执行出错:', error);
+    showFeedbackMessage('error', '交易过程中发生错误');
+  }
+};
+
+// 显示反馈消息
+const showFeedbackMessage = (type, message) => {
+  feedbackType.value = type;
+  feedbackMessage.value = message;
+  showFeedback.value = true;
+  
+  // 3秒后自动隐藏
+  setTimeout(() => {
+    showFeedback.value = false;
+  }, 3000);
+};
+
+// 确认交易
+const confirmTrade = () => {
+  showConfirmDialog.value = false;
+  executeTrade();
+};
+
+// 监听选中商品变化
+watch(selectedProduct, () => {
+  quantity.value = 1;
+});
+</script>
+
+<style scoped>
+.enhanced-trade-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  margin: 0 auto;
+  will-change: transform, opacity;
+}
+
+/* 移除panel-enter动画，由父组件控制 */
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: #4a6fa5;
+  color: white;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.trade-type-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.type-btn {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #fff;
+  border-radius: 4px;
+  background-color: transparent;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.type-btn.active {
+  background-color: white;
+  color: #4a6fa5;
+  font-weight: bold;
+}
+
+.trade-detail {
+  padding: 1rem;
+  background-color: #fff;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.price-info {
+  margin-bottom: 1rem;
+}
+
+.current-price {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.price-value {
+  font-weight: bold;
+  color: #4a6fa5;
+}
+
+/* 预测信息样式 */
+.prediction-info {
+  margin-bottom: 1rem;
+}
+
+.prediction-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background-color: #f0f0f0;
+}
+
+.prediction-icon {
+  font-size: 1.2rem;
+}
+
+.prediction-up {
+  background-color: rgba(46, 204, 113, 0.15);
+  color: #27ae60;
+  border-left: 3px solid #27ae60;
+}
+
+.prediction-down {
+  background-color: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border-left: 3px solid #e74c3c;
+}
+
+.prediction-stable {
+  background-color: rgba(52, 152, 219, 0.15);
+  color: #3498db;
+  border-left: 3px solid #3498db;
+}
+
+.trade-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.quantity-control button {
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.quantity-control input {
+  width: 3rem;
+  padding: 0.3rem;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.quick-quantity {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.quick-quantity button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  cursor: pointer;
+}
+
+.trade-summary {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.summary-row:last-child {
+  margin-bottom: 0;
+}
+
+.total-value {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.profit-positive {
+  color: #28a745;
+}
+
+.profit-negative {
+  color: #dc3545;
+}
+
+/* 库存信息和平均价格信息样式 */
+.inventory-info {
+  color: #6c757d;
+  font-size: 0.85rem;
+  padding-top: 0.3rem;
+  border-top: 1px dashed #ddd;
+}
+
+.avg-price-info {
+  color: #6c757d;
+  font-size: 0.85rem;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+  background-color: #e9ecef;
+}
+
+.execute-trade-btn {
+  flex: 2;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #4a6fa5;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.execute-trade-btn:hover:not(:disabled) {
+  background-color: #3d5d8a;
+  transform: translateY(-1px);
+}
+
+.execute-trade-btn:disabled {
+  background-color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.trade-feedback {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 900;
+  font-size: 0.9rem;
+}
+
+.trade-feedback.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.trade-feedback.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* 反馈消息动画 */
+.feedback-enter-active {
+  animation: feedback-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.feedback-leave-active {
+  animation: feedback-out 0.3s ease forwards;
+}
+
+@keyframes feedback-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes feedback-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+  opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+}
+
+.confirm-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.confirm-dialog {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.2rem;
+  width: 90%;
+  max-width: 320px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform-origin: center;
+}
+
+/* 确认对话框动画 */
+.confirm-enter-active {
+  animation: confirm-backdrop-in 0.2s ease-out forwards;
+}
+
+.confirm-leave-active {
+  animation: confirm-backdrop-out 0.2s ease-in forwards;
+}
+
+.confirm-enter-active .confirm-dialog {
+  animation: confirm-zoom-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.confirm-leave-active .confirm-dialog {
+  animation: confirm-zoom-out 0.2s ease-in forwards;
+}
+
+@keyframes confirm-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes confirm-backdrop-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes confirm-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes confirm-zoom-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+.confirm-dialog h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #4a6fa5;
+  font-size: 1.1rem;
+}
+
+.confirm-dialog p {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.confirm-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.confirm-buttons button {
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.confirm-buttons .cancel-btn {
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+}
+
+.confirm-buttons .cancel-btn:hover {
+  background-color: #e9ecef;
+}
+
+.confirm-buttons .confirm-btn {
+  background-color: #4a6fa5;
+  color: white;
+  border: none;
+}
+
+.confirm-buttons .confirm-btn:hover {
+  background-color: #3d5d8a;
+}
+</style> 

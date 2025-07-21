@@ -1,0 +1,229 @@
+{
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0,
+    "skipped": 0,
+    "duration": 32
+  },
+  "tests": [
+    {
+      "name": "项目目录结构",
+      "status": "PASS",
+      "message": "所有必要目录存在",
+      "timestamp": "2025-07-19T06:08:05.613Z"
+    },
+    {
+      "name": "核心文件检查",
+      "status": "PASS",
+      "message": "所有核心文件存在",
+      "timestamp": "2025-07-19T06:08:05.614Z"
+    },
+    {
+      "name": "资源目录检查",
+      "status": "PASS",
+      "message": "所有资源目录存在",
+      "timestamp": "2025-07-19T06:08:05.614Z"
+    },
+    {
+      "name": "package.json解析",
+      "status": "PASS",
+      "message": "package.json可正确解析为JSON",
+      "timestamp": "2025-07-19T06:08:05.615Z"
+    },
+    {
+      "name": "核心依赖检查",
+      "status": "PASS",
+      "message": "所有核心依赖存在",
+      "timestamp": "2025-07-19T06:08:05.615Z"
+    },
+    {
+      "name": "版本号检查",
+      "status": "PASS",
+      "message": "版本号正确: 0.1.0",
+      "timestamp": "2025-07-19T06:08:05.615Z"
+    },
+    {
+      "name": "构建配置检查",
+      "status": "PASS",
+      "message": "构建配置存在",
+      "timestamp": "2025-07-19T06:08:05.615Z"
+    },
+    {
+      "name": "构建配置项检查",
+      "status": "PASS",
+      "message": "所有必要构建配置项存在",
+      "timestamp": "2025-07-19T06:08:05.615Z"
+    },
+    {
+      "name": "模块导入: src/core/models/player.js",
+      "status": "PASS",
+      "message": "模块存在并有导出",
+      "timestamp": "2025-07-19T06:08:05.616Z"
+    },
+    {
+      "name": "模块导入: src/core/models/product.js",
+      "status": "PASS",
+      "message": "模块存在并有导出",
+      "timestamp": "2025-07-19T06:08:05.616Z"
+    },
+    {
+      "name": "模块导入: src/core/services/priceSystem.js",
+      "status": "PASS",
+      "message": "模块存在并有导出",
+      "timestamp": "2025-07-19T06:08:05.617Z"
+    },
+    {
+      "name": "模块导入: src/core/services/eventSystem.js",
+      "status": "PASS",
+      "message": "模块存在并有导出",
+      "timestamp": "2025-07-19T06:08:05.617Z"
+    },
+    {
+      "name": "模块导入: src/infrastructure/persistence/storageService.js",
+      "status": "PASS",
+      "message": "模块存在并有导出",
+      "timestamp": "2025-07-19T06:08:05.617Z"
+    },
+    {
+      "name": "模块导入: src/infrastructure/utils/errorHandler.js",
+      "status": "PASS",
+      "message": "模块存在并有导出",
+      "timestamp": "2025-07-19T06:08:05.617Z"
+    }
+  ],
+  "timestamp": "2025-07-19T06:08:05.600Z",
+  "details": {
+    "项目目录结构": {
+      "checkedDirs": [
+        "src",
+        "resources",
+        "electron",
+        "dist",
+        "public"
+      ]
+    },
+    "核心文件检查": {
+      "checkedFiles": [
+        "package.json",
+        "vite.config.js",
+        "electron-builder.js",
+        "src/main.js",
+        "electron/main.js",
+        "resources/logo.png",
+        "resources/splash.html",
+        "icon.ico"
+      ]
+    },
+    "资源目录检查": {
+      "checkedDirs": [
+        "resources/assets/images",
+        "resources/assets/sounds",
+        "resources/assets/icons"
+      ]
+    },
+    "package.json解析": {},
+    "核心依赖检查": {
+      "requiredDeps": [
+        "electron",
+        "electron-builder",
+        "vue",
+        "pinia",
+        "vite",
+        "electron-log",
+        "electron-store",
+        "electron-updater"
+      ],
+      "missingDeps": []
+    },
+    "版本号检查": {
+      "version": "0.1.0"
+    },
+    "构建配置检查": {
+      "buildConfig": {
+        "appId": "com.housejourney.app",
+        "productName": "买房记",
+        "copyright": "买房记开发团队 © 2025",
+        "directories": {
+          "output": "dist_electron",
+          "buildResources": "resources"
+        },
+        "win": {
+          "target": [
+            {
+              "target": "nsis",
+              "arch": [
+                "x64"
+              ]
+            },
+            {
+              "target": "portable",
+              "arch": [
+                "x64"
+              ]
+            }
+          ],
+          "icon": "icon.ico"
+        },
+        "nsis": {
+          "oneClick": false,
+          "allowToChangeInstallationDirectory": true,
+          "createDesktopShortcut": true,
+          "createStartMenuShortcut": true,
+          "shortcutName": "买房记",
+          "artifactName": "买房记_安装版_${version}.exe"
+        },
+        "portable": {
+          "artifactName": "买房记_便携版_${version}.exe"
+        },
+        "files": [
+          "dist/**/*",
+          "electron/**/*",
+          "!node_modules/**/*"
+        ],
+        "extraResources": [
+          {
+            "from": "resources",
+            "to": "resources"
+          }
+        ],
+        "asar": true
+      }
+    },
+    "构建配置项检查": {
+      "requiredBuildConfigs": [
+        "appId",
+        "productName",
+        "win",
+        "files",
+        "asar"
+      ],
+      "missingBuildConfigs": []
+    },
+    "模块导入: src/core/models/player.js": {
+      "path": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\core\\models\\player.js",
+      "hasExports": true
+    },
+    "模块导入: src/core/models/product.js": {
+      "path": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\core\\models\\product.js",
+      "hasExports": true
+    },
+    "模块导入: src/core/services/priceSystem.js": {
+      "path": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\core\\services\\priceSystem.js",
+      "hasExports": true
+    },
+    "模块导入: src/core/services/eventSystem.js": {
+      "path": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\core\\services\\eventSystem.js",
+      "hasExports": true
+    },
+    "模块导入: src/infrastructure/persistence/storageService.js": {
+      "path": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\infrastructure\\persistence\\storageService.js",
+      "hasExports": true
+    },
+    "模块导入: src/infrastructure/utils/errorHandler.js": {
+      "path": "C:\\Users\\Ratey\\Desktop\\live\\house-journey\\src\\infrastructure\\utils\\errorHandler.js",
+      "hasExports": true
+    }
+  },
+  "errors": []
+}
