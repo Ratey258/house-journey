@@ -143,7 +143,7 @@
       "buildConfig": {
         "appId": "com.housejourney.app",
         "productName": "买房记",
-        "copyright": "买房记开发团队 © 2025",
+        "copyright": "春卷 © 2025",
         "directories": {
           "output": "dist_electron",
           "buildResources": "resources"

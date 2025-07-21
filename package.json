@@ -1,10 +1,14 @@
 {
   "name": "house-journey",
   "version": "0.1.0",
-  "description": "买房记 - 房产投资模拟游戏",
-  "author": "买房记开发团队",
+  "description": "买房记 - 模拟经营游戏",
+  "author": "春卷",
   "license": "MIT",
   "main": "electron/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ratey258/house-journey.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -15,6 +19,9 @@
     "electron:build:win": "vite build && electron-builder --win nsis --config electron-builder.js",
     "electron:build:portable": "vite build && electron-builder --win portable --config electron-builder.js --debug",
     "electron:build:publish": "vite build && electron-builder --win --publish always --config electron-builder.js",
+    "publish:patch": "npm version patch && vite build && electron-builder --win --publish always --config electron-builder.js",
+    "publish:minor": "npm version minor && vite build && electron-builder --win --publish always --config electron-builder.js",
+    "publish:major": "npm version major && vite build && electron-builder --win --publish always --config electron-builder.js",
     "electron:clean": "rimraf dist dist_electron",
     "package": "electron-builder build -c electron-builder.js",
     "package:win": "electron-builder build -c electron-builder.js --win",
@@ -35,15 +42,21 @@
     "format:all": "node scripts/format-code.js format",
     "check:all": "node scripts/format-code.js check",
     "audit:error-handling": "node scripts/error-handler-audit.js",
-    "fix:error-handling": "node scripts/error-handler-fix.js"
+    "fix:error-handling": "node scripts/error-handler-fix.js",
+    "forge:package": "electron-forge package",
+    "forge:make": "electron-forge make"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.3.0",
+    "@electron-forge/maker-squirrel": "^7.3.0",
+    "@electron-forge/maker-zip": "^7.3.0",
     "@vitejs/plugin-vue": "^4.2.3",
     "@vue/test-utils": "^2.4.1",
     "c8": "^8.0.1",
     "concurrently": "^7.6.0",
     "electron": "^24.3.0",
     "electron-builder": "^26.0.12",
+    "electron-packager": "^17.1.2",
     "eslint": "^8.44.0",
     "eslint-plugin-vue": "^9.15.1",
     "jsdom": "^22.1.0",
@@ -72,53 +85,29 @@
     "vue-router": "^4.2.2",
     "vue-virtual-scroller": "^2.0.0-beta.8"
   },
-  "build": {
-    "appId": "com.housejourney.app",
-    "productName": "买房记",
-    "copyright": "买房记开发团队 © 2025",
-    "directories": {
-      "output": "dist_electron",
-      "buildResources": "resources"
-    },
-    "win": {
-      "target": [
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "name": "买房记v0.1.0",
+        "executableName": "买房记v0.1.0",
+        "icon": "./ico.ico",
+        "asar": true
+      },
+      "makers": [
         {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "买房记v0.1.0",
+            "setupIcon": "./ico.ico"
+          }
         },
         {
-          "target": "portable",
-          "arch": [
-            "x64"
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "win32"
           ]
         }
-      ],
-      "icon": "icon.ico"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "买房记",
-      "artifactName": "买房记_安装版_${version}.exe"
-    },
-    "portable": {
-      "artifactName": "买房记_便携版_${version}.exe"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*",
-      "!node_modules/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "resources",
-        "to": "resources"
-      }
-    ],
-    "asar": true
+      ]
+    }
   }
-} 
+}
