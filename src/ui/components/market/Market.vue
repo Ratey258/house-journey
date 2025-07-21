@@ -59,8 +59,8 @@
             <td class="trend-column">
               <div class="trend-container">
                 <price-trend-component 
-                  :trend="product.trend"
-                  :percent="product.changePercent"
+                  :trend="product.trend || 'stable'"
+                  :percent="product.changePercent || 0"
                 />
               </div>
             </td>
@@ -150,8 +150,8 @@
             <div class="current-price">¥{{ formatNumber(product.currentPrice) }}</div>
             <div class="trend-price-change">
               <price-trend-component 
-                :trend="product.trend" 
-                :percent="product.changePercent"
+                :trend="product.trend || 'stable'" 
+                :percent="product.changePercent || 0"
               />
               <span class="card-price-change" :class="getPriceChangeClass(product.changePercent)">
                 {{ formatChange(product.changePercent) }}
@@ -256,6 +256,7 @@
 import { ref, computed, watch } from 'vue';
 import { useGameStore } from '../../../stores';
 import { useGameCoreStore } from '../../../stores/gameCore';
+import { useMarketStore, usePriceSystemStore } from '../../../stores/market';
 import { useI18n } from 'vue-i18n';
 import { PriceTrend } from '../../../core/services/priceSystem';
 import EnhancedTradePanel from './EnhancedTradePanel.vue';
@@ -265,12 +266,14 @@ import { formatNumber, formatPercentChange, getPriceChangeClass } from '../../..
 
 const { t } = useI18n();
 const gameStore = useGameStore();
-const gameCoreStore = useGameCoreStore(); // 添加游戏核心存储
+const gameCoreStore = useGameCoreStore(); 
+const marketStore = useMarketStore();
+const priceStore = usePriceSystemStore();
 
 // 计算属性
-const locations = computed(() => gameStore.locations || []);
-const currentLocation = computed(() => gameStore.currentLocation || { id: '', name: '加载中...' });
-const availableProducts = computed(() => gameStore.availableProducts || []);
+const locations = computed(() => marketStore.locations || []);
+const currentLocation = computed(() => marketStore.currentLocation || { id: '', name: '加载中...' });
+const availableProducts = computed(() => marketStore.availableProducts || []);
 const player = computed(() => gameStore.player || { money: 0, capacity: 0, inventoryUsed: 0 });
 
 // 响应式变量
@@ -356,10 +359,7 @@ const openTradePanel = (product) => {
 const openSellPanel = (product) => {
   selectedProduct.value = product;
   showTradePanel.value = true;
-  // 通知EnhancedTradePanel组件切换到出售模式
-  setTimeout(() => {
-    document.querySelector('.enhanced-trade-panel .type-btn:nth-child(2)').click();
-  }, 100);
+  // 不再需要通过DOM操作切换到出售模式，因为EnhancedTradePanel已经重构
 };
 
 // 关闭交易面板
@@ -369,7 +369,9 @@ const closeTradePanel = () => {
 };
 
 const getPriceHistory = (productId) => {
-  return gameStore.productPrices?.[productId]?.history || [];
+  // 确保productId是字符串类型
+  const productIdStr = String(productId);
+  return priceStore.priceHistory[productIdStr] || [];
 };
 
 // 快速购买1个

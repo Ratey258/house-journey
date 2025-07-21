@@ -1,161 +1,125 @@
-# 工具函数库使用指南
+# 基础设施工具
 
-## 概述
+本目录包含项目的基础设施工具，为游戏的各个模块提供通用功能支持。
 
-本工具函数库提供了《买房记》游戏中常用的工具函数，旨在减少代码重复，提高可维护性。通过集中管理这些函数，我们可以确保在整个应用中使用一致的格式化和处理逻辑。
+## 工具列表
 
-## 主要工具函数
+### 错误处理 (errorHandler.js)
 
-### 格式化工具 (`formatUtils.js`)
+提供统一的错误处理机制，包括错误捕获、日志记录和恢复功能。
 
-提供各种数据格式化函数：
+### 错误类型 (errorTypes.js)
 
-- `formatNumber(num)`: 格式化数字为千分位显示
-- `formatCurrency(amount, currency)`: 格式化货币金额
-- `formatPercentChange(percent)`: 格式化百分比变化（带正负号）
-- `formatDate(date, format)`: 格式化日期时间
-- `getPriceChangeClass(percent)`: 获取价格变化的CSS类名
-- `formatGameWeek(week, totalWeeks)`: 格式化游戏周数显示
-- `formatGameTime(minutes)`: 格式化游戏时间
+定义系统中的各种错误类型和严重程度，用于错误分类和处理。
 
-### 错误处理工具 (`errorHandler.js`)
+### 格式化工具 (formatUtils.js)
 
-提供统一的错误处理机制：
+提供数字、货币、日期等格式化功能，确保UI展示的一致性。
 
-- `handleError(error, context, type, severity)`: 处理错误并记录日志
-- `withErrorHandling(asyncFn, context, type, severity)`: 异步错误处理包装器
-- `withGameErrorHandling(asyncFn, context)`: 游戏核心错误处理
+### 状态管理工具
 
-### 错误类型定义 (`errorTypes.js`)
+#### 状态日志中间件 (createStateLogger)
 
-定义错误类型和严重程度：
+用于在开发环境中监控状态变更，便于调试和问题排查。
 
-- `ErrorType`: 错误类型枚举
-- `ErrorSeverity`: 错误严重程度枚举
-- `createError(message, type, severity, metadata)`: 创建增强的错误对象
+- 记录action调用和参数
+- 记录状态变更前后的差异
+- 支持过滤和折叠日志
 
-## 使用方法
+#### 批量更新工具 (createBatchUpdater)
 
-### 导入工具函数
+将多个状态更新合并为一次操作，减少重渲染次数，提高性能。
+
+## 状态管理优化指南
+
+### 1. 状态管理架构优化
+
+我们对状态管理架构进行了以下优化：
+
+#### 1.1 Store拆分
+
+将大型Store拆分为更小、更专注的模块：
+
+- `gameCore` -> `gameCore` + `gameProgress`：分离游戏进度和游戏核心逻辑
+- `market` -> `market` + `priceSystem`：分离价格系统和市场管理
+
+这种拆分有以下好处：
+- 减少单个Store的复杂度
+- 提高代码可维护性
+- 减少不必要的组件重渲染
+- 更清晰的状态边界
+
+#### 1.2 兼容层优化
+
+优化了`src/stores/index.js`中的兼容层：
+
+- 使用getter/setter代替computed，减少响应式对象开销
+- 直接引用方法而非创建包装函数
+- 保持API兼容性的同时提高性能
+
+#### 1.3 数据流规范化
+
+- 严格执行单向数据流
+- 通过actions修改状态，避免直接修改
+- 使用批量更新减少重渲染
+
+### 2. 性能优化工具
+
+#### 2.1 状态日志中间件
+
+用法示例：
 
 ```javascript
-// 导入单个工具函数
-import { formatNumber } from '@/infrastructure/utils';
+import { createStateLogger } from '../infrastructure/utils';
 
-// 导入多个工具函数
-import { formatNumber, formatCurrency, formatDate } from '@/infrastructure/utils';
+// 应用日志中间件
+const store = useMyStore();
+createStateLogger(store, {
+  collapsed: true, // 折叠日志组
+  logActions: true, // 记录action调用
+  logMutations: true, // 记录状态变更
+  actionNameFilter: name => ['importantAction'].includes(name) // 过滤特定action
+});
 ```
 
-### 在组件中使用
+#### 2.2 批量更新工具
+
+用法示例：
 
 ```javascript
-// 在Vue组件中使用
-const formattedPrice = formatCurrency(product.price);
-const formattedDate = formatDate(order.date);
-```
+import { createBatchUpdater } from '../infrastructure/utils';
 
-## 优化建议
+// 创建批量更新工具
+const { batchUpdates } = createBatchUpdater();
 
-1. **统一使用工具函数**：避免在组件中重复实现相同功能的函数
-2. **扩展而非重写**：如需特殊格式化逻辑，请扩展现有工具函数而非重写
-3. **保持向后兼容**：修改工具函数时确保不破坏现有功能
-4. **添加单元测试**：为工具函数编写测试，确保其正确性
-
-## 重构指南
-
-如果您发现代码中仍存在重复实现的格式化函数或工具函数，请按照以下步骤进行重构：
-
-1. 检查 `infrastructure/utils` 中是否已有相同功能的函数
-2. 如果已存在，直接使用现有函数替换重复代码
-3. 如果不存在但是通用功能，将其添加到相应的工具文件中
-4. **更新组件代码，导入并使用新的工具函数**
-
-## 错误处理最佳实践
-
-### 统一错误处理
-
-项目中应统一使用`errorHandler.js`提供的错误处理机制，避免自定义try/catch逻辑。
-
-#### 推荐用法：
-
-1. **使用withErrorHandling包装器**
-
-```javascript
-import { withErrorHandling } from '@/infrastructure/utils/errorHandler';
-
-// 推荐：使用withErrorHandling包装异步函数
-async function saveUserData() {
-  return withErrorHandling(async () => {
-    // 业务逻辑
-    const result = await apiCall();
-    return result;
-  }, 'UserDataService', ErrorType.STORAGE);
+// 批量执行多个状态更新
+function handleMultipleUpdates() {
+  batchUpdates(() => {
+    store.updateValue1(newValue1);
+    store.updateValue2(newValue2);
+    store.updateValue3(newValue3);
+  });
 }
 ```
 
-2. **游戏核心逻辑错误处理**
+### 3. 最佳实践
 
-```javascript
-import { withGameErrorHandling } from '@/infrastructure/utils/errorHandler';
+#### 3.1 Store设计原则
 
-// 游戏核心逻辑应使用withGameErrorHandling
-async function processTurn() {
-  return withGameErrorHandling(async () => {
-    // 游戏逻辑
-  }, 'GameLoopService');
-}
-```
+- **单一职责**：每个Store只负责一个领域的状态
+- **明确边界**：清晰定义Store之间的依赖关系
+- **最小化状态**：避免存储可以从其他状态计算得出的数据
+- **使用getters**：对于需要计算的派生状态，使用getters
 
-3. **组件级错误捕获**
+#### 3.2 性能优化建议
 
-```javascript
-import { handleError, ErrorType } from '@/infrastructure/utils/errorHandler';
+- **选择性订阅**：组件只订阅需要的状态片段
+- **避免深层嵌套**：扁平化状态结构，减少响应式开销
+- **使用批量更新**：合并短时间内的多次状态更新
+- **计算属性缓存**：合理使用计算属性的缓存机制
 
-try {
-  // 复杂操作
-} catch (error) {
-  handleError(error, '组件名称', ErrorType.COMPONENT);
-  // 可以继续提供降级UI或功能
-}
-```
+#### 3.3 调试技巧
 
-#### 错误类型和严重程度
-
-根据错误的性质选择合适的错误类型和严重程度：
-
-| 错误类型 | 适用场景 |
-|---------|---------|
-| VALIDATION | 用户输入验证错误 |
-| NETWORK | API请求和网络连接错误 |
-| STORAGE | 本地存储和文件操作错误 |
-| GAME_LOGIC | 游戏规则和状态错误 |
-| SYSTEM | 系统级错误 |
-| UNKNOWN | 未分类错误 |
-
-| 严重程度 | 处理方式 |
-|---------|---------|
-| FATAL | 致命错误，会显示对话框并可能中断游戏 |
-| ERROR | 严重错误，显示对话框但尝试继续 |
-| WARNING | 警告级别，显示Toast不中断游戏 |
-| INFO | 信息级别，仅记录日志 |
-
-#### 避免的做法
-
-1. **不要使用开发文档中过时的错误处理API**
-2. **不要使用裸露的try/catch而不调用handleError**
-3. **不要忽略异步函数中的错误（总是使用withErrorHandling）**
-4. **不要在错误处理后继续执行可能依赖失败操作的代码**
-
-### 错误恢复机制
-
-当发生严重错误时，系统会自动创建游戏状态快照并尝试恢复：
-
-1. **状态快照**: 定期自动保存的游戏状态
-2. **紧急快照**: 在检测到可能的错误前自动创建
-3. **恢复对话框**: 当检测到异常退出时显示恢复选项
-
-## 注意事项
-
-- 工具函数应保持纯函数特性，不依赖外部状态
-- 确保函数有适当的参数验证和默认值
-- 添加清晰的JSDoc注释，说明函数用途、参数和返回值 
+- **使用状态日志中间件**：在开发环境监控状态变更
+- **Vue Devtools**：利用Vue Devtools的Timeline和Pinia插件
+- **性能分析**：使用Chrome Performance面板分析性能瓶颈 

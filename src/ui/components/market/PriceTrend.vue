@@ -15,9 +15,17 @@ import { computed } from 'vue';
 
 const props = defineProps({
   trend: {
-    type: String,
+    type: [String, Object],
     default: 'stable',
-    validator: (value) => ['rising_strong', 'rising', 'stable_high', 'stable', 'stable_low', 'falling', 'falling_strong', 'volatile'].includes(value)
+    validator: (value) => {
+      if (typeof value === 'string') {
+        return ['rising_strong', 'rising', 'stable_high', 'stable', 'stable_low', 'falling', 'falling_strong', 'volatile'].includes(value);
+      }
+      if (typeof value === 'object' && value !== null) {
+        return ['rising', 'falling', 'stable', 'volatile'].includes(value.trend);
+      }
+      return false;
+    }
   },
   percent: {
     type: Number,
@@ -33,6 +41,30 @@ const props = defineProps({
   }
 });
 
+// 获取标准化的趋势值
+const normalizedTrend = computed(() => {
+  if (typeof props.trend === 'string') {
+    return props.trend;
+  }
+  
+  if (typeof props.trend === 'object' && props.trend !== null) {
+    const { trend, strength } = props.trend;
+    
+    // 根据趋势和强度确定具体趋势类型
+    if (trend === 'rising') {
+      return strength > 0.5 ? 'rising_strong' : 'rising';
+    } else if (trend === 'falling') {
+      return strength > 0.5 ? 'falling_strong' : 'falling';
+    } else if (trend === 'stable') {
+      return 'stable';
+    } else if (trend === 'volatile') {
+      return 'volatile';
+    }
+  }
+  
+  return 'stable';
+});
+
 // 根据趋势类型确定图标
 const trendIcon = computed(() => {
   const icons = {
@@ -46,18 +78,20 @@ const trendIcon = computed(() => {
     'volatile': 'icon-volatile'
   };
   
-  return icons[props.trend] || 'icon-arrow-right';
+  return icons[normalizedTrend.value] || 'icon-arrow-right';
 });
 
 // 根据趋势确定样式类
 const trendClass = computed(() => {
-  if (props.trend.includes('rising_strong')) return 'trend-up-strong';
-  if (props.trend.includes('rising')) return 'trend-up';
-  if (props.trend.includes('stable_high')) return 'trend-stable-high';
-  if (props.trend.includes('stable_low')) return 'trend-stable-low';
-  if (props.trend.includes('falling_strong')) return 'trend-down-strong';
-  if (props.trend.includes('falling')) return 'trend-down';
-  if (props.trend.includes('volatile')) return 'trend-volatile';
+  const trend = normalizedTrend.value;
+  
+  if (trend === 'rising_strong') return 'trend-up-strong';
+  if (trend === 'rising') return 'trend-up';
+  if (trend === 'stable_high') return 'trend-stable-high';
+  if (trend === 'stable_low') return 'trend-stable-low';
+  if (trend === 'falling_strong') return 'trend-down-strong';
+  if (trend === 'falling') return 'trend-down';
+  if (trend === 'volatile') return 'trend-volatile';
   return 'trend-stable';
 });
 
@@ -80,7 +114,7 @@ const trendDescription = computed(() => {
     'volatile': '价格波动'
   };
   
-  return `${descriptions[props.trend] || '价格稳定'} (${formattedPercent.value})`;
+  return `${descriptions[normalizedTrend.value] || '价格稳定'} (${formattedPercent.value})`;
 });
 </script>
 

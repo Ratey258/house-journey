@@ -4,5 +4,5 @@
  */
 
 export { useMarketStore } from './marketState';
-export { usePriceActions } from './priceActions';
+export { usePriceSystemStore } from './priceSystemStore';
 export { useLocationSystem } from './locationSystem'; 

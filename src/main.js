@@ -14,6 +14,7 @@ import {
   ErrorSeverity
 } from './infrastructure/utils/errorHandler';
 import { initSnapshotSystem } from './infrastructure/persistence/stateSnapshot';
+import { createStateLogger } from './infrastructure/utils';
 // 导入第三方库配置
 import { setupThirdParty } from './plugins/thirdParty';
 
@@ -74,8 +75,11 @@ console.log('第三方库和错误处理设置完成');
   try {
     // 预加载关键存储
     const { useUiStore } = await import('./stores/uiStore');
-    const { useGameCoreStore } = await import('./stores/gameCore');
+    const { useGameCoreStore, useGameProgressStore } = await import('./stores/gameCore');
     const { useSettingsStore } = await import('./stores/settingsStore');
+    const { useMarketStore, usePriceSystemStore } = await import('./stores/market');
+    const { usePlayerStore } = await import('./stores/player');
+    const { useGameStore } = await import('./stores');
     
     // 初始化存储
     const uiStore = useUiStore();
@@ -87,6 +91,39 @@ console.log('第三方库和错误处理设置完成');
       gameCoreStore: !!gameCoreStore,
       settingsStore: !!settingsStore
     });
+    
+    // 在开发环境中应用状态日志中间件
+    if (process.env.NODE_ENV === 'development') {
+      console.log('应用状态日志中间件');
+      
+      // 为核心Store应用日志中间件
+      const gameStore = useGameStore();
+      const gameCore = useGameCoreStore();
+      const gameProgress = useGameProgressStore();
+      const player = usePlayerStore();
+      const market = useMarketStore();
+      const priceSystem = usePriceSystemStore();
+      
+      // 配置日志选项
+      const logOptions = {
+        collapsed: true,
+        logActions: true,
+        logMutations: true
+      };
+      
+      // 应用日志中间件
+      createStateLogger(gameStore, { 
+        ...logOptions, 
+        actionNameFilter: name => ['buyProduct', 'sellProduct', 'advanceWeek'].includes(name) 
+      });
+      createStateLogger(gameCore, logOptions);
+      createStateLogger(gameProgress, logOptions);
+      createStateLogger(player, logOptions);
+      createStateLogger(market, logOptions);
+      createStateLogger(priceSystem, { ...logOptions, logMutations: false }); // 价格系统变化频繁，只记录操作
+      
+      console.log('状态日志中间件应用完成');
+    }
     
     // 验证关键资源
     validateCriticalResources();
