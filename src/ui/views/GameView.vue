@@ -210,26 +210,13 @@
             :gameStats="gameResult"
             @return-to-main="goToMainMenu"
             @restart-game="restartGame"
-            @show-detailed-stats="toggleDetailedStats"
+            @continue-game="continueFromVictory"
           />
         </transition>
       </div>
     </transition>
 
-    <!-- 详细统计对话框 -->
-    <transition name="fade">
-      <div v-if="showDetailedStats" class="dialog-overlay" @click.self="toggleDetailedStats">
-        <transition name="slide-left">
-          <GameStatsDetail
-            :show="showDetailedStats"
-            :gameStats="gameResult"
-            :player="player"
-            :gameState="gameState"
-            @close="toggleDetailedStats"
-          />
-        </transition>
-      </div>
-    </transition>
+    <!-- 移除详细统计对话框 -->
   </div>
 </template>
 
@@ -252,7 +239,6 @@ import Inventory from '@/ui/components/player/Inventory.vue';
 import HouseMarket from '@/ui/components/market/HouseMarket.vue';
 import EventModal from '@/ui/components/common/EventModal.vue';
 import GameOverView from '@/ui/views/GameOverView.vue';
-import GameStatsDetail from '@/ui/components/player/GameStatsDetail.vue';
 import TutorialSystem from '@/ui/components/common/TutorialSystem.vue';
 import GameLoader from '@/ui/components/common/GameLoader.vue';
 import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler'; // 导入GameLoader组件
@@ -281,7 +267,6 @@ const showMenu = ref(false);
 const showSaveDialog = ref(false);
 const showGameOverDialog = ref(false);
 const saveName = ref('');
-const showDetailedStats = ref(false);
 const isDevelopmentMode = ref(false); // 开发模式标志
 
 // 加载状态
@@ -374,7 +359,7 @@ onBeforeUnmount(() => {
 // 处理键盘快捷键
 const handleKeyDown = (event) => {
   // 如果有模态框打开，不处理快捷键
-  if (showMenu.value || showSaveDialog.value || showGameOverDialog.value || showDetailedStats.value) {
+  if (showMenu.value || showSaveDialog.value || showGameOverDialog.value) {
     return;
   }
   
@@ -640,9 +625,12 @@ const generateGameEndSuggestions = () => {
   return suggestions.slice(0, 5); // 最多返回5条建议
 };
 
-// 切换详细统计视图
-const toggleDetailedStats = () => {
-  showDetailedStats.value = !showDetailedStats.value;
+// 添加继续游戏方法
+const continueFromVictory = () => {
+  // 隐藏结算页面
+  showGameOverDialog.value = false;
+  // 通知游戏核心继续游戏
+  gameCoreStore.continueGame();
 };
 
 // 重新开始游戏

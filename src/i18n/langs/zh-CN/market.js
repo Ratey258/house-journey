@@ -86,12 +86,12 @@ export default {
       remaining: '购买后剩余',
       significantWarning: '注意：这是一笔大额交易，将耗费您大部分资金！',
 
-      // 新增胜利相关翻译
-      victoryPurchase: '恭喜！您已成功购买{house}，达成了游戏主要目标！',
-      victoryMessage: '恭喜您购买了豪华房产：{house}！您已经达成了游戏的主要目标！\n\n您当前处于第{week}周，游戏总共有{maxWeek}周。',
-      continuePrompt: '您想要结束游戏并查看结果，还是继续游戏争取更高分数？\n\n选择"确定"继续游戏\n选择"取消"结束游戏并查看结果',
+      // 修改胜利相关翻译
+      victoryPurchase: '恭喜！您已成功购买房产',
+      victoryMessage: '恭喜您购买了房产：{house}！\n\n您当前处于第{week}周，游戏总共有{maxWeek}周。',
+      continuePrompt: '您想要结束游戏并查看结果，还是继续游戏争取更高分数？',
       continuePlaying: '您选择了继续游戏，争取更高分数！游戏将继续进行到第52周。',
-      endGameNow: '结束游戏',
+      endGameNow: '结束游戏并查看成绩',
       continueGame: '继续游戏',
 
       details: {

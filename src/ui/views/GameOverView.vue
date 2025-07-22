@@ -17,152 +17,110 @@
           </div>
         </div>
         
-        <div class="statistics-section">
-          <h2>游戏统计</h2>
-          <div class="statistics-grid">
-            <div class="stat-item">
-              <div class="stat-icon">📅</div>
-              <div class="stat-content">
-                <div class="stat-label">游戏周数</div>
-                <div class="stat-value">{{ gameStats.weeksPassed || 0 }} / {{ gameState.maxWeeks || 52 }}</div>
-              </div>
-            </div>
-            
-            <div class="stat-item">
-              <div class="stat-icon">💰</div>
-              <div class="stat-content">
-                <div class="stat-label">最终资金</div>
-                <div class="stat-value">¥{{ formatNumber(gameStats.finalMoney || 0) }}</div>
-              </div>
-            </div>
-            
-            <div class="stat-item">
-              <div class="stat-icon">📊</div>
-              <div class="stat-content">
-                <div class="stat-label">总资产</div>
-                <div class="stat-value">¥{{ formatNumber(gameStats.finalAssets || 0) }}</div>
-              </div>
-            </div>
-            
-            <div class="stat-item">
-              <div class="stat-icon">🔄</div>
-              <div class="stat-content">
-                <div class="stat-label">交易次数</div>
-                <div class="stat-value">{{ gameStats.tradeStats?.totalTrades || 0 }}</div>
-              </div>
-            </div>
-            
-            <div class="stat-item">
-              <div class="stat-icon">📈</div>
-              <div class="stat-content">
-                <div class="stat-label">总交易利润</div>
-                <div class="stat-value" :class="{'positive': (gameStats.tradeStats?.totalProfit || 0) > 0, 'negative': (gameStats.tradeStats?.totalProfit || 0) < 0}">
-                  {{ (gameStats.tradeStats?.totalProfit || 0) > 0 ? '+' : '' }}¥{{ formatNumber(gameStats.tradeStats?.totalProfit || 0) }}
-                </div>
-              </div>
-            </div>
-            
-            <div class="stat-item">
-              <div class="stat-icon">💎</div>
-              <div class="stat-content">
-                <div class="stat-label">平均交易利润</div>
-                <div class="stat-value">¥{{ formatNumber(gameStats.tradeStats?.averageProfit || 0) }}</div>
-              </div>
+        <!-- 核心统计数据，集中在一行 -->
+        <div class="core-stats">
+          <div class="stat-item">
+            <div class="stat-label">游戏周数</div>
+            <div class="stat-value">{{ gameStats.weeksPassed || 0 }} / {{ gameState.maxWeeks }}</div>
+          </div>
+          
+          <div class="stat-item">
+            <div class="stat-label">最终资金</div>
+            <div class="stat-value">¥{{ formatNumber(gameStats.finalMoney || 0) }}</div>
+          </div>
+          
+          <div class="stat-item">
+            <div class="stat-label">净资产</div>
+            <div class="stat-value">¥{{ formatNumber(gameStats.finalAssets || 0) }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 房产信息(如果有) -->
+      <div v-if="player.purchasedHouses && player.purchasedHouses.length > 0" class="house-info">
+        <div class="house-details">
+          <div class="house-image-container">
+            <img :src="getHouseImage(player.purchasedHouses[0])" alt="房屋图片" class="house-image">
+          </div>
+          <div class="house-text">
+            <h3 class="house-name">{{ player.purchasedHouses[0].name }}</h3>
+            <p class="house-price">价格: ¥{{ formatNumber(player.purchasedHouses[0].purchasePrice || player.purchasedHouses[0].price) }}</p>
+            <p class="house-week">购买时间: 第 {{ player.purchasedHouses[0].purchaseWeek || gameStats.week }} 周</p>
+            <div class="victory-info">
+              <div class="victory-badge">游戏通关!</div>
+              <p class="victory-text">在{{ gameState.maxWeeks }}周游戏中，您仅用了{{ player.purchasedHouses[0].purchaseWeek || gameStats.week }}周就完成了购房目标!</p>
             </div>
           </div>
         </div>
-        
-        <div v-if="player.purchasedHouses && player.purchasedHouses.length > 0" class="house-info">
-          <h2>已购房产</h2>
-          <div class="house-details">
-            <div class="house-image-container">
-              <img :src="getHouseImage(player.purchasedHouses[0])" alt="房屋图片" class="house-image">
-            </div>
-            <div class="house-text">
-              <h3 class="house-name">{{ player.purchasedHouses[0].name }}</h3>
-              <p class="house-price">价格: ¥{{ formatNumber(player.purchasedHouses[0].price) }}</p>
-              <p class="house-week">购买时间: 第 {{ player.purchasedHouses[0].purchaseWeek }} 周</p>
-              <p class="house-desc">{{ player.purchasedHouses[0].description }}</p>
+      </div>
+      
+      <!-- 备选：从游戏状态中显示房屋信息 -->
+      <div v-else-if="gameStats.purchasedHouse || (gameStats.data && gameStats.data.house)" class="house-info">
+        <div class="house-details">
+          <div class="house-image-container">
+            <img :src="getHouseImage(gameStats.purchasedHouse || gameStats.data.house)" alt="房屋图片" class="house-image">
+          </div>
+          <div class="house-text">
+            <h3 class="house-name">{{ (gameStats.purchasedHouse || gameStats.data.house).name }}</h3>
+            <p class="house-price">价格: ¥{{ formatNumber((gameStats.purchasedHouse || gameStats.data.house).price) }}</p>
+            <p class="house-week">购买时间: 第 {{ gameStats.week }} 周</p>
+            <div class="victory-info">
+              <div class="victory-badge">游戏通关!</div>
+              <p class="victory-text">在{{ gameState.maxWeeks }}周游戏中，您仅用了{{ gameStats.week }}周就完成了购房目标!</p>
             </div>
           </div>
         </div>
-        
-        <div class="score-breakdown">
-          <h2>得分详情</h2>
-          <div class="score-items">
-            <div class="score-item">
-              <div class="score-item-label">资产得分</div>
-              <div class="score-item-value">{{ formatNumber(gameStats.score?.details?.assetsScore || 0) }}</div>
-            </div>
-            <div class="score-item">
-              <div class="score-item-label">时间效率得分</div>
-              <div class="score-item-value">{{ formatNumber(gameStats.score?.details?.timeScore || 0) }}</div>
-            </div>
-            <div class="score-item">
-              <div class="score-item-label">房产价值得分</div>
-              <div class="score-item-value">{{ formatNumber(gameStats.score?.details?.houseScore || 0) }}</div>
-            </div>
-            <div class="score-item">
-              <div class="score-item-label">交易效率得分</div>
-              <div class="score-item-value">{{ formatNumber(gameStats.score?.details?.tradeScore || 0) }}</div>
-            </div>
-            <div class="score-item">
-              <div class="score-item-label">事件处理得分</div>
-              <div class="score-item-value">{{ formatNumber(gameStats.score?.details?.eventScore || 0) }}</div>
-            </div>
-            <div class="score-item total">
-              <div class="score-item-label">总分</div>
-              <div class="score-item-value">{{ formatNumber(gameStats.score?.score || 0) }}</div>
+      </div>
+      
+      <!-- 交易统计 -->
+      <div class="statistics-section" v-if="gameStats.tradeStats">
+        <h2>交易统计</h2>
+        <div class="statistics-grid">
+          <div class="stat-item">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+              <div class="stat-label">交易笔数</div>
+              <div class="stat-value">{{ gameStats.tradeStats?.totalTrades || 0 }}次</div>
             </div>
           </div>
-        </div>
-        
-        <div v-if="gameStats.locationStats && gameStats.locationStats.length > 0" class="location-stats">
-          <h2>地点访问统计</h2>
-          <div class="location-chart">
-            <div v-for="(location, index) in gameStats.locationStats.slice(0, 5)" :key="index" class="location-bar">
-              <div class="location-name">{{ location.locationName }}</div>
-              <div class="bar-container">
-                <div class="bar" :style="{width: getLocationBarWidth(location.visitCount)}"></div>
-                <span class="bar-value">{{ location.visitCount }}次</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="suggestions">
-          <h2>游戏建议</h2>
-          <ul class="suggestion-list">
-            <li v-for="(suggestion, index) in gameStats.suggestions" :key="index" class="suggestion-item">
-              <div class="suggestion-icon">💡</div>
-              <div class="suggestion-text">{{ suggestion }}</div>
-            </li>
-          </ul>
-        </div>
-        
-        <div v-if="hasAchievements" class="achievements-section">
-          <h2>解锁成就</h2>
-          <div class="achievements-grid">
-            <div v-for="(achievement, index) in achievements" :key="index" class="achievement-item">
-              <div class="achievement-icon">🏆</div>
-              <div class="achievement-content">
-                <div class="achievement-name">{{ achievement.name }}</div>
-                <div class="achievement-desc">{{ achievement.description }}</div>
+          
+          <div class="stat-item">
+            <div class="stat-icon">📈</div>
+            <div class="stat-content">
+              <div class="stat-label">总交易利润</div>
+              <div class="stat-value" :class="{'positive': (gameStats.tradeStats?.totalProfit || 0) > 0, 'negative': (gameStats.tradeStats?.totalProfit || 0) < 0}">
+                {{ (gameStats.tradeStats?.totalProfit || 0) > 0 ? '+' : '' }}¥{{ formatNumber(gameStats.tradeStats?.totalProfit || 0) }}
               </div>
             </div>
           </div>
         </div>
       </div>
       
+      <!-- 成就展示 -->
+      <div v-if="hasAchievements" class="achievements-section">
+        <h2>解锁成就</h2>
+        <div class="achievements-grid">
+          <div v-for="(achievement, index) in achievements" :key="index" class="achievement-item">
+            <div class="achievement-icon">🏆</div>
+            <div class="achievement-content">
+              <div class="achievement-name">{{ achievement.name }}</div>
+              <div class="achievement-desc">{{ achievement.description }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div class="actions">
-        <button @click="showDetailedStats" class="btn btn-info">
-          <span class="btn-icon">📊</span>
-          <span class="btn-text">详细统计</span>
+        <button v-if="canContinueGame" @click="continueGame" class="btn btn-primary">
+          <span class="btn-icon">🎮</span>
+          <span class="btn-text">继续游戏</span>
         </button>
+        
         <button @click="restartGame" class="btn btn-success">
           <span class="btn-icon">🔄</span>
           <span class="btn-text">重新开始</span>
         </button>
+        
         <button @click="returnToMainMenu" class="btn btn-primary">
           <span class="btn-icon">🏠</span>
           <span class="btn-text">返回主菜单</span>
@@ -174,6 +132,7 @@
 
 <script>
 import { formatNumber, formatCurrency, formatDate, formatGameTime } from '@/infrastructure/utils';
+import { useGameCoreStore } from '@/stores/gameCore';
 
 export default {
   name: 'GameOverView',
@@ -198,10 +157,15 @@ export default {
     };
   },
   computed: {
+    canContinueGame() {
+      // 检查是否可以继续游戏（房屋购买胜利）
+      return this.gameStats.canContinue || this.gameStats.endReason === 'houseVictory';
+    },
     resultClass() {
       const endReason = this.gameStats.endReason;
       if (endReason === 'victory' || endReason === 'achievement' || 
-          endReason === 'victoryTimeLimit' || endReason === 'victoryOther') {
+          endReason === 'victoryTimeLimit' || endReason === 'victoryOther' ||
+          endReason === 'houseVictory') {
         return 'result-success';
       }
       if (endReason === 'bankruptcy') return 'result-failure';
@@ -212,7 +176,8 @@ export default {
       return endReason === 'victory' || 
              endReason === 'achievement' || 
              endReason === 'victoryTimeLimit' || 
-             endReason === 'victoryOther';
+             endReason === 'victoryOther' ||
+             endReason === 'houseVictory';
     },
     isBankruptcy() {
       return this.gameStats.endReason === 'bankruptcy';
@@ -221,6 +186,8 @@ export default {
       const endReason = this.gameStats.endReason;
       
       switch (endReason) {
+        case 'houseVictory':
+          return `恭喜！你成功购买了${this.gameStats.purchasedHouse?.name || '房产'}！`;
         case 'victory':
           return '恭喜！你成功购买了豪宅！';
         case 'victoryTimeLimit':
@@ -287,25 +254,21 @@ export default {
       return formatNumber(num);
     },
     getHouseImage(house) {
-      return house.image || require('@/assets/images/houses/default-house.png');
+      // 简单返回一个固定字符串，避免require可能导致的问题
+      return house.image || '/placeholder_house.jpg';
     },
     returnToMainMenu() {
       this.$emit('return-to-main');
     },
-    showDetailedStats() {
-      this.showDetailedView = !this.showDetailedView;
-      this.$emit('show-detailed-stats');
-    },
     restartGame() {
       this.$emit('restart-game');
     },
-    getLocationBarWidth(visitCount) {
-      if (!this.gameStats.locationStats || this.gameStats.locationStats.length === 0) return '0%';
-      
-      const maxVisits = Math.max(...this.gameStats.locationStats.map(loc => loc.visitCount));
-      if (maxVisits === 0) return '0%';
-      
-      return `${(visitCount / maxVisits * 100).toFixed(0)}%`;
+    continueGame() {
+      // 调用游戏核心存储的继续游戏方法
+      const gameStore = useGameCoreStore();
+      gameStore.continueGame();
+      // 发送事件给父组件
+      this.$emit('continue-game');
     },
     loadAchievements() {
       // 这里应该从游戏状态加载成就数据
@@ -395,7 +358,7 @@ export default {
     animateScoreElements() {
       // 这里可以添加动画效果，例如使用GSAP库
       // 简单实现：添加CSS类触发动画
-      const elements = document.querySelectorAll('.stat-item, .score-item, .suggestion-item');
+      const elements = document.querySelectorAll('.stat-item:not(.core-stats .stat-item), .achievement-item');
       elements.forEach((el, index) => {
         setTimeout(() => {
           el.classList.add('animate-in');
@@ -419,31 +382,31 @@ export default {
   align-items: center;
   min-height: 100vh;
   background-color: #f5f7fa;
-  padding: 20px;
+  padding: 10px; /* 减小整体内边距 */
   color: #333;
 }
 
 .game-over-container {
-  max-width: 900px;
+  max-width: 800px; /* 减小最大宽度 */
   width: 100%;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  padding: 30px;
+  padding: 20px; /* 减小内边距 */
   overflow: auto;
-  max-height: 90vh;
+  max-height: 85vh; /* 减小最大高度 */
 }
 
 .header-section {
   text-align: center;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
+  margin-bottom: 15px; /* 减小下边距 */
+  padding-bottom: 15px; /* 减小下内边距 */
   border-bottom: 1px solid #eee;
 }
 
 .title {
-  font-size: 2.5rem;
-  margin-bottom: 10px;
+  font-size: 2rem; /* 减小标题字体大小 */
+  margin-bottom: 5px; /* 减小下边距 */
   color: #2c3e50;
 }
 
@@ -456,7 +419,7 @@ export default {
 }
 
 .subtitle {
-  font-size: 1.2rem;
+  font-size: 1rem; /* 减小副标题字体大小 */
   color: #7f8c8d;
   margin-bottom: 0;
 }
@@ -465,22 +428,22 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 15px; /* 减小下边距 */
 }
 
 .rank-animation {
-  width: 100px;
-  height: 100px;
+  width: 80px; /* 减小排名图标尺寸 */
+  height: 80px; /* 减小排名图标尺寸 */
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-right: 20px;
-  font-size: 3rem;
+  margin-right: 15px; /* 减小右边距 */
+  font-size: 2.5rem; /* 减小字体大小 */
   font-weight: bold;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .rank-animation::before {
@@ -539,29 +502,29 @@ export default {
 }
 
 .score-label {
-  font-size: 1rem;
+  font-size: 0.9rem; /* 减小标签字体大小 */
   color: #7f8c8d;
-  margin-bottom: 5px;
+  margin-bottom: 2px; /* 减小下边距 */
 }
 
 .score-value {
-  font-size: 2rem;
+  font-size: 1.6rem; /* 减小分数字体大小 */
   font-weight: bold;
   color: #2c3e50;
 }
 
 .statistics-section, .house-info, .score-breakdown, .location-stats, .suggestions, .achievements-section {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
+  margin-bottom: 15px; /* 减小下边距 */
+  padding-bottom: 15px; /* 减小内边距 */
   border-bottom: 1px solid #eee;
 }
 
 h2 {
-  font-size: 1.5rem;
+  font-size: 1.3rem; /* 减小标题字体大小 */
   color: #2c3e50;
-  margin-bottom: 20px;
+  margin-bottom: 10px; /* 减小下边距 */
   position: relative;
-  padding-left: 15px;
+  padding-left: 12px; /* 减小左内边距 */
 }
 
 h2::before {
@@ -578,21 +541,21 @@ h2::before {
 
 .statistics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 减小网格项最小宽度 */
+  gap: 10px; /* 减小网格间隔 */
+  margin-bottom: 10px; /* 减小下边距 */
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  padding: 15px;
+  padding: 10px; /* 减小内边距 */
   background-color: #f8f9fa;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: transform 0.3s ease, opacity 0.3s ease;
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(10px);
 }
 
 .stat-item.animate-in {
@@ -601,8 +564,8 @@ h2::before {
 }
 
 .stat-icon {
-  font-size: 1.8rem;
-  margin-right: 15px;
+  font-size: 1.4rem; /* 减小图标大小 */
+  margin-right: 10px; /* 减小右边距 */
   color: #3498db;
 }
 
@@ -611,13 +574,13 @@ h2::before {
 }
 
 .stat-label {
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* 减小标签字体大小 */
   color: #7f8c8d;
-  margin-bottom: 5px;
+  margin-bottom: 2px; /* 减小下边距 */
 }
 
 .stat-value {
-  font-size: 1.2rem;
+  font-size: 1rem; /* 减小值字体大小 */
   font-weight: bold;
   color: #2c3e50;
 }
@@ -630,18 +593,47 @@ h2::before {
   color: #e74c3c;
 }
 
+.house-info {
+  padding: 15px; /* 减小内边距 */
+  margin-bottom: 15px; /* 减小下边距 */
+  background-color: #f5f7fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e1e8ed;
+  position: relative;
+  overflow: hidden;
+}
+
+.house-info h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c3e50;
+  position: relative;
+}
+
+.house-info h2:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -8px;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(to right, #3498db, #2ecc71);
+  border-radius: 3px;
+}
+
 .house-details {
   display: flex;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  gap: 15px; /* 减小间隔 */
 }
 
 .house-image-container {
-  width: 200px;
-  height: 150px;
+  flex: 0 0 150px; /* 减小图片容器宽度 */
+  height: 120px; /* 减小图片容器高度 */
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border: 2px solid #fff;
 }
 
 .house-image {
@@ -652,43 +644,65 @@ h2::before {
 
 .house-text {
   flex: 1;
-  padding: 15px;
 }
 
 .house-name {
-  font-size: 1.3rem;
-  font-weight: bold;
-  margin-bottom: 10px;
+  margin-top: 0;
+  margin-bottom: 5px; /* 减小下边距 */
   color: #2c3e50;
+  font-size: 1.2rem; /* 减小标题字体大小 */
 }
 
 .house-price {
-  font-size: 1.1rem;
-  color: #e74c3c;
   font-weight: bold;
-  margin-bottom: 5px;
+  color: #e74c3c;
+  margin-bottom: 5px; /* 减小下边距 */
 }
 
 .house-week {
-  font-size: 0.9rem;
   color: #7f8c8d;
-  margin-bottom: 10px;
+  margin-bottom: 5px; /* 减小下边距 */
 }
 
 .house-desc {
+  color: #34495e;
+  font-style: italic;
+  margin-bottom: 15px;
+}
+
+.victory-info {
+  background: linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(52, 152, 219, 0.1));
+  border-radius: 8px;
+  padding: 10px; /* 减小内边距 */
+  border-left: 3px solid #2ecc71;
+  margin-top: 10px; /* 减小上边距 */
+}
+
+.victory-badge {
+  display: inline-block;
+  background: linear-gradient(to right, #2ecc71, #3498db);
+  color: white;
+  padding: 3px 8px; /* 减小内边距 */
+  border-radius: 20px;
+  font-weight: bold;
+  margin-bottom: 5px; /* 减小下边距 */
   font-size: 0.9rem;
-  color: #7f8c8d;
-  line-height: 1.5;
+}
+
+.victory-text {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 .score-items {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* 减小网格项最小宽度 */
+  gap: 10px; /* 减小间隔 */
 }
 
 .score-item {
-  padding: 12px;
+  padding: 10px; /* 减小内边距 */
   background-color: #f8f9fa;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
@@ -714,25 +728,25 @@ h2::before {
 }
 
 .score-item-label {
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* 减小标签字体大小 */
   color: #7f8c8d;
-  margin-bottom: 5px;
+  margin-bottom: 2px; /* 减小下边距 */
 }
 
 .score-item-value {
-  font-size: 1.2rem;
+  font-size: 1rem; /* 减小值字体大小 */
   font-weight: bold;
   color: #2c3e50;
 }
 
 .location-chart {
-  margin-top: 20px;
+  margin-top: 10px; /* 减小上边距 */
 }
 
 .location-bar {
   display: flex;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 8px; /* 减小下边距 */
 }
 
 .location-name {
@@ -778,8 +792,8 @@ h2::before {
 .suggestion-item {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 15px;
-  padding: 12px;
+  margin-bottom: 8px; /* 减小下边距 */
+  padding: 10px; /* 减小内边距 */
   background-color: #f8f9fa;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
@@ -807,14 +821,14 @@ h2::before {
 
 .achievements-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 减小网格项最小宽度 */
+  gap: 10px; /* 减小间隔 */
 }
 
 .achievement-item {
   display: flex;
   align-items: center;
-  padding: 15px;
+  padding: 10px; /* 减小内边距 */
   background-color: #fff3cd;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
@@ -845,15 +859,15 @@ h2::before {
 .actions {
   display: flex;
   justify-content: center;
-  gap: 15px;
-  margin-top: 30px;
+  gap: 10px; /* 减小按钮间间隔 */
+  margin-top: 15px; /* 减小上边距 */
 }
 
 .btn {
-  padding: 12px 25px;
+  padding: 8px 15px; /* 减小按钮内边距 */
   border: none;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.9rem; /* 减小按钮字体大小 */
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -884,6 +898,40 @@ h2::before {
 .btn-info {
   background-color: #9b59b6;
   color: white;
+}
+
+/* 新增的样式 */
+.core-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.core-stats .stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+  transform: none;
+  opacity: 1;
+}
+
+.core-stats .stat-label {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  margin-bottom: 5px;
+}
+
+.core-stats .stat-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #2c3e50;
 }
 
 /* 响应式设计 */
@@ -928,5 +976,30 @@ h2::before {
 
 .result-neutral {
   background-color: #f5f7fa;
+}
+
+@media (max-width: 576px) {
+  /* 在小屏幕上进一步优化布局 */
+  .house-details {
+    flex-direction: column;
+  }
+  
+  .house-image-container {
+    width: 100%;
+    height: 100px;
+    margin-bottom: 10px;
+  }
+  
+  .statistics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .score-items {
+    grid-template-columns: 1fr;
+  }
+  
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style> 

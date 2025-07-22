@@ -267,6 +267,91 @@ export const useGameCoreStore = defineStore('gameCore', {
     },
     
     /**
+     * 购买房屋后的胜利，并显示通关页面，但允许继续游戏
+     * @param {Object} house - 购买的房屋对象
+     */
+    achieveVictoryWithHouse(house) {
+      // 标记玩家已达到胜利条件
+      this.victoryAchieved = true;
+      
+      const playerStore = usePlayerStore();
+      
+      // 确保房屋数据存在并设置默认图片路径
+      if (house && !house.image) {
+        house.image = '/placeholder_house.jpg';
+      }
+
+      // 将房屋添加到玩家已购房屋列表（如果还没有添加的话）
+      const houseAlreadyAdded = playerStore.purchasedHouses.some(h => h.id === house.id);
+      if (!houseAlreadyAdded && house) {
+        playerStore.purchasedHouses.push({
+          houseId: house.id,
+          id: house.id,
+          name: house.name,
+          description: house.description || '',
+          price: house.price,
+          purchasePrice: house.price,
+          purchaseWeek: this.currentWeek,
+          level: house.level || 1,
+          image: house.image || '/placeholder_house.jpg'
+        });
+      }
+      
+      // 准备游戏结果数据，包含完整的统计信息
+      this.gameResult = {
+        reason: 'houseVictory', // 自定义的胜利原因：购买房屋
+        week: this.currentWeek,
+        weeksPassed: this.currentWeek,
+        score: this.calculateGameScore('victory'),
+        victoryAchieved: true,
+        firstVictoryWeek: this.currentWeek,
+        firstVictoryHouse: house,
+        canContinue: true, // 标记可继续游戏
+        finalMoney: playerStore.money,
+        finalAssets: playerStore.netWorth,
+        debt: playerStore.debt,
+        purchasedHouse: house,
+        // 确保包含交易统计数据
+        tradeStats: {
+          totalTrades: playerStore.statistics?.transactionCount || 0,
+          totalProfit: playerStore.statistics?.totalProfit || 0,
+          averageProfit: playerStore.statistics?.transactionCount > 0 
+            ? (playerStore.statistics?.totalProfit || 0) / playerStore.statistics.transactionCount 
+            : 0
+        },
+        score: {
+          score: this.calculateGameScore('victory'),
+          rank: this.calculateRank(this.calculateGameScore('victory')),
+          details: this.calculateScoreDetails('victory')
+        },
+        endReason: 'houseVictory',
+        data: {
+          house: {
+            ...house,
+            image: house.image || '/placeholder_house.jpg'
+          }
+        }
+      };
+      
+      // 暂时设置游戏结束标志，显示通关页面
+      this.gameOver = true;
+    },
+    
+    /**
+     * 继续游戏（通关后选择继续）
+     */
+    continueGame() {
+      // 重置游戏结束标志，但保持胜利状态
+      this.gameOver = false;
+      
+      // 保留已经达成的胜利状态
+      this.victoryAchieved = true;
+      
+      // 显示继续游戏的消息
+      this.addNotification('success', '您选择继续游戏！您可以继续赚钱并购买更多房产，直到第52周游戏结束。');
+    },
+    
+    /**
      * 结束游戏
      * @param {string} reason - 结束原因
      * @param {string} [achievementName=null] - 成就名称（如果是通过成就结束）
@@ -445,7 +530,26 @@ export const useGameCoreStore = defineStore('gameCore', {
      * 手动结束游戏（玩家选择结束）
      */
     manualEndGame() {
-      const reason = this.victoryAchieved ? 'victory' : 'playerChoice';
+      const playerStore = usePlayerStore();
+      
+      // 确定结束原因：如果购买了任何房产，视为胜利结局
+      let reason = 'playerChoice';
+      
+      // 如果玩家已购买任何房产，视为购房胜利
+      if (playerStore.purchasedHouses && playerStore.purchasedHouses.length > 0) {
+        reason = 'victory';
+        
+        // 如果之前没有标记胜利状态，现在标记
+        if (!this.victoryAchieved) {
+          this.victoryAchieved = true;
+          this.gameResult = {
+            firstVictoryWeek: this.currentWeek,
+            firstVictoryHouse: playerStore.purchasedHouses[playerStore.purchasedHouses.length - 1]
+          };
+        }
+      }
+      
+      // 结束游戏
       this.endGame(reason);
     },
     

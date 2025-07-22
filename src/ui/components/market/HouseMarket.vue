@@ -221,14 +221,6 @@ const purchaseHouse = () => {
       duration: 5000
     });
 
-    // 如果是高级房产（5级），添加祝贺信息
-    if (selectedHouse.value.level >= 5) {
-      // 显示特殊的祝贺对话框
-      setTimeout(() => {
-        showVictoryDialog(selectedHouse.value);
-      }, 500);
-    }
-
     // 尝试触发自动保存
     try {
       const saveStore = useSaveStore();
@@ -238,12 +230,9 @@ const purchaseHouse = () => {
       console.warn('购房后自动保存失败', err);
     }
 
-    // 检查游戏胜利条件
-    if (selectedHouse.value.level >= 5) {
-      // 不再直接调用checkGameEnd，而是让游戏状态系统自动检测
-      // 这样可以避免直接结束游戏
-      gameStore.checkGameEnd();
-    }
+    // 设置游戏结束但可继续的状态
+    // 标记成功购买房屋，并显示结算页面
+    gameStore.achieveVictoryWithHouse(selectedHouse.value);
   } else {
     uiStore.showToast({
       type: 'error',
@@ -255,40 +244,7 @@ const purchaseHouse = () => {
   closeBuyModal();
 };
 
-// 显示胜利对话框
-const showVictoryDialog = (house) => {
-  // 这里可以实现一个更华丽的胜利提示
-  // 例如使用一个专门的对话框组件
-  const message = t('market.houseMarket.victoryMessage', {
-    house: house.name,
-    week: gameStore.currentWeek,
-    maxWeek: gameStore.maxWeeks
-  });
-
-  // 使用自定义对话框而不是 confirm
-  const customDialog = {
-    title: t('market.houseMarket.victoryPurchase', { house: house.name }),
-    message: message,
-    showCancel: true,
-    cancelText: t('market.houseMarket.endGameNow'),
-    confirmText: t('market.houseMarket.continueGame'),
-    onConfirm: () => {
-      // 玩家选择继续游戏
-      uiStore.showToast({
-        type: 'info',
-        message: t('market.houseMarket.continuePlaying'),
-        duration: 5000
-      });
-    },
-    onCancel: () => {
-      // 玩家选择结束并查看结果
-      gameStore.manualEndGame();
-    }
-  };
-
-  // 显示自定义对话框
-  uiStore.showDialog(customDialog);
-}
+// 移除showVictoryDialog方法，因为不再需要弹窗确认
 </script>
 
 <style scoped>

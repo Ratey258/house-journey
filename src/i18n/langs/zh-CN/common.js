@@ -128,12 +128,16 @@ export default {
   gameOver: {
     title: '游戏结束',
     victory: '恭喜！你成功购买了豪宅！',
+    houseVictory: '恭喜！你已购买房产，完成游戏主要目标！',
     timeLimit: '时间已到！',
     weeksPlayed: '游戏周数',
     finalMoney: '最终资金',
     netWorth: '净资产',
     purchasedHouses: '已购房屋',
-    backToMenu: '返回主菜单'
+    backToMenu: '返回主菜单',
+    continueGame: '继续游戏',
+    continueDescription: '你可以选择继续游戏，直到第52周结束，或查看当前成绩',
+    restartGame: '重新开始'
   },
   
   recovery: {
