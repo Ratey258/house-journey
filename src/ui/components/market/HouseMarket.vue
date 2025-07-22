@@ -1,7 +1,7 @@
 <template>
   <div class="house-market">
     <h2 class="title">{{ $t('market.houseMarket.title') }}</h2>
-    
+
     <div class="houses-container">
       <div
         v-for="house in houses"
@@ -38,13 +38,13 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 购买确认模态框 -->
     <div v-if="showBuyModal" class="modal-backdrop" @click.self="closeBuyModal">
       <div class="modal-content">
         <h3>{{ $t('market.houseMarket.confirmTitle') }}</h3>
         <p>{{ $t('market.houseMarket.confirmMessage', { house: selectedHouse?.name }) }}</p>
-        
+
         <div class="house-purchase-info">
           <div class="detail-item">
             <span class="detail-label">{{ $t('market.houseMarket.price') }}</span>
@@ -59,9 +59,9 @@
             <span class="detail-value">¥{{ formatNumber(playerMoney - (selectedHouse?.price || 0)) }}</span>
           </div>
         </div>
-        
+
         <p class="purchase-warning" v-if="isSignificantPurchase">{{ $t('market.houseMarket.significantWarning') }}</p>
-        
+
         <div class="modal-actions">
           <button class="btn cancel-btn" @click="closeBuyModal">{{ $t('common.cancel') }}</button>
           <button class="btn confirm-btn" @click="purchaseHouse">{{ $t('common.confirm') }}</button>
@@ -73,14 +73,14 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useGameStore } from '@/stores';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
-import { formatNumber, formatCurrency } from '@/infrastructure/utils';
+import { formatNumber } from '@/infrastructure/utils';
 import { handleError, ErrorType, ErrorSeverity } from '../../../infrastructure/utils/errorHandler';
 import { useGameCoreStore } from '@/stores/gameCore';
 import { useUiStore } from '@/stores/uiStore';
+import { useSaveStore } from '@/stores/persistence';
 
 const { t } = useI18n();
 const gameStore = useGameCoreStore();
@@ -161,8 +161,8 @@ const openBuyModal = (house) => {
   if (!canPlayerAfford(house)) {
     uiStore.showToast({
       type: 'error',
-      message: t('market.houseMarket.notEnoughMoney', { 
-        price: formatNumber(house.price), 
+      message: t('market.houseMarket.notEnoughMoney', {
+        price: formatNumber(house.price),
         money: formatNumber(playerStore.money),
         shortfall: formatNumber(house.price - playerStore.money)
       }),
@@ -170,7 +170,7 @@ const openBuyModal = (house) => {
     });
     return;
   }
-  
+
   selectedHouse.value = house;
   showBuyModal.value = true;
 };
@@ -184,7 +184,7 @@ const closeBuyModal = () => {
 // 购买房屋
 const purchaseHouse = () => {
   if (!selectedHouse.value) return;
-  
+
   // 再次严格验证资金，防止在打开模态框后资金变动
   if (playerStore.money < selectedHouse.value.price) {
     uiStore.showToast({
@@ -199,7 +199,7 @@ const purchaseHouse = () => {
     closeBuyModal();
     return;
   }
-  
+
   // 大额购买确认（超过玩家资金的90%）
   if (selectedHouse.value.price > playerStore.money * 0.9) {
     if (!confirm(t('market.houseMarket.significantConfirm', {
@@ -209,30 +209,26 @@ const purchaseHouse = () => {
       return;
     }
   }
-  
+
   // 执行购买
   const success = playerStore.purchaseHouse(selectedHouse.value);
-  
+
   if (success) {
     // 购买成功的消息
-    let successMessage = t('market.houseMarket.purchaseSuccess', { house: selectedHouse.value.name });
-    
-    // 如果是高级房产（5级），添加祝贺信息
-    if (selectedHouse.value.level >= 5) {
-      successMessage = t('market.houseMarket.victoryPurchase', { house: selectedHouse.value.name });
-      
-      // 显示特殊的祝贺对话框
-      setTimeout(() => {
-        showVictoryDialog(selectedHouse.value);
-      }, 500);
-    }
-    
     uiStore.showToast({
       type: 'success',
       message: t('market.houseMarket.purchaseSuccess', { name: selectedHouse.value.name }),
       duration: 5000
     });
-    
+
+    // 如果是高级房产（5级），添加祝贺信息
+    if (selectedHouse.value.level >= 5) {
+      // 显示特殊的祝贺对话框
+      setTimeout(() => {
+        showVictoryDialog(selectedHouse.value);
+      }, 500);
+    }
+
     // 尝试触发自动保存
     try {
       const saveStore = useSaveStore();
@@ -241,7 +237,7 @@ const purchaseHouse = () => {
       handleError(err, 'HouseMarket (market)', ErrorType.UNKNOWN, ErrorSeverity.WARNING);
       console.warn('购房后自动保存失败', err);
     }
-    
+
     // 检查游戏胜利条件
     if (selectedHouse.value.level >= 5) {
       // 不再直接调用checkGameEnd，而是让游戏状态系统自动检测
@@ -255,7 +251,7 @@ const purchaseHouse = () => {
       duration: 5000
     });
   }
-  
+
   closeBuyModal();
 };
 
@@ -268,19 +264,31 @@ const showVictoryDialog = (house) => {
     week: gameStore.currentWeek,
     maxWeek: gameStore.maxWeeks
   });
-  
-  if (confirm(message + "\n\n" + t('market.houseMarket.continuePrompt'))) {
-    // 玩家选择继续游戏
-    uiStore.showToast({
-      type: 'info',
-      message: t('market.houseMarket.continuePlaying'),
-      duration: 5000
-    });
-  } else {
-    // 玩家选择结束并查看结果
-    gameStore.manualEndGame();
-  }
-};
+
+  // 使用自定义对话框而不是 confirm
+  const customDialog = {
+    title: t('market.houseMarket.victoryPurchase', { house: house.name }),
+    message: message,
+    showCancel: true,
+    cancelText: t('market.houseMarket.endGameNow'),
+    confirmText: t('market.houseMarket.continueGame'),
+    onConfirm: () => {
+      // 玩家选择继续游戏
+      uiStore.showToast({
+        type: 'info',
+        message: t('market.houseMarket.continuePlaying'),
+        duration: 5000
+      });
+    },
+    onCancel: () => {
+      // 玩家选择结束并查看结果
+      gameStore.manualEndGame();
+    }
+  };
+
+  // 显示自定义对话框
+  uiStore.showDialog(customDialog);
+}
 </script>
 
 <style scoped>
@@ -478,4 +486,4 @@ const showVictoryDialog = (house) => {
 .cancel-btn:hover {
   background-color: #c0392b;
 }
-</style> 
+</style>

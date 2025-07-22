@@ -262,8 +262,8 @@ function mountApp() {
 
           // 处理各种菜单事件
           if (action === 'menu:open-dev-tools') {
-            // 打开游戏内的开发工具页面
-            router.push('/dev-tools');
+            // 触发显示浮动开发工具窗口
+            window.dispatchEvent(new CustomEvent('show-dev-tools'));
           }
         });
       }

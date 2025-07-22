@@ -1,14 +1,14 @@
-<!-- 
+<!--
   Toast通知组件
   提供全局消息通知功能
 -->
 <template>
   <div class="toast-container">
     <TransitionGroup name="toast">
-      <div 
-        v-for="toast in toasts" 
-        :key="toast.id" 
-        class="toast" 
+      <div
+        v-for="toast in toasts"
+        :key="toast.id"
+        class="toast"
         :class="`toast-${toast.type}`"
       >
         <div class="toast-icon">
@@ -27,138 +27,76 @@
   </div>
 </template>
 
-<script>
-import { ref, onMounted, inject, onBeforeUnmount } from 'vue';
-import { handleError, ErrorType, ErrorSeverity } from '../../../infrastructure/utils/errorHandler';
+<script setup>
+import { ref, onMounted, inject, onBeforeUnmount, computed } from 'vue';
+import { useUiStore } from '@/stores/uiStore';
 
-export default {
-  name: 'Toast',
-  setup() {
-    // 通知列表
-    const toasts = ref([]);
-    
-    // 尝试获取音频管理器
-    const audio = inject('audio', null);
-    
-    // 用于取消事件总线订阅
-    let unsubscribe = null;
-    
-    // 添加新通知
-    const addToast = (options) => {
-      if (typeof options === 'string') {
-        options = { message: options };
-      }
-      
-      const toast = {
-        id: Date.now(),
-        type: options.type || 'info',
-        message: options.message || '',
-        title: options.title || '',
-        duration: options.duration || 3000,
-        onClose: options.onClose
-      };
-      
-      toasts.value.push(toast);
-      
-      // 播放音效
-      playToastSound(toast.type);
-      
-      // 自动关闭
-      if (toast.duration > 0) {
-        setTimeout(() => {
-          removeToast(toast.id);
-        }, toast.duration);
-      }
-    };
-    
-    // 移除通知
-    const removeToast = (id) => {
-      const index = toasts.value.findIndex(t => t.id === id);
-      if (index !== -1) {
-        const toast = toasts.value[index];
-        toasts.value.splice(index, 1);
-        
-        // 调用关闭回调
-        if (typeof toast.onClose === 'function') {
-          toast.onClose(toast);
-        }
-      }
-    };
+const uiStore = useUiStore();
+// 直接从 uiStore 获取 toasts 数据
+const toasts = computed(() => uiStore.toasts);
 
-    // 播放通知音效
-    const playToastSound = (type) => {
-      if (!audio) return;
-      
-      // 根据类型选择音效
-      const soundId = `toast_${type}`;
-      
-      // 如果音效已加载，直接播放
-      if (audio.sounds && audio.sounds[soundId]) {
-        audio.play(soundId);
-        return;
-      }
-      
-      // 否则加载并播放音效
-      // 注意：实际项目中应该预先加载所有音效
-      const soundUrls = {
-        success: '/sounds/success.mp3',
-        info: '/sounds/info.mp3',
-        warning: '/sounds/warning.mp3',
-        error: '/sounds/error.mp3'
-      };
-      
-      if (soundUrls[type] && audio.load) {
-        audio.load(soundId, soundUrls[type], {
-          volume: 0.5,
-          onload: () => audio.play(soundId)
-        });
-      }
-    };
-    
-    // 组件挂载时设置事件总线
-    onMounted(() => {
-      try {
-        // 尝试导入并使用事件总线
-        import('@vueuse/core').then(module => {
-          const { useEventBus } = module;
-          const eventBus = useEventBus('toast');
-          
-          const handleToastEvent = (options) => {
-            if (typeof options === 'string') {
-              addToast({ message: options });
-            } else {
-              addToast(options);
-            }
-          };
-          
-          // 订阅事件
-          eventBus.on(handleToastEvent);
-          
-          // 保存取消订阅函数
-          unsubscribe = () => eventBus.off(handleToastEvent);
-        }).catch(err => {
-          console.warn('无法导入事件总线:', err);
-        });
-      } catch (err) {
-        handleError(err, 'Toast (common)', ErrorType.UNKNOWN, ErrorSeverity.WARNING);
-        console.warn('设置事件总线失败:', err);
-      }
+// 移除通知
+const removeToast = (id) => {
+  uiStore.removeToast(id);
+};
+
+// 尝试获取音频管理器
+const audio = inject('audio', null);
+
+// 播放通知音效
+const playToastSound = (type) => {
+  if (!audio) return;
+
+  // 根据类型选择音效
+  const soundId = `toast_${type}`;
+
+  // 如果音效已加载，直接播放
+  if (audio.sounds && audio.sounds[soundId]) {
+    audio.play(soundId);
+    return;
+  }
+
+  // 否则加载并播放音效
+  const soundUrls = {
+    success: '/sounds/success.mp3',
+    info: '/sounds/info.mp3',
+    warning: '/sounds/warning.mp3',
+    error: '/sounds/error.mp3'
+  };
+
+  if (soundUrls[type] && audio.load) {
+    audio.load(soundId, soundUrls[type], {
+      volume: 0.5,
+      onload: () => audio.play(soundId)
     });
-    
-    // 组件卸载时取消订阅
-    onBeforeUnmount(() => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
-    });
-
-    return {
-      toasts,
-      addToast,
-      removeToast
-    };
   }
 };
+
+// 监听 toasts 变化，播放相应音效
+const prevToastsLength = ref(0);
+const watchToasts = () => {
+  if (toasts.value.length > prevToastsLength.value) {
+    // 有新的 toast 添加
+    const newToast = toasts.value[0]; // 最新的 toast 在前面
+    if (newToast) {
+      playToastSound(newToast.type);
+    }
+  }
+  prevToastsLength.value = toasts.value.length;
+};
+
+// 设置观察
+onMounted(() => {
+  // 初始化 prevToastsLength
+  prevToastsLength.value = toasts.value.length;
+
+  // 设置观察定时器
+  const interval = setInterval(watchToasts, 100);
+
+  onBeforeUnmount(() => {
+    clearInterval(interval);
+  });
+});
 </script>
 
 <style scoped>
@@ -293,4 +231,4 @@ export default {
   width: 16px;
   height: 16px;
 }
-</style> 
+</style>

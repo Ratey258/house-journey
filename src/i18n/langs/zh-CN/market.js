@@ -63,67 +63,92 @@ export default {
       electronics_hub_desc: '各类电子产品和数码设备的专业交易市场，价格适中且品种齐全',
       black_market_desc: '隐蔽的非法交易场所，各类珍稀收藏品和奇特商品云集，风险与机遇并存',
       commodity_market_desc: '批发市场和大宗商品交易的集中地，价格低廉但需要大量采购'
-    }
-  },
-  
-  houseMarket: {
-    title: '房产市场',
-    affordable: '可购买',
-    price: '价格',
-    level: '等级',
-    size: '面积',
-    location: '位置',
-    buyButton: '购买',
-    noHouses: '没有可购买的房屋',
-    notEnoughMoney: '资金不足！您需要¥{price}，但只有¥{money}，还差¥{shortfall}',
-    fundsChanged: '您的资金已发生变化！需要¥{price}，但只有¥{money}，还差¥{shortfall}',
-    significantConfirm: '这笔交易将花费您{percent}%的资金，确定要购买吗？',
-    purchaseSuccess: '恭喜！您已成功购买{house}',
-    purchaseFailed: '购买失败，请稍后重试',
-    confirmTitle: '确认购买房产',
-    confirmMessage: '您确定要购买"{house}"吗？',
-    yourMoney: '您的资金',
-    remaining: '购买后剩余',
-    significantWarning: '注意：这是一笔大额交易，将耗费您大部分资金！',
-    
-    // 新增胜利相关翻译
-    victoryPurchase: '恭喜！您已成功购买{house}，达成了游戏主要目标！',
-    victoryMessage: '恭喜您购买了豪华房产：{house}！您已经达成了游戏的主要目标！\n\n您当前处于第{week}周，游戏总共有{maxWeek}周。',
-    continuePrompt: '您想要结束游戏并查看结果，还是继续游戏争取更高分数？\n\n选择"确定"继续游戏\n选择"取消"结束游戏并查看结果',
-    continuePlaying: '您选择了继续游戏，争取更高分数！游戏将继续进行到第52周。',
-    endGameNow: '结束游戏',
-    continueGame: '继续游戏',
-    
-    details: {
-      title: '房屋详情',
+    },
+
+    // 房屋市场相关翻译
+    houseMarket: {
+      title: '房产市场',
+      affordable: '可购买',
       price: '价格',
+      level: '等级',
       size: '面积',
       location: '位置',
-      type: '类型',
-      features: '特色',
-      description: '描述'
-    },
-    types: {
-      apartment: '公寓',
-      house: '独栋别墅',
-      villa: '豪华别墅',
-      mansion: '豪宅',
-      penthouse: '顶层公寓'
-    },
-    features: {
-      garden: '花园',
-      pool: '游泳池',
-      garage: '车库',
-      security: '安保系统',
-      view: '景观视野',
-      central: '中心位置',
-      quiet: '安静社区',
-      modern: '现代装修',
-      classic: '经典风格',
-      luxury: '豪华装修'
+      buyButton: '购买',
+      noHouses: '没有可购买的房屋',
+      notEnoughMoney: '资金不足！您需要¥{price}，但只有¥{money}，还差¥{shortfall}',
+      fundsChanged: '您的资金已发生变化！需要¥{price}，但只有¥{money}，还差¥{shortfall}',
+      significantConfirm: '这笔交易将花费您{percent}%的资金，确定要购买吗？',
+      purchaseSuccess: '恭喜！您已成功购买{house}',
+      purchaseFailed: '购买失败，请稍后重试',
+      confirmTitle: '确认购买房产',
+      confirmMessage: '您确定要购买"{house}"吗？',
+      yourMoney: '您的资金',
+      remaining: '购买后剩余',
+      significantWarning: '注意：这是一笔大额交易，将耗费您大部分资金！',
+
+      // 新增胜利相关翻译
+      victoryPurchase: '恭喜！您已成功购买{house}，达成了游戏主要目标！',
+      victoryMessage: '恭喜您购买了豪华房产：{house}！您已经达成了游戏的主要目标！\n\n您当前处于第{week}周，游戏总共有{maxWeek}周。',
+      continuePrompt: '您想要结束游戏并查看结果，还是继续游戏争取更高分数？\n\n选择"确定"继续游戏\n选择"取消"结束游戏并查看结果',
+      continuePlaying: '您选择了继续游戏，争取更高分数！游戏将继续进行到第52周。',
+      endGameNow: '结束游戏',
+      continueGame: '继续游戏',
+
+      details: {
+        title: '房屋详情',
+        price: '价格',
+        size: '面积',
+        location: '位置',
+        type: '类型',
+        features: '特色',
+        description: '描述'
+      },
+      types: {
+        apartment: '公寓',
+        house: '独栋别墅',
+        villa: '豪华别墅',
+        mansion: '豪宅',
+        penthouse: '顶层公寓'
+      },
+      features: {
+        garden: '花园',
+        pool: '游泳池',
+        garage: '车库',
+        security: '安保系统',
+        view: '景观视野',
+        central: '中心位置',
+        quiet: '安静社区',
+        modern: '现代装修',
+        classic: '经典风格',
+        luxury: '豪华装修'
+      }
     }
   },
-  
+
+  // 添加房屋名称和描述
+  houses: {
+    small: {
+      name: '单身公寓',
+      description: '适合单身人士居住的小型公寓，位置便利但空间有限。'
+    },
+    medium: {
+      name: '二手旧房',
+      description: '年代较久的二手住宅，价格适中但可能需要装修。空间较大，非常适合改造成理想的家。'
+    },
+    large: {
+      name: '高档小区',
+      description: '现代化高档住宅小区，环境优美，配套设施齐全。社区环境安全，是家庭居住的绝佳选择。'
+    },
+    luxury: {
+      name: '现代别墅',
+      description: '独栋现代别墅，拥有私家花园和车库。宽敞的空间和精致的设计，彰显主人的品味与地位。'
+    },
+    mansion: {
+      name: '私人庄园',
+      description: '大型私人庄园，带有大片绿地和多功能区域。拥有这样的房产，代表你已达到人生巅峰！'
+    }
+  },
+
   buyModal: {
     title: '购买 {product}',
     price: '单价',
@@ -135,7 +160,7 @@ export default {
     confirm: '确认购买',
     cancel: '取消'
   },
-  
+
   sellModal: {
     title: '出售 {product}',
     purchasePrice: '买入价',
@@ -148,7 +173,7 @@ export default {
     confirm: '确认出售',
     cancel: '取消'
   },
-  
+
   houseModal: {
     title: '购买 {house}',
     confirmPurchase: '确认购买此房屋吗？',
@@ -159,7 +184,7 @@ export default {
     cancel: '取消',
     endGame: '购买此房屋将结束游戏'
   },
-  
+
   trends: {
     rising_strong: '价格急剧上涨',
     rising: '价格上涨中',
@@ -181,4 +206,4 @@ export default {
       low: '低'
     }
   }
-}; 
+};

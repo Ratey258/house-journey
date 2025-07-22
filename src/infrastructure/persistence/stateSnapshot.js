@@ -41,7 +41,7 @@ async function initStorageService() {
   storageInitPromise = new Promise((resolve, reject) => {
     try {
       storageService = new ElectronStorageService();
-      storageService.init()
+      storageService.initializeElectronAPI()
         .then(() => {
           console.log('状态快照存储服务初始化成功');
           resolve(storageService);
@@ -49,7 +49,7 @@ async function initStorageService() {
         .catch((error) => {
           handleError(error, 'stateSnapshot (persistence)', ErrorType.STORAGE, ErrorSeverity.ERROR);
           console.error('初始化存储服务失败:', error);
-          
+
           // 创建一个内存中的备用存储
           storageService = {
             async getData(key) {
@@ -61,7 +61,7 @@ async function initStorageService() {
                 return null;
               }
             },
-            
+
             async setData(key, value) {
               try {
                 localStorage.setItem(key, JSON.stringify(value));
@@ -72,7 +72,7 @@ async function initStorageService() {
                 return false;
               }
             },
-            
+
             async removeData(key) {
               try {
                 localStorage.removeItem(key);
@@ -99,7 +99,7 @@ async function initStorageService() {
 
 /**
  * 创建游戏状态快照
- * 
+ *
  * @param {Object} gameStore - 游戏状态存储
  * @returns {Promise<Object|null>} 创建的快照对象，如果失败则返回null
  */
@@ -109,13 +109,13 @@ export async function createStateSnapshot(gameStore) {
     console.warn('无法创建快照：游戏存储无效');
     return null;
   }
-  
+
   // 检查是否需要创建新快照 (时间间隔)
   const now = Date.now();
   if (now - lastSnapshotTime < MIN_SNAPSHOT_INTERVAL) {
     return null;
   }
-  
+
   // 创建游戏状态快照
   const gameState = {
     timestamp: now,
@@ -133,15 +133,15 @@ export async function createStateSnapshot(gameStore) {
       productPrices: { ...(gameStore.productPrices || {}) }
     } : null
   };
-  
+
   // 添加到内存快照列表
   stateSnapshots.unshift(gameState);
-  
+
   // 限制快照数量
   if (stateSnapshots.length > MAX_SNAPSHOTS) {
     stateSnapshots.length = MAX_SNAPSHOTS;
   }
-  
+
   // 保存到存储服务
   try {
     const service = await initStorageService();
@@ -151,14 +151,14 @@ export async function createStateSnapshot(gameStore) {
     handleError(e, 'stateSnapshot (persistence)', ErrorType.UNKNOWN, ErrorSeverity.WARNING);
     console.warn('保存快照到存储服务失败:', e);
   }
-  
+
   return gameState;
 }
 
 /**
  * 创建紧急状态快照
  * 当检测到可能的异常情况时调用，同步创建
- * 
+ *
  * @param {Object} gameStore - 游戏状态存储
  * @returns {boolean} 是否成功创建紧急快照
  */
@@ -168,7 +168,7 @@ export function createEmergencySnapshot(gameStore) {
     if (!gameStore || !gameStore.currentWeek) {
       return false;
     }
-    
+
     // 创建精简的紧急快照
     const emergencyData = {
       timestamp: Date.now(),
@@ -181,10 +181,10 @@ export function createEmergencySnapshot(gameStore) {
       gameStarted: gameStore.gameStarted,
       gameOver: gameStore.gameOver
     };
-    
+
     // 同步保存到localStorage (更可靠，适用于紧急情况)
     localStorage.setItem(EMERGENCY_SNAPSHOT_KEY, JSON.stringify(emergencyData));
-    
+
     return true;
   } catch (e) {
     handleError(e, 'stateSnapshot (persistence)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
@@ -195,7 +195,7 @@ export function createEmergencySnapshot(gameStore) {
 
 /**
  * 获取最近的状态快照
- * 
+ *
  * @returns {Object|null} 最近的状态快照，如果没有则返回null
  */
 export function getLatestSnapshot() {
@@ -204,7 +204,7 @@ export function getLatestSnapshot() {
 
 /**
  * 加载上次保存的快照
- * 
+ *
  * @returns {Promise<Object|null>} 加载的快照对象，如果没有则返回null
  */
 export async function loadLatestSnapshot() {
@@ -213,7 +213,7 @@ export async function loadLatestSnapshot() {
     if (stateSnapshots.length > 0) {
       return stateSnapshots[0];
     }
-    
+
     // 尝试从存储服务读取
     try {
       const service = await initStorageService();
@@ -226,7 +226,7 @@ export async function loadLatestSnapshot() {
       handleError(e, 'stateSnapshot (persistence)', ErrorType.UNKNOWN, ErrorSeverity.WARNING);
       console.warn('从存储服务加载快照失败:', e);
     }
-    
+
     // 尝试加载紧急快照（从localStorage）
     try {
       const emergencyData = localStorage.getItem(EMERGENCY_SNAPSHOT_KEY);
@@ -238,7 +238,7 @@ export async function loadLatestSnapshot() {
       handleError(e, 'stateSnapshot (persistence)', ErrorType.UNKNOWN, ErrorSeverity.WARNING);
       console.warn('加载紧急快照失败:', e);
     }
-    
+
     return null;
   } catch (error) {
     console.error('加载最新快照时出错:', error);
@@ -248,7 +248,7 @@ export async function loadLatestSnapshot() {
 
 /**
  * 应用快照恢复游戏状态
- * 
+ *
  * @param {Object} gameStore - 游戏状态存储
  * @param {Object} snapshot - 快照对象
  * @returns {Promise<boolean>} 是否成功应用快照
@@ -258,28 +258,28 @@ export async function applySnapshot(gameStore, snapshot) {
     if (!snapshot || !gameStore) {
       return false;
     }
-    
+
     // 恢复基本游戏状态
     gameStore.currentWeek = snapshot.currentWeek || 1;
     gameStore.gameStarted = snapshot.gameStarted || false;
     gameStore.gameOver = snapshot.gameOver || false;
-    
+
     // 恢复玩家状态
     if (snapshot.player) {
       if (!gameStore.player) {
         gameStore.player = {};
       }
-      
+
       gameStore.player.name = snapshot.player.name || '';
       gameStore.player.money = snapshot.player.money || 0;
       gameStore.player.debt = snapshot.player.debt || 0;
-      
+
       // 恢复库存
       if (snapshot.player.inventory && Array.isArray(snapshot.player.inventory)) {
         gameStore.player.inventory = [...snapshot.player.inventory];
       }
     }
-    
+
     // 恢复市场状态
     if (snapshot.marketState) {
       // 设置当前位置
@@ -291,13 +291,13 @@ export async function applySnapshot(gameStore, snapshot) {
           gameStore.currentLocation = location;
         }
       }
-      
+
       // 恢复价格
       if (snapshot.marketState.productPrices) {
         gameStore.productPrices = { ...snapshot.marketState.productPrices };
       }
     }
-    
+
     return true;
   } catch (error) {
     handleError(error, 'stateSnapshot (persistence)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
@@ -308,19 +308,19 @@ export async function applySnapshot(gameStore, snapshot) {
 
 /**
  * 清除所有快照
- * 
+ *
  * @returns {Promise<boolean>} 是否成功清除所有快照
  */
 export async function clearAllSnapshots() {
   try {
     // 清除内存中的快照
     stateSnapshots.length = 0;
-    
+
     // 清除存储中的快照
     const service = await initStorageService();
     await service.removeData(SNAPSHOT_STORAGE_KEY);
     localStorage.removeItem(EMERGENCY_SNAPSHOT_KEY);
-    
+
     return true;
   } catch (error) {
     handleError(error, 'stateSnapshot (persistence)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
@@ -331,7 +331,7 @@ export async function clearAllSnapshots() {
 
 /**
  * 初始化快照系统
- * 
+ *
  * @returns {Promise<boolean>} 是否成功初始化
  */
 export async function initSnapshotSystem() {

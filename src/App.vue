@@ -18,11 +18,17 @@
     <!-- 恢复对话框 -->
     <ErrorRecoveryDialog />
 
+    <!-- 通用对话框 -->
+    <GameDialog />
+
     <!-- 全局Toast通知 -->
     <Toast />
 
     <!-- 全局音频管理器 -->
     <AudioManager />
+
+    <!-- 开发工具管理器 -->
+    <DevToolsManager />
   </div>
 </template>
 
@@ -31,9 +37,11 @@ import { defineComponent, ref, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import ErrorDialog from './ui/components/common/ErrorDialog.vue';
 import ErrorRecoveryDialog from './ui/components/common/ErrorRecoveryDialog.vue';
+import GameDialog from './ui/components/common/GameDialog.vue';
 import Toast from './ui/components/common/Toast.vue';
 import AudioManager from './ui/components/common/AudioManager.vue';
 import CssLoader from './ui/components/common/CssLoader.vue';
+import DevToolsManager from './ui/components/common/DevToolsManager.vue';
 import { useUiStore } from './stores/uiStore';
 import { useGameCoreStore } from './stores/gameCore';
 import { usePlayerStore } from './stores/player';
@@ -46,9 +54,11 @@ export default defineComponent({
   components: {
     ErrorDialog,
     ErrorRecoveryDialog,
+    GameDialog,
     Toast,
     AudioManager,
-    CssLoader
+    CssLoader,
+    DevToolsManager
   },
   setup() {
     const router = useRouter();

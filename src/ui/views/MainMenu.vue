@@ -285,9 +285,9 @@ function goToSettings() {
   router.push('/settings');
 }
 
-// 跳转到开发工具页面
+// 显示浮动开发工具窗口
 function goToDevTools() {
-  router.push('/dev-tools');
+  window.dispatchEvent(new CustomEvent('show-dev-tools'));
 }
 
 // 退出游戏
