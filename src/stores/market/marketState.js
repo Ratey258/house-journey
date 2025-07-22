@@ -619,7 +619,58 @@ export const useMarketStore = defineStore('market', {
           this.marketModifiers.productModifiers[data.productId] = data.value;
           break;
       }
-    }
+    },
+
+/**
+ * 加载产品数据
+ * @param {Array} productIds - 产品ID列表
+ */
+loadProducts(productIds) {
+  console.log('MarketStore - 加载产品数据:', productIds);
+  if (!Array.isArray(productIds)) {
+    console.warn('MarketStore - 加载产品数据时传入的不是数组:', productIds);
+    return;
+  }
+  
+  // 确保产品列表已加载
+  if (this.products.length === 0) {
+    this.products = getAllProducts();
+  }
+  
+  // 如果传入的是产品ID列表，过滤出对应产品
+  if (productIds.length > 0 && typeof productIds[0] === 'string') {
+    const allProducts = getAllProducts();
+    this.products = allProducts.filter(p => productIds.includes(p.id));
+    console.log('MarketStore - 已加载指定产品:', this.products.length);
+  }
+  
+  // 更新当前地点的可用产品
+  this.updateLocationProducts();
+},
+
+/**
+ * 加载房屋数据
+ * @param {Array} houseIds - 房屋ID列表
+ */
+loadHouses(houseIds) {
+  console.log('MarketStore - 加载房屋数据:', houseIds);
+  if (!Array.isArray(houseIds)) {
+    console.warn('MarketStore - 加载房屋数据时传入的不是数组:', houseIds);
+    return;
+  }
+  
+  // 确保房屋列表已加载
+  if (this.houses.length === 0) {
+    this.houses = getAllHouses();
+  }
+  
+  // 如果传入的是房屋ID列表，过滤出对应房屋
+  if (houseIds.length > 0 && typeof houseIds[0] === 'string') {
+    const allHouses = getAllHouses();
+    this.houses = allHouses.filter(h => houseIds.includes(h.id));
+    console.log('MarketStore - 已加载指定房屋:', this.houses.length);
+  }
+},
   },
   
   getters: {

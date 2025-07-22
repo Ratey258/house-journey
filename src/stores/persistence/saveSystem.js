@@ -124,14 +124,57 @@ export const useSaveStore = defineStore('save', {
      */
     async loadSaveList() {
       try {
+        console.log('尝试加载存档列表...');
+        
         // 使用存储服务加载存档列表
         const saveList = await storageService.getData(SAVE_LIST_KEY);
-        this.saveList = saveList || [];
+        
+        // 如果存档列表为空，尝试从Electron API直接获取
+        if (!saveList || !Array.isArray(saveList) || saveList.length === 0) {
+          console.log('存档列表为空或无效，尝试从文件系统获取...');
+          
+          try {
+            if (window.electronAPI && window.electronAPI.listSaves) {
+              const result = await window.electronAPI.listSaves();
+              
+              if (result && result.success && Array.isArray(result.saves)) {
+                console.log('从Electron API获取到', result.saves.length, '个存档');
+                
+                // 将文件系统返回的存档列表转换成我们需要的格式
+                const formattedSaves = result.saves.map(save => ({
+                  id: save.name,
+                  name: save.name,
+                  isAuto: save.name.startsWith('autosave_') || save.name.includes('自动存档'),
+                  timestamp: save.lastModified ? new Date(save.lastModified).getTime() : Date.now(),
+                  lastModified: save.lastModified
+                }));
+                
+                // 更新存档列表
+                this.saveList = formattedSaves;
+                
+                // 保存到存储服务
+                await storageService.setData(SAVE_LIST_KEY, formattedSaves);
+                
+                return formattedSaves;
+              }
+            }
+          } catch (electronError) {
+            console.error('从Electron API获取存档列表失败', electronError);
+          }
+          
+          // 如果Electron API也失败，使用空数组
+          this.saveList = [];
+        } else {
+          console.log('成功从存储中加载存档列表，数量:', saveList.length);
+          this.saveList = saveList;
+        }
       } catch (error) {
         handleError(error, 'saveSystem (persistence)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
         console.error('加载存档列表失败', error);
         this.saveList = [];
       }
+      
+      return this.saveList;
     },
     
     /**
@@ -193,8 +236,65 @@ export const useSaveStore = defineStore('save', {
         const event = useEventStore();
         const uiStore = useUiStore();
         
-        // 生成存档数据
+        // 生成存档数据 - 安全处理可能包含循环引用的对象
+        // 在外部声明变量，确保在try/catch外部可见
         let saveData = {
+            version: CURRENT_GAME_VERSION,
+            timestamp: new Date().toISOString()
+        };
+        
+        try {
+          console.log('准备存档数据...');
+          
+          // 安全地获取游戏核心数据
+          const safeGameResult = gameCore.gameResult ? JSON.parse(JSON.stringify({
+            reason: gameCore.gameResult.reason,
+            week: gameCore.gameResult.week,
+            score: gameCore.gameResult.score,
+            endReason: gameCore.gameResult.endReason,
+            victoryAchieved: gameCore.gameResult.victoryAchieved,
+            firstVictoryWeek: gameCore.gameResult.firstVictoryWeek
+          })) : null;
+          
+          // 安全地获取通知数据
+          const safeNotifications = gameCore.notifications ? gameCore.notifications.map(n => ({
+            id: n.id,
+            type: n.type,
+            message: n.message,
+            timestamp: n.timestamp
+          })) : [];
+          
+          // 安全地处理库存物品
+          const safeInventory = player.inventory ? player.inventory.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            quantity: item.quantity,
+            purchasePrice: item.purchasePrice,
+            purchaseWeek: item.purchaseWeek
+          })) : [];
+          
+          // 安全地处理已购买房屋
+          const safePurchasedHouses = player.purchasedHouses ? player.purchasedHouses.map(house => ({
+            houseId: house.houseId,
+            name: house.name,
+            level: house.level,
+            purchasePrice: house.purchasePrice,
+            purchaseWeek: house.purchaseWeek,
+            location: typeof house.location === 'string' ? house.location : null
+          })) : [];
+          
+          // 安全地处理事件数据
+          let safeActiveEvent = null;
+          if (event.activeEvent) {
+            safeActiveEvent = {
+              id: event.activeEvent.id,
+              title: event.activeEvent.title,
+              type: event.activeEvent.type
+            };
+          }
+          
+          // 创建安全的存档对象
+          saveData = {
           version: CURRENT_GAME_VERSION,
           timestamp: new Date().toISOString(),
           gameCore: {
@@ -203,9 +303,9 @@ export const useSaveStore = defineStore('save', {
             gameStarted: gameCore.gameStarted,
             gamePaused: gameCore.gamePaused,
             gameOver: gameCore.gameOver,
-            gameResult: gameCore.gameResult,
-            notifications: gameCore.notifications,
-            gameGoals: gameCore.gameGoals
+              gameResult: safeGameResult,
+              notifications: safeNotifications,
+              gameGoals: JSON.parse(JSON.stringify(gameCore.gameGoals || {}))
           },
           player: {
             name: player.name,
@@ -213,26 +313,72 @@ export const useSaveStore = defineStore('save', {
             debt: player.debt,
             capacity: player.capacity,
             inventoryUsed: player.inventoryUsed,
-            inventory: player.inventory,
-            purchasedHouses: player.purchasedHouses,
-            statistics: player.statistics
+              inventory: safeInventory,
+              purchasedHouses: safePurchasedHouses,
+              statistics: JSON.parse(JSON.stringify(player.statistics || {}))
           },
           market: {
-            locations: market.locations,
+              locations: JSON.parse(JSON.stringify(market.locations || [])),
             currentLocation: market.currentLocation ? market.currentLocation.id : null,
-            productPrices: market.productPrices,
-            products: market.products.map(p => p.id),
-            houses: market.houses.map(h => h.id),
-            marketModifiers: market.marketModifiers
+              productPrices: JSON.parse(JSON.stringify(market.productPrices || {})),
+              products: market.products ? market.products.map(p => typeof p === 'object' ? p.id : p) : [],
+              houses: market.houses ? market.houses.map(h => typeof h === 'object' ? h.id : h) : [],
+              marketModifiers: JSON.parse(JSON.stringify(market.marketModifiers || {}))
           },
           event: {
-            activeEvent: event.activeEvent,
+              activeEvent: safeActiveEvent,
             forceLocationChange: event.forceLocationChange,
             targetLocation: event.targetLocation,
             nextEventId: event.nextEventId,
-            triggeredEvents: event.triggeredEvents
+              triggeredEvents: JSON.parse(JSON.stringify(event.triggeredEvents || []))
           }
         };
+          
+          console.log('存档数据准备完成');
+        } catch (error) {
+          handleError(error, 'saveSystem (persistence)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
+          console.error('准备存档数据时出错:', error);
+          
+          // 创建简化版的存档数据
+          saveData = {
+            version: CURRENT_GAME_VERSION,
+            timestamp: new Date().toISOString(),
+            gameCore: {
+              currentWeek: gameCore.currentWeek,
+              maxWeeks: gameCore.maxWeeks,
+              gameStarted: true,
+              gamePaused: false,
+              gameOver: gameCore.gameOver
+            },
+            player: {
+              name: player.name,
+              money: player.money,
+              debt: player.debt,
+              capacity: 100,
+              inventoryUsed: 0,
+              inventory: [],
+              purchasedHouses: []
+            },
+            market: {
+              currentLocation: null,
+              productPrices: {},
+              products: [],
+              houses: [],
+              marketModifiers: {}
+            },
+            event: {
+              triggeredEvents: []
+            }
+          };
+          
+          if (!isAutoSave) {
+            uiStore.showToast({
+              type: 'warning',
+              message: '存档数据处理出错，使用简化版本',
+              duration: 3000
+            });
+          }
+        }
         
         // 验证存档数据
         const validationResult = validateSaveData(saveData);
@@ -299,10 +445,30 @@ export const useSaveStore = defineStore('save', {
           version: CURRENT_GAME_VERSION
         };
         
-        // 保存游戏数据
+        try {
+          console.log('正在保存游戏数据到存储...');
+          
+          // 保存游戏数据到本地存储
         await storageService.setData(`${SAVE_PREFIX}${saveId}`, saveData);
+          console.log('游戏数据已保存到存储');
+          
+          // 尝试使用Electron API直接保存到文件系统
+          if (window.electronAPI && window.electronAPI.saveGame) {
+            console.log('尝试使用Electron API保存游戏...');
+            const electronResult = await window.electronAPI.saveGame({
+              name: saveName,
+              gameState: saveData
+            });
+            
+            if (electronResult && electronResult.success) {
+              console.log('游戏已成功保存到文件系统:', electronResult.path);
+            } else {
+              console.warn('Electron保存可能失败:', electronResult?.error || '未知错误');
+            }
+          }
         
         // 更新存档列表
+          console.log('更新存档列表...');
         if (isNewSave) {
           this.saveList.unshift(saveInfo);
         } else {
@@ -310,6 +476,27 @@ export const useSaveStore = defineStore('save', {
           const index = this.saveList.findIndex(save => save.id === saveId);
           if (index !== -1) {
             this.saveList[index] = saveInfo;
+            }
+          }
+        } catch (storageError) {
+          handleError(storageError, 'saveSystem (persistence)', ErrorType.STORAGE, ErrorSeverity.ERROR);
+          console.error('保存游戏数据时出错:', storageError);
+          
+          // 尝试直接使用Electron API作为备份方案
+          if (window.electronAPI && window.electronAPI.saveGame) {
+            console.log('尝试使用备用方法保存游戏...');
+            const backupResult = await window.electronAPI.saveGame({
+              name: saveName,
+              gameState: saveData
+            });
+            
+            if (!backupResult || !backupResult.success) {
+              throw storageError; // 如果备份方法也失败，重新抛出原始错误
+            }
+            
+            console.log('已使用备用方法保存游戏');
+          } else {
+            throw storageError;
           }
         }
         

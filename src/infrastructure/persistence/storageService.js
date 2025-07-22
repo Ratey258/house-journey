@@ -477,6 +477,71 @@ export class LocalStorageService extends StorageService {
   }
   
   /**
+   * 安全序列化数据
+   * @param {any} data - 要序列化的数据
+   * @returns {string} - JSON字符串
+   * @private
+   */
+  _safeStringify(data) {
+    try {
+      // 尝试常规序列化
+      return JSON.stringify(data);
+    } catch (error) {
+      console.warn('标准序列化失败，尝试手动序列化');
+      
+      // 创建一个安全的可序列化版本
+      if (data === null || data === undefined) {
+        return JSON.stringify(null);
+      }
+      
+      // 处理基本类型
+      if (typeof data !== 'object') {
+        return JSON.stringify(data);
+      }
+      
+      // 处理数组
+      if (Array.isArray(data)) {
+        const safeArray = [];
+        for (let i = 0; i < data.length; i++) {
+          try {
+            const item = data[i];
+            if (typeof item === 'object' && item !== null) {
+              safeArray.push(JSON.parse(this._safeStringify(item)));
+            } else {
+              safeArray.push(item);
+            }
+          } catch (e) {
+            safeArray.push(null);
+          }
+        }
+        return JSON.stringify(safeArray);
+      }
+      
+      // 处理对象
+      const safeObj = {};
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          try {
+            const value = data[key];
+            if (typeof value === 'object' && value !== null) {
+              safeObj[key] = JSON.parse(this._safeStringify(value));
+            } else if (typeof value === 'function') {
+              safeObj[key] = '[函数]';
+            } else {
+              safeObj[key] = value;
+            }
+          } catch (e) {
+            console.warn(`无法序列化属性 ${key}`);
+            safeObj[key] = null;
+          }
+        }
+      }
+      
+      return JSON.stringify(safeObj);
+    }
+  }
+  
+  /**
    * 设置数据
    * @param {string} key 存储键
    * @param {any} data 要存储的数据
@@ -484,12 +549,30 @@ export class LocalStorageService extends StorageService {
    */
   async setData(key, data) {
     try {
+      console.log(`LocalStorage: 保存数据到 ${key}`);
       const fullKey = this.getFullKey(key);
-      localStorage.setItem(fullKey, JSON.stringify(data));
+      
+      // 使用安全序列化
+      let serializedData;
+      try {
+        serializedData = this._safeStringify(data);
+      } catch (serializeError) {
+        console.warn('序列化失败，使用基本数据', serializeError);
+        // 如果序列化失败，保存一个基本对象
+        serializedData = JSON.stringify({
+          _simplified: true,
+          timestamp: new Date().toISOString(),
+          key
+        });
+      }
+      
+      localStorage.setItem(fullKey, serializedData);
       return true;
     } catch (error) {
       handleError(error, 'storageService (persistence)', ErrorType.STORAGE, ErrorSeverity.ERROR);
-      throw storageError(`Failed to set data for key ${key}`, { originalError: error.message });
+      console.error(`保存数据到本地存储失败: ${key}`, error);
+      // 不抛出错误，而是返回失败状态
+      return false;
     }
   }
   
@@ -599,6 +682,58 @@ export class ElectronStorageService extends StorageService {
   }
 
   /**
+   * 安全序列化数据，处理循环引用和特殊对象
+   * @param {any} data - 要序列化的数据
+   * @returns {any} - 可安全序列化的数据
+   * @private
+   */
+  _safeSerialize(data) {
+    try {
+      console.log('尝试安全序列化数据');
+      // 尝试使用JSON序列化和反序列化来创建一个纯数据对象，移除所有函数和循环引用
+      return JSON.parse(JSON.stringify(data));
+    } catch (error) {
+      console.warn('标准JSON序列化失败，尝试手动序列化', error);
+      
+      // 如果JSON序列化失败，进行手动序列化
+      if (data === null || data === undefined) {
+        return data;
+      }
+      
+      // 处理基本类型
+      if (typeof data !== 'object') {
+        return data;
+      }
+      
+      // 处理数组
+      if (Array.isArray(data)) {
+        return data.map(item => this._safeSerialize(item));
+      }
+      
+      // 处理普通对象
+      const result = {};
+      for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          try {
+            result[key] = this._safeSerialize(data[key]);
+          } catch (e) {
+            console.warn(`无法序列化属性 ${key}:`, e);
+            // 对于无法序列化的属性，设置为null或基本类型表示
+            if (typeof data[key] === 'function') {
+              result[key] = '[函数]';
+            } else if (typeof data[key] === 'object') {
+              result[key] = '[复杂对象]';
+            } else {
+              result[key] = null;
+            }
+          }
+        }
+      }
+      return result;
+    }
+  }
+
+  /**
    * 设置数据
    * @param {string} key 存储键
    * @param {any} data 数据
@@ -606,22 +741,56 @@ export class ElectronStorageService extends StorageService {
    */
   async setData(key, data) {
     try {
+      console.log(`正在保存数据 [${key}]...`);
+      
+      // 首先尝试备用存储，以防主存储失败
+      const fallbackSuccess = await this.fallbackStorage.setData(key, data);
+      console.log(`备用存储保存${fallbackSuccess ? '成功' : '失败'}`);
+      
       if (!this.isInitialized) {
-        return await this.fallbackStorage.setData(key, data);
+        console.log('ElectronAPI未初始化，仅使用备用存储');
+        return fallbackSuccess;
       }
 
       if (!window.electronAPI || !window.electronAPI.setConfig) {
         throw new Error('Electron API不可用');
       }
+      
+      // 安全序列化数据，处理潜在的循环引用
+      const safeData = this._safeSerialize(data);
+      console.log('数据已安全序列化');
 
       const fullKey = this.prefix + key;
-      const config = { [fullKey]: data };
+      const config = { [fullKey]: safeData };
       
       await window.electronAPI.setConfig(config);
+      console.log(`数据成功保存到 [${key}]`);
       return true;
     } catch (error) {
       handleError(error, 'storageService (persistence)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
       console.error(`设置数据失败 [${key}]:`, error);
+      
+      // 尝试直接使用文件系统API保存游戏数据
+      if (key.includes('Save_') && window.electronAPI && window.electronAPI.saveGame) {
+        try {
+          console.log('尝试使用saveGame API保存...');
+          const saveName = key.replace(this.prefix, '').replace('Save_', '');
+          
+          const result = await window.electronAPI.saveGame({
+            name: saveName,
+            gameState: data
+          });
+          
+          if (result && result.success) {
+            console.log('使用saveGame API保存成功');
+            return true;
+          }
+        } catch (saveGameError) {
+          console.error('saveGame API保存失败', saveGameError);
+        }
+      }
+      
+      // 尝试使用备用存储
       return await this.fallbackStorage.setData(key, data);
     }
   }

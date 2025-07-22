@@ -33,16 +33,20 @@
     </header>
     
     <!-- 通知区域 -->
-    <div v-if="!isLoading && notifications.length > 0" class="notifications-container">
-      <div 
-        v-for="notification in notifications" 
-        :key="notification.id" 
-        class="notification"
-        :class="notification.type"
-      >
-        {{ notification.message }}
-        <button class="close-btn" @click="dismissNotification(notification.id)">×</button>
-      </div>
+    <div v-if="!isLoading" class="notifications-container">
+      <transition-group name="notification">
+        <div 
+          v-for="notification in notifications" 
+          :key="notification.id" 
+          class="notification"
+          :class="notification.type"
+        >
+          <div class="notification-content">
+            {{ notification.message }}
+          </div>
+          <button class="close-btn" @click="dismissNotification(notification.id)">×</button>
+        </div>
+      </transition-group>
     </div>
     
     <!-- 主游戏区域 -->
@@ -109,20 +113,22 @@
         </div>
         
         <div class="tab-content">
-          <!-- 市场标签页 -->
-          <div v-if="activeTab === 'market'" class="market-tab">
-            <Market />
-          </div>
-          
-          <!-- 背包标签页 -->
-          <div v-else-if="activeTab === 'inventory'" class="inventory-tab">
-            <Inventory />
-          </div>
-          
-          <!-- 房屋标签页 -->
-          <div v-else-if="activeTab === 'houses'" class="houses-tab">
-            <HouseMarket />
-          </div>
+          <transition name="tab-fade" mode="out-in">
+            <!-- 市场标签页 -->
+            <div v-if="activeTab === 'market'" class="market-tab" key="market">
+              <Market />
+            </div>
+            
+            <!-- 背包标签页 -->
+            <div v-else-if="activeTab === 'inventory'" class="inventory-tab" key="inventory">
+              <Inventory />
+            </div>
+            
+            <!-- 房屋标签页 -->
+            <div v-else-if="activeTab === 'houses'" class="houses-tab" key="houses">
+              <HouseMarket />
+            </div>
+          </transition>
         </div>
       </div>
     </div>
@@ -139,61 +145,91 @@
     <EventModal ref="eventModal" />
     
     <!-- 游戏菜单对话框 -->
-    <div v-if="showMenu" class="dialog-overlay">
-      <div class="dialog game-menu-dialog">
-        <h2 class="dialog-title">{{ $t('gameMenu.title') }}</h2>
-        <div class="menu-options">
-          <button class="menu-option" @click="saveGame">{{ $t('gameMenu.save') }}</button>
-          <button class="menu-option" @click="goToMainMenu">{{ $t('gameMenu.mainMenu') }}</button>
-          <button class="menu-option" @click="hideGameMenu">{{ $t('gameMenu.continue') }}</button>
-        </div>
+    <transition name="fade">
+      <div v-if="showMenu" class="dialog-overlay" @click.self="hideGameMenu">
+        <transition name="zoom-bounce">
+          <div class="dialog game-menu-dialog">
+            <h2 class="dialog-title">{{ $t('gameMenu.title') }}</h2>
+            <div class="menu-options">
+              <transition-group name="menu-item">
+                <button class="menu-option" @click="saveGame" key="save">
+                  <span class="menu-icon">💾</span>
+                  {{ $t('gameMenu.save') }}
+                </button>
+                <button class="menu-option" @click="goToMainMenu" key="main">
+                  <span class="menu-icon">🏠</span>
+                  {{ $t('gameMenu.mainMenu') }}
+                </button>
+                <button class="menu-option" @click="hideGameMenu" key="continue">
+                  <span class="menu-icon">▶️</span>
+                  {{ $t('gameMenu.continue') }}
+                </button>
+              </transition-group>
+            </div>
+          </div>
+        </transition>
       </div>
-    </div>
+    </transition>
     
     <!-- 保存游戏对话框 -->
-    <div v-if="showSaveDialog" class="dialog-overlay">
-      <div class="dialog save-dialog">
-        <h2 class="dialog-title">{{ $t('saveDialog.title') }}</h2>
-        <div class="save-form">
-          <input 
-            v-model="saveName" 
-            type="text" 
-            class="save-input" 
-            :placeholder="$t('saveDialog.namePlaceholder')"
-          />
-          <div class="dialog-buttons">
-            <button class="dialog-button confirm" @click="confirmSave" :disabled="!saveName">
-              {{ $t('common.confirm') }}
-            </button>
-            <button class="dialog-button cancel" @click="cancelSave">
-              {{ $t('common.cancel') }}
-            </button>
+    <transition name="fade">
+      <div v-if="showSaveDialog" class="dialog-overlay" @click.self="cancelSave">
+        <transition name="slide-up">
+          <div class="dialog save-dialog">
+            <h2 class="dialog-title">{{ $t('saveDialog.title') }}</h2>
+            <div class="save-form">
+              <input 
+                v-model="saveName" 
+                type="text" 
+                class="save-input" 
+                :placeholder="$t('saveDialog.namePlaceholder')"
+                ref="saveInput"
+                @keyup.enter="confirmSave"
+              />
+              <div class="dialog-buttons">
+                <button class="dialog-button confirm" @click="confirmSave" :disabled="!saveName">
+                  {{ $t('common.confirm') }}
+                </button>
+                <button class="dialog-button cancel" @click="cancelSave">
+                  {{ $t('common.cancel') }}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        </transition>
       </div>
-    </div>
+    </transition>
     
     <!-- 游戏结束对话框 -->
-    <div v-if="gameOver && showGameOverDialog" class="dialog-overlay">
-      <GameOverView 
-        :gameState="gameState"
-        :player="player"
-        :gameStats="gameResult"
-        @return-to-main="goToMainMenu"
-        @restart-game="restartGame"
-        @show-detailed-stats="toggleDetailedStats"
-      />
-    </div>
+    <transition name="fade">
+      <div v-if="gameOver && showGameOverDialog" class="dialog-overlay">
+        <transition name="scale-bounce">
+          <GameOverView 
+            :gameState="gameState"
+            :player="player"
+            :gameStats="gameResult"
+            @return-to-main="goToMainMenu"
+            @restart-game="restartGame"
+            @show-detailed-stats="toggleDetailedStats"
+          />
+        </transition>
+      </div>
+    </transition>
 
     <!-- 详细统计对话框 -->
-    <GameStatsDetail
-      v-if="showDetailedStats"
-      :show="showDetailedStats"
-      :gameStats="gameResult"
-      :player="player"
-      :gameState="gameState"
-      @close="toggleDetailedStats"
-    />
+    <transition name="fade">
+      <div v-if="showDetailedStats" class="dialog-overlay" @click.self="toggleDetailedStats">
+        <transition name="slide-left">
+          <GameStatsDetail
+            :show="showDetailedStats"
+            :gameStats="gameResult"
+            :player="player"
+            :gameState="gameState"
+            @close="toggleDetailedStats"
+          />
+        </transition>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -207,6 +243,7 @@ import { useUiStore } from '@/stores/uiStore';
 import { usePlayerStore } from '@/stores/player';
 import { useMarketStore } from '@/stores/market';
 import { useEventStore } from '@/stores/events';
+import { useSaveStore } from '@/stores/persistence';
 
 // 导入组件
 import PlayerInfo from '@/ui/components/player/PlayerInfo.vue';
@@ -230,6 +267,7 @@ const uiStore = useUiStore();
 const { t } = useI18n();
 const eventModal = ref(null);
 const tutorialSystem = ref(null);
+const saveInput = ref(null);
 
 console.log('GameView组件初始化，游戏状态:', {
   gameStarted: gameCoreStore.gameStarted,
@@ -505,14 +543,46 @@ const saveGame = () => {
   // 默认使用当前日期作为存档名
   const now = new Date();
   saveName.value = `存档-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+  
+  // 等待DOM更新后，聚焦输入框
+  nextTick(() => {
+    if (saveInput.value) {
+      saveInput.value.focus();
+      saveInput.value.select(); // 选择全部文字，方便用户直接修改
+    }
+  });
 };
 
 const confirmSave = async () => {
   if (!saveName.value) return;
   
-  const success = await gameCoreStore.saveGame(saveName.value);
-  if (success) {
-    showSaveDialog.value = false;
+  try {
+    // 使用正确的保存方法 - saveStore.saveGame
+    const saveStore = useSaveStore();
+    const result = await saveStore.saveGame(saveName.value);
+    
+    if (result.success) {
+      showSaveDialog.value = false;
+      uiStore.showToast({
+        type: 'success',
+        message: '游戏已成功保存',
+        duration: 2000
+      });
+    } else {
+      uiStore.showToast({
+        type: 'error',
+        message: '保存游戏失败',
+        duration: 3000
+      });
+    }
+  } catch (err) {
+    handleError(err, 'GameView (views)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
+    console.error('保存游戏时出错:', err);
+    uiStore.showToast({
+      type: 'error',
+      message: '保存游戏时出错: ' + (err.message || '未知错误'),
+      duration: 3000
+    });
   }
 };
 
@@ -1426,5 +1496,261 @@ const handleBeforeUnload = async (event) => {
     width: 100%;
     padding: 10px;
   }
+}
+
+/* 在style块的末尾添加这些动画CSS */
+
+/* 通用淡入淡出效果 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 缩放弹跳效果 - 用于菜单对话框 */
+.zoom-bounce-enter-active {
+  animation: zoom-bounce-in 0.5s;
+}
+.zoom-bounce-leave-active {
+  animation: zoom-bounce-out 0.3s;
+}
+@keyframes zoom-bounce-in {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes zoom-bounce-out {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* 缩放弹跳效果 - 用于游戏结束对话框 */
+.scale-bounce-enter-active {
+  animation: scale-bounce-in 0.8s;
+}
+.scale-bounce-leave-active {
+  animation: scale-bounce-out 0.4s;
+}
+@keyframes scale-bounce-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes scale-bounce-out {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* 菜单项动画 */
+.menu-item-enter-active {
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition-delay: calc(0.1s * var(--order));
+}
+.menu-item-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.menu-item-enter-from {
+  opacity: 0;
+  transform: translateY(15px);
+}
+.menu-item-leave-to {
+  opacity: 0;
+  transform: translateY(15px);
+}
+
+/* 从下向上滑入效果 - 用于保存对话框 */
+.slide-up-enter-active {
+  animation: slide-up-in 0.4s;
+}
+.slide-up-leave-active {
+  animation: slide-up-out 0.3s;
+}
+@keyframes slide-up-in {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes slide-up-out {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+}
+
+/* 从左向右滑入效果 - 用于详细统计对话框 */
+.slide-left-enter-active {
+  animation: slide-left-in 0.4s;
+}
+.slide-left-leave-active {
+  animation: slide-left-out 0.3s;
+}
+@keyframes slide-left-in {
+  0% {
+    transform: translateX(-50px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes slide-left-out {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50px);
+    opacity: 0;
+  }
+}
+
+/* 标签内容淡入淡出效果 */
+.tab-fade-enter-active,
+.tab-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.tab-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 通知动画 */
+.notification-enter-active {
+  animation: notification-in 0.5s ease-out;
+}
+.notification-leave-active {
+  animation: notification-out 0.3s ease-in;
+}
+@keyframes notification-in {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-5%);
+  }
+  80% {
+    transform: translateX(2%);
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes notification-out {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(110%);
+    opacity: 0;
+  }
+}
+
+/* 菜单图标样式 */
+.menu-icon {
+  display: inline-block;
+  margin-right: 10px;
+  font-size: 1.2em;
+}
+
+/* 改进通知样式 */
+.notification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  background-color: #fff;
+  transition: all 0.3s ease;
+  animation: notification-pulse 2s infinite alternate;
+}
+
+.notification-content {
+  flex-grow: 1;
+  padding-right: 10px;
+}
+
+@keyframes notification-pulse {
+  0% {
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  }
+  100% {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+  }
+}
+
+/* 为对话框添加阴影效果 */
+.dialog {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* 菜单选项悬停效果 */
+.menu-option {
+  transition: all 0.3s ease;
+  border-left: 4px solid transparent;
+}
+
+.menu-option:hover {
+  transform: translateX(5px);
+  border-left-color: #3498db;
+  background-color: #f8f9fa;
 }
 </style> 

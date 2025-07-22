@@ -8,7 +8,7 @@
       
       <div class="menu-buttons">
         <button class="menu-button" @click="showNewGameDialog">新游戏</button>
-        <button class="menu-button" @click="showInDevelopmentToast('读取存档')">读取存档</button>
+        <button class="menu-button" @click="goToSaves">读取存档</button>
         <button class="menu-button" @click="showInDevelopmentToast('设置')">设置</button>
         <button class="menu-button" @click="showAboutDialog">关于</button>
         <button class="menu-button" @click="quitGame">退出游戏</button>
@@ -275,7 +275,7 @@ function cancelNewGame() {
   }
 }
 
-// 跳转到存档页面 - 现在不再直接使用
+// 跳转到存档页面
 function goToSaves() {
   router.push('/saves');
 }
@@ -300,11 +300,22 @@ async function quitGame() {
   }
 }
 
-// 组件挂载时，尝试从本地存储中恢复上次使用的玩家名称
+// 组件挂载时，处理初始化逻辑
 onMounted(() => {
+  // 从本地存储中恢复上次使用的玩家名称
   const savedName = localStorage.getItem('lastPlayerName');
   if (savedName) {
     playerName.value = savedName;
+  }
+  
+  // 检查是否有查询参数，决定是否自动执行操作
+  const { action } = router.currentRoute.value.query;
+  
+  if (action === 'new-game') {
+    // 延迟一点显示，等待页面完全加载
+    setTimeout(() => {
+      showNewGameDialog();
+    }, 300);
   }
 });
 </script>
