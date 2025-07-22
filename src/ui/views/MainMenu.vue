@@ -7,14 +7,30 @@
       </div>
 
       <div class="menu-buttons">
-        <button class="menu-button" @click="showNewGameDialog">新游戏</button>
-        <button class="menu-button" @click="goToSaves">读取存档</button>
-        <button class="menu-button" @click="showInDevelopmentToast('设置')">设置</button>
-        <button class="menu-button" @click="showAboutDialog">关于</button>
-        <button class="menu-button" @click="quitGame">退出游戏</button>
-
-        <!-- 开发工具链接 -->
-        <button class="menu-button dev-button" @click="goToDevTools">开发工具</button>
+        <button class="menu-button new-game-btn" @click="showNewGameDialog">
+          <i class="menu-icon">🎮</i>
+          <span>新游戏</span>
+        </button>
+        <button class="menu-button load-game-btn" @click="goToSaves">
+          <i class="menu-icon">📂</i>
+          <span>读取存档</span>
+        </button>
+        <button class="menu-button leaderboard-btn" @click="showInDevelopmentToast('排行榜')">
+          <i class="menu-icon">🏆</i>
+          <span>排行榜</span>
+        </button>
+        <button class="menu-button settings-btn" @click="showInDevelopmentToast('设置')">
+          <i class="menu-icon">⚙️</i>
+          <span>设置</span>
+        </button>
+        <button class="menu-button about-btn" @click="showAboutDialog">
+          <i class="menu-icon">ℹ️</i>
+          <span>关于</span>
+        </button>
+        <button class="menu-button exit-btn" @click="quitGame">
+          <i class="menu-icon">🚪</i>
+          <span>退出游戏</span>
+        </button>
       </div>
     </div>
 
@@ -57,10 +73,10 @@
         </div>
 
             <div class="dialog-actions animate-item">
+          <button class="button" @click="cancelNewGame" :disabled="isLoading">取消</button>
           <button class="button primary" @click="startNewGame" :disabled="!playerName.trim() || isLoading">
             {{ isLoading ? '加载中...' : '开始游戏' }}
           </button>
-          <button class="button" @click="cancelNewGame" :disabled="isLoading">取消</button>
         </div>
       </div>
         </transition>
@@ -82,7 +98,7 @@
         <div class="dev-toast-icon">🚧</div>
         <h3>功能开发中</h3>
         <p>{{ devToastMessage }}</p>
-        <button class="button" @click="closeDevToast">确定</button>
+        <button class="button primary" @click="closeDevToast">确定</button>
       </div>
     </div>
 
@@ -107,7 +123,7 @@
           </div>
         </div>
         <div class="about-actions">
-          <button class="button" @click="closeAboutDialog">关闭</button>
+          <button class="button primary" @click="closeAboutDialog">关闭</button>
         </div>
       </div>
     </div>
@@ -330,6 +346,25 @@ onMounted(() => {
   background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
   background-size: 400% 400%;
   animation: gradient 15s ease infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 添加背景光效 */
+.main-menu:before {
+  content: '';
+  position: absolute;
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  top: -25%;
+  left: -25%;
+  animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes gradient {
@@ -340,22 +375,54 @@ onMounted(() => {
 
 .menu-container {
   background-color: rgba(255, 255, 255, 0.95);
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
   width: 500px;
   padding: 40px;
   text-align: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.menu-container:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  transform: translateY(-5px);
 }
 
 .title-section {
   margin-bottom: 40px;
+  position: relative;
+}
+
+/* 添加标题光晕效果 */
+.title-section:after {
+  content: '';
+  position: absolute;
+  width: 100px;
+  height: 5px;
+  background: linear-gradient(90deg, transparent, #3498db, transparent);
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 2px;
 }
 
 .game-title {
-  font-size: 48px;
+  font-size: 56px;
   font-weight: bold;
   margin: 0;
   color: #1a2a6c;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  letter-spacing: 2px;
+  animation: title-glow 3s ease-in-out infinite;
+}
+
+@keyframes title-glow {
+  0%, 100% { text-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); }
+  50% { text-shadow: 0 0 15px rgba(52, 152, 219, 0.5); }
 }
 
 .game-version {
@@ -374,42 +441,93 @@ onMounted(() => {
   background-color: #3498db;
   color: white;
   border: none;
-  border-radius: 4px;
-  padding: 14px 20px;
+  border-radius: 8px;
+  padding: 16px 20px;
   font-size: 18px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-icon {
+  font-style: normal;
+  font-size: 20px;
+}
+
+.menu-button:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: all 0.6s;
+}
+
+.menu-button:hover:before {
+  left: 100%;
 }
 
 .menu-button:hover {
   background-color: #2980b9;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
-.dev-button {
-  margin-top: 20px;
+.menu-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 为不同按钮添加特定样式 */
+.new-game-btn {
+  background-color: #3498db;
+}
+.new-game-btn:hover {
+  background-color: #2980b9;
+}
+
+.load-game-btn {
+  background-color: #27ae60;
+}
+.load-game-btn:hover {
+  background-color: #219653;
+}
+
+.leaderboard-btn {
+  background-color: #f39c12;
+}
+.leaderboard-btn:hover {
+  background-color: #d35400;
+}
+
+.settings-btn {
   background-color: #9b59b6;
-  font-size: 16px;
-  padding: 10px 16px;
-  position: relative;
 }
-
-.dev-button:hover {
+.settings-btn:hover {
   background-color: #8e44ad;
 }
 
-.dev-button::before {
-  content: "DEV";
-  position: absolute;
-  top: -10px;
-  right: -10px;
+.about-btn {
+  background-color: #34495e;
+}
+.about-btn:hover {
+  background-color: #2c3e50;
+}
+
+.exit-btn {
   background-color: #e74c3c;
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-weight: bold;
+}
+.exit-btn:hover {
+  background-color: #c0392b;
 }
 
 /* 对话框样式 */
@@ -419,19 +537,33 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 100;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .dialog {
   background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   width: 400px;
-  padding: 24px;
+  padding: 30px;
+  animation: dialogIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes dialogIn {
+  from { opacity: 0; transform: scale(0.8) translateY(30px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .dialog-title {
@@ -439,79 +571,136 @@ onMounted(() => {
   margin-bottom: 20px;
   color: #1a2a6c;
   text-align: center;
+  position: relative;
+}
+
+.dialog-title:after {
+  content: '';
+  position: absolute;
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #3498db, transparent);
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 2px;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-weight: 500;
+  color: #2c3e50;
 }
 
 .form-group input[type="text"] {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
   font-size: 16px;
+  transition: all 0.3s;
+  background-color: #f8f9fa;
+}
+
+.form-group input[type="text"]:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  background-color: #fff;
 }
 
 .difficulty-options {
   display: flex;
   justify-content: space-between;
-  margin-top: 8px;
+  margin-top: 10px;
+  gap: 10px;
 }
 
 .radio-label {
   display: flex;
   align-items: center;
   cursor: pointer;
+  padding: 10px 15px;
+  border-radius: 6px;
+  flex: 1;
+  transition: all 0.3s;
+  background-color: #f8f9fa;
+  border: 2px solid #e0e0e0;
+}
+
+.radio-label:hover {
+  background-color: #edf2f7;
 }
 
 .radio-label input {
-  margin-right: 6px;
+  margin-right: 8px;
+}
+
+.radio-label input:checked + span {
+  font-weight: 500;
 }
 
 .dialog-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 30px;
 }
 
 .button {
-  padding: 10px 16px;
-  border-radius: 4px;
+  padding: 12px 24px;
+  border-radius: 8px;
   font-size: 16px;
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
+  transition: all 0.3s;
+  min-width: 120px;
+  font-weight: 500;
 }
 
 .button.primary {
   background-color: #3498db;
   color: white;
+  box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
 }
 
 .button.primary:hover {
   background-color: #2980b9;
+  box-shadow: 0 6px 8px rgba(52, 152, 219, 0.3);
+  transform: translateY(-2px);
+}
+
+.button.primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
 }
 
 .button.primary:disabled {
   background-color: #95a5a6;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .button:not(.primary) {
-  background-color: #ecf0f1;
+  background-color: #f1f2f6;
   color: #34495e;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .button:not(.primary):hover {
-  background-color: #bdc3c7;
+  background-color: #dfe4ea;
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.button:not(.primary):active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* 加载指示器样式 */
@@ -569,28 +758,38 @@ onMounted(() => {
 /* 开发中提示样式 */
 .dev-toast {
   background-color: white;
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 16px;
+  padding: 30px;
   max-width: 400px;
   text-align: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  animation: toast-in 0.3s ease-out;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  animation: toast-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dev-toast-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
+  font-size: 60px;
+  margin-bottom: 20px;
+  display: block;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-20px); }
+  60% { transform: translateY(-10px); }
 }
 
 .dev-toast h3 {
-  font-size: 20px;
-  margin: 0 0 12px 0;
-  color: #333;
+  font-size: 24px;
+  margin: 0 0 15px 0;
+  color: #2c3e50;
 }
 
 .dev-toast p {
-  margin: 0 0 20px 0;
-  color: #666;
+  margin: 0 0 25px 0;
+  color: #7f8c8d;
+  font-size: 18px;
 }
 
 .dev-toast button {
@@ -622,13 +821,14 @@ onMounted(() => {
 /* 关于对话框样式 */
 .about-dialog {
   background-color: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 0;
   width: 90%;
-  max-width: 450px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  animation: dialog-appear 0.3s ease-out;
+  max-width: 420px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: dialog-appear 0.4s ease-out;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .about-header {
@@ -642,62 +842,68 @@ onMounted(() => {
   margin: 0;
   font-size: 1.3rem;
   font-weight: 600;
+  letter-spacing: 1px;
 }
 
 .about-content {
-  padding: 24px;
+  padding: 25px 20px;
   text-align: center;
 }
 
 .about-logo {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: bold;
   color: #1a2a6c;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .about-version {
-  color: #666;
-  margin-bottom: 20px;
+  color: #7f8c8d;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
 }
 
 .about-content p {
   margin: 12px 0;
   line-height: 1.5;
-  color: #333;
+  color: #34495e;
+  font-size: 0.95rem;
 }
 
 .about-history {
-  margin-top: 20px;
+  margin-top: 18px;
   padding: 15px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
+  background-color: #f8f9fa;
+  border-radius: 10px;
   border: 1px solid #eee;
   text-align: left;
   font-size: 0.9rem;
-  color: #555;
+  color: #2c3e50;
   line-height: 1.6;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.03);
 }
 
 .about-credits {
-  margin-top: 24px;
+  margin-top: 18px;
   border-top: 1px solid #eee;
-  padding-top: 16px;
+  padding-top: 15px;
 }
 
 .about-credits h4 {
-  margin: 0 0 12px 0;
-  color: #555;
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
 }
 
 .about-credits p {
-  margin: 6px 0;
+  margin: 5px 0;
   font-size: 0.9rem;
-  color: #666;
+  color: #34495e;
 }
 
 .about-actions {
-  padding: 16px;
+  padding: 15px;
   display: flex;
   justify-content: center;
   border-top: 1px solid #eee;
