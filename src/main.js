@@ -3,9 +3,9 @@ import { createPinia } from 'pinia';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import App from './App.vue';
 import i18n from './i18n';
-import { 
-  loadErrorLogs, 
-  setupGlobalErrorHandlers, 
+import {
+  loadErrorLogs,
+  setupGlobalErrorHandlers,
   checkGameAbnormalExit,
   markGameRunning,
   clearGameRunningMark,
@@ -76,18 +76,18 @@ console.log('第三方库和错误处理设置完成');
     const { useUiStore } = await import('./stores/uiStore');
     const { useGameCoreStore } = await import('./stores/gameCore');
     const { useSettingsStore } = await import('./stores/settingsStore');
-    
+
     // 初始化存储
     const uiStore = useUiStore();
     const gameCoreStore = useGameCoreStore();
     const settingsStore = useSettingsStore();
-    
+
     console.log('Pinia存储预初始化完成:', {
       uiStore: !!uiStore,
       gameCoreStore: !!gameCoreStore,
       settingsStore: !!settingsStore
     });
-    
+
     // 验证关键资源
     validateCriticalResources();
   } catch (error) {
@@ -100,29 +100,29 @@ console.log('第三方库和错误处理设置完成');
 function validateCriticalResources() {
   try {
     console.log('开始验证关键资源...');
-    
+
     // 验证彩蛋事件图片
     const easterEggImagePaths = [
       './resources/assets/images/events/special_encounter.jpg'
     ];
-    
+
     // 记录资源状态
     const resourceStatus = {};
-    
+
     // 检查图片资源
     easterEggImagePaths.forEach(path => {
       console.log(`检查资源: ${path}`);
       const img = new Image();
-      
+
       img.onload = () => {
         console.log(`✅ 资源加载成功: ${path}`);
         resourceStatus[path] = 'loaded';
       };
-      
+
       img.onerror = (err) => {
         console.error(`❌ 资源加载失败: ${path}`, err);
         resourceStatus[path] = 'failed';
-        
+
         // 尝试其他可能的路径
         const altPaths = [
           path,
@@ -130,10 +130,10 @@ function validateCriticalResources() {
           path.replace('./resources', '.'),
           `/resources${path.substring(1)}`
         ];
-        
+
         console.log(`尝试替代路径:`, altPaths);
       };
-      
+
       img.src = path;
     });
   } catch (error) {
@@ -145,33 +145,33 @@ function validateCriticalResources() {
 (async function checkForAbnormalExit() {
   try {
     const wasAbnormalExit = checkGameAbnormalExit();
-    
+
     if (wasAbnormalExit) {
       console.info('检测到异常退出，准备恢复');
-      
+
       try {
         // 导入需要的存储
         const uiStoreModule = await import('./stores/uiStore');
         const gameStoreModule = await import('./stores/gameCore');
-        
+
         // 初始化快照系统
         await initSnapshotSystem();
-        
+
         // 获取存储实例
         const uiStore = uiStoreModule.useUiStore();
         const gameStore = gameStoreModule.useGameCoreStore();
-        
+
         if (!uiStore || !gameStore) {
           throw new Error('无法获取存储实例');
         }
-        
+
         // 等待DOM加载完成
         setTimeout(async () => {
           try {
             // 使用动态导入获取快照功能
             const stateSnapshotModule = await import('./infrastructure/persistence/stateSnapshot');
             const { loadLatestSnapshot, applySnapshot } = stateSnapshotModule;
-            
+
             const snapshot = await loadLatestSnapshot();
             if (snapshot) {
               uiStore.showRecoveryDialog({
@@ -187,7 +187,7 @@ function validateCriticalResources() {
                         type: 'success',
                         message: '游戏状态已成功恢复'
                       });
-                      
+
                       // 如果不在游戏页面，跳转到游戏页面
                       if (router.currentRoute.value.path !== '/game') {
                         router.push('/game');
@@ -241,7 +241,7 @@ let appMounted = false;
 
 function mountApp() {
   if (appMounted) return;
-  
+
   try {
     // 检查挂载点是否存在
     const appElement = document.getElementById('app');
@@ -251,9 +251,22 @@ function mountApp() {
       app.mount('#app');
       appMounted = true;
       console.log('应用挂载完成');
-      
+
       // 触发应用加载完成事件
       window.dispatchEvent(new Event('app-loaded'));
+
+      // 监听Electron菜单事件
+      if (window.electronAPI && window.electronAPI.onMenuAction) {
+        window.electronAPI.onMenuAction((action) => {
+          console.log('收到菜单事件:', action);
+
+          // 处理各种菜单事件
+          if (action === 'menu:open-dev-tools') {
+            // 打开游戏内的开发工具页面
+            router.push('/dev-tools');
+          }
+        });
+      }
     } else {
       console.error('找不到挂载点 #app');
     }
@@ -275,4 +288,4 @@ setTimeout(() => {
     console.log('使用备用方法挂载应用');
     mountApp();
   }
-}, 1000); 
+}, 1000);

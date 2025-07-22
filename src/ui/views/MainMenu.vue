@@ -13,8 +13,8 @@
         <button class="menu-button" @click="showAboutDialog">关于</button>
         <button class="menu-button" @click="quitGame">退出游戏</button>
 
-        <!-- 开发工具链接，仅在开发环境显示 -->
-        <button v-if="isDev" class="menu-button dev-button" @click="goToDevTools">开发工具</button>
+        <!-- 开发工具链接 -->
+        <button class="menu-button dev-button" @click="goToDevTools">开发工具</button>
       </div>
     </div>
 

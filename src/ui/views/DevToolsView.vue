@@ -6,16 +6,16 @@
       </button>
       <h1>开发工具</h1>
     </div>
-    
+
     <div class="tool-section">
       <h2>价格系统测试</h2>
       <button @click="testPriceSystem" class="test-button">运行价格系统测试</button>
       <pre class="test-output" v-if="testResults">{{ testResults }}</pre>
     </div>
-    
+
     <div class="tool-section">
       <h2>游戏操作</h2>
-      
+
       <div class="tool-group">
         <h3>周数控制</h3>
         <div class="control-buttons">
@@ -24,7 +24,7 @@
           <button @click="advanceMultipleWeeks(10)" class="action-button">前进10周</button>
         </div>
       </div>
-      
+
       <div class="tool-group">
         <h3>资金调整</h3>
         <div class="input-group">
@@ -32,7 +32,45 @@
           <button @click="addMoney" class="action-button">增加资金</button>
         </div>
       </div>
-      
+
+      <!-- 新增：玩家参数调整 -->
+      <div class="tool-group">
+        <h3>玩家参数调整</h3>
+        <div class="input-group param-row">
+          <label>当前资金:</label>
+          <input type="number" v-model.number="playerParams.money" placeholder="资金" />
+        </div>
+        <div class="input-group param-row">
+          <label>当前债务:</label>
+          <input type="number" v-model.number="playerParams.debt" placeholder="债务" />
+        </div>
+        <div class="input-group param-row">
+          <label>背包容量:</label>
+          <input type="number" v-model.number="playerParams.capacity" placeholder="容量" />
+        </div>
+        <div class="input-group actions">
+          <button @click="updatePlayerParams" class="action-button success">应用参数</button>
+          <button @click="resetPlayerParams" class="action-button warning">重置参数</button>
+        </div>
+
+        <h4>库存操作</h4>
+        <div class="input-group">
+          <button @click="clearInventory" class="action-button warning">清空库存</button>
+          <button @click="addRandomItems" class="action-button">添加随机物品</button>
+          <input type="number" v-model.number="randomItemsCount" placeholder="物品数量" min="1" max="10" />
+        </div>
+      </div>
+
+      <!-- 新增：游戏周数调整 -->
+      <div class="tool-group">
+        <h3>游戏周数调整</h3>
+        <div class="input-group param-row">
+          <label>设置周数:</label>
+          <input type="number" v-model.number="weekToSet" placeholder="周数" min="1" :max="gameStore.maxWeeks" />
+          <button @click="setCurrentWeek" class="action-button">设置周数</button>
+        </div>
+      </div>
+
       <div class="tool-group">
         <h3>市场修正</h3>
         <div class="input-group">
@@ -41,7 +79,7 @@
             <option value="category">类别修正</option>
             <option value="product">商品修正</option>
           </select>
-          
+
           <template v-if="modifierType === 'category'">
             <select v-model="selectedCategory">
               <option value="DAILY">日常用品</option>
@@ -51,7 +89,7 @@
               <option value="COLLECTIBLE">收藏品</option>
             </select>
           </template>
-          
+
           <template v-if="modifierType === 'product'">
             <select v-model="selectedProductId">
               <option v-for="product in products" :key="product.id" :value="product.id">
@@ -59,31 +97,66 @@
               </option>
             </select>
           </template>
-          
-          <input 
-            type="number" 
-            v-model.number="modifierValue" 
-            step="0.1" 
-            min="0.1" 
+
+          <input
+            type="number"
+            v-model.number="modifierValue"
+            step="0.1"
+            min="0.1"
             max="2.0"
-            placeholder="修正值(0.1-2.0)" 
+            placeholder="修正值(0.1-2.0)"
           />
-          
-          <input 
-            type="number" 
-            v-model.number="modifierDuration" 
-            min="1" 
-            placeholder="持续周数" 
+
+          <input
+            type="number"
+            v-model.number="modifierDuration"
+            min="1"
+            placeholder="持续周数"
           />
-          
+
           <button @click="applyMarketModifier" class="action-button">应用修正</button>
         </div>
       </div>
     </div>
-    
+
+    <div class="tool-section">
+      <h2>游戏场景预设</h2>
+      <div class="scenarios">
+        <div class="scenario-card" @click="applyScenario('early')">
+          <h3>前期阶段</h3>
+          <p>设置为游戏前期状态：</p>
+          <ul>
+            <li>周数：5周</li>
+            <li>资金：3000元</li>
+            <li>债务：4500元</li>
+          </ul>
+        </div>
+
+        <div class="scenario-card" @click="applyScenario('mid')">
+          <h3>中期阶段</h3>
+          <p>设置为游戏中期状态：</p>
+          <ul>
+            <li>周数：20周</li>
+            <li>资金：50000元</li>
+            <li>债务：2000元</li>
+          </ul>
+        </div>
+
+        <div class="scenario-card" @click="applyScenario('late')">
+          <h3>后期阶段</h3>
+          <p>设置为游戏后期状态：</p>
+          <ul>
+            <li>周数：35周</li>
+            <li>资金：200000元</li>
+            <li>债务：0元</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
     <div class="tool-section">
       <h2>当前游戏状态</h2>
-      
+
       <div class="status-grid">
         <div class="status-item">
           <strong>当前周数:</strong> {{ gameStore.currentWeek }}/{{ gameStore.maxWeeks }}
@@ -104,7 +177,7 @@
           <strong>市场状态:</strong> {{ gameStore.marketStatus }}
         </div>
       </div>
-      
+
       <h3>市场调整因子</h3>
       <pre class="json-display">{{ JSON.stringify(gameStore.marketModifiers, null, 2) }}</pre>
     </div>
@@ -115,6 +188,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGameStore } from '@/stores';
+import { useInventoryActions } from '@/stores/player';
 import { runPriceSystemTests } from '@/infrastructure/utils/priceSystemTest';
 import { formatNumber } from '@/infrastructure/utils';
 
@@ -130,6 +204,19 @@ const modifierDuration = ref(3);
 const selectedCategory = ref('DAILY');
 const selectedProductId = ref(null);
 
+// 新增：玩家参数调整
+const playerParams = ref({
+  money: 0,
+  debt: 0,
+  capacity: 0
+});
+
+// 新增：库存操作
+const randomItemsCount = ref(1);
+
+// 新增：游戏周数调整
+const weekToSet = ref(gameStore.currentWeek);
+
 // 计算属性
 const products = computed(() => gameStore.products);
 
@@ -143,12 +230,12 @@ const testPriceSystem = () => {
   // 捕获控制台输出
   const originalConsoleLog = console.log;
   let output = '';
-  
+
   console.log = (...args) => {
     output += args.join(' ') + '\n';
     originalConsoleLog(...args);
   };
-  
+
   try {
     runPriceSystemTests();
     testResults.value = output;
@@ -187,7 +274,7 @@ const applyMarketModifier = () => {
     value: modifierValue.value,
     duration: modifierDuration.value
   };
-  
+
   switch (modifierType.value) {
     case 'category':
       data.category = selectedCategory.value;
@@ -196,8 +283,91 @@ const applyMarketModifier = () => {
       data.productId = selectedProductId.value;
       break;
   }
-  
+
   gameStore.addMarketModifier(modifierType.value, data);
+};
+
+// 新增：更新玩家参数
+const updatePlayerParams = () => {
+  if (playerParams.value.money !== null && playerParams.value.money >= 0) {
+    gameStore.player.money = playerParams.value.money;
+  }
+
+  if (playerParams.value.debt !== null && playerParams.value.debt >= 0) {
+    gameStore.player.debt = playerParams.value.debt;
+  }
+
+  if (playerParams.value.capacity !== null && playerParams.value.capacity > 0) {
+    gameStore.player.capacity = playerParams.value.capacity;
+  }
+};
+
+// 新增：重置玩家参数（回填当前值）
+const resetPlayerParams = () => {
+  playerParams.value = {
+    money: gameStore.player.money,
+    debt: gameStore.player.debt,
+    capacity: gameStore.player.capacity
+  };
+};
+
+// 清空库存
+const clearInventory = () => {
+  gameStore.player.inventory = [];
+  gameStore.player.inventoryUsed = 0;
+};
+
+// 添加随机物品
+const addRandomItems = () => {
+  const count = randomItemsCount.value;
+  if (count < 1) return;
+
+  // 获取所有产品
+  const availableProducts = products.value;
+  if (availableProducts.length === 0) return;
+
+  // 随机选择一个产品
+  const randomIndex = Math.floor(Math.random() * availableProducts.length);
+  const randomProduct = availableProducts[randomIndex];
+
+  // 使用库存操作API添加物品
+  const inventoryActions = useInventoryActions();
+
+  // 计算随机价格（在最低和最高价格之间）
+  const minPrice = randomProduct.minPrice || randomProduct.basePrice * 0.7;
+  const maxPrice = randomProduct.maxPrice || randomProduct.basePrice * 1.3;
+  const randomPrice = Math.floor(minPrice + Math.random() * (maxPrice - minPrice));
+
+  // 添加到库存
+  inventoryActions.addToInventory(randomProduct, count, randomPrice);
+};
+
+// 设置当前周数
+const setCurrentWeek = () => {
+  if (weekToSet.value !== null && weekToSet.value >= 1 && weekToSet.value <= gameStore.maxWeeks) {
+    gameStore.currentWeek = weekToSet.value;
+  }
+};
+
+// 设置预定义场景
+const applyScenario = (scenario) => {
+  switch (scenario) {
+    case 'early':
+      gameStore.currentWeek = 5;
+      gameStore.player.money = 3000;
+      gameStore.player.debt = 4500;
+      break;
+    case 'mid':
+      gameStore.currentWeek = 20;
+      gameStore.player.money = 50000;
+      gameStore.player.debt = 2000;
+      break;
+    case 'late':
+      gameStore.currentWeek = 35;
+      gameStore.player.money = 200000;
+      gameStore.player.debt = 0;
+      break;
+  }
 };
 
 // 设置初始产品ID
@@ -205,6 +375,9 @@ onMounted(() => {
   if (products.value.length > 0) {
     selectedProductId.value = products.value[0].id;
   }
+
+  // 初始化玩家参数
+  resetPlayerParams();
 });
 </script>
 
@@ -346,6 +519,86 @@ h3 {
   font-size: 0.9rem;
 }
 
+/* 新增样式 */
+.param-row {
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.param-row label {
+  min-width: 100px;
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.actions {
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.action-button.success {
+  background-color: #38a169;
+}
+
+.action-button.success:hover {
+  background-color: #2f855a;
+}
+
+.action-button.warning {
+  background-color: #e53e3e;
+}
+
+.action-button.warning:hover {
+  background-color: #c53030;
+}
+
+.scenarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.scenario-card {
+  background-color: #e2e8f0;
+  border-radius: 6px;
+  padding: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.scenario-card:hover {
+  background-color: #d6d6d6;
+  transform: translateY(-3px);
+}
+
+.scenario-card h3 {
+  color: #2c3e50;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.scenario-card p {
+  color: #4a5568;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.scenario-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.scenario-card li {
+  margin-bottom: 3px;
+}
+
 .status-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -376,16 +629,16 @@ h3 {
   .status-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .input-group {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .input-group input,
   .input-group select,
   .input-group button {
     width: 100%;
   }
 }
-</style> 
+</style>

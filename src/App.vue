@@ -1,26 +1,26 @@
 <template>
   <div id="app">
     <!-- 全局CSS加载动画，在Vue应用初始化前显示 -->
-    <CssLoader 
-      v-if="isLoading" 
-      :title="'正在初始化游戏'" 
+    <CssLoader
+      v-if="isLoading"
+      :title="'正在初始化游戏'"
       :status="loadingStatus"
       :progress="loadingProgress"
       @complete="onLoadingComplete"
     />
-    
+
     <!-- 主应用内容 -->
     <router-view v-if="!isLoading" />
-    
+
     <!-- 全局错误对话框 -->
     <ErrorDialog />
-    
+
     <!-- 恢复对话框 -->
     <ErrorRecoveryDialog />
-    
+
     <!-- 全局Toast通知 -->
     <Toast />
-    
+
     <!-- 全局音频管理器 -->
     <AudioManager />
   </div>
@@ -55,41 +55,41 @@ export default defineComponent({
     const isLoading = ref(true);
     const loadingStatus = ref('初始化游戏环境...');
     const loadingProgress = ref(0);
-    
+
     // 应用初始化函数
     const initializeApp = async () => {
       try {
         loadingStatus.value = '初始化存储...';
         loadingProgress.value = 10;
-        
+
         // 获取存储实例
         const uiStore = useUiStore();
         const gameCoreStore = useGameCoreStore();
         const playerStore = usePlayerStore();
         const marketStore = useMarketStore();
         const eventStore = useEventStore();
-        
+
         loadingStatus.value = '加载游戏配置...';
         loadingProgress.value = 30;
-        
+
         // 预加载一些关键数据
         await new Promise(resolve => setTimeout(resolve, 300));
-        
+
         loadingStatus.value = '准备游戏界面...';
         loadingProgress.value = 60;
-        
+
         // 等待DOM更新
         await nextTick();
-        
+
         loadingStatus.value = '完成初始化...';
         loadingProgress.value = 90;
-        
+
         // 再等待一小段时间，确保界面平滑过渡
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         loadingStatus.value = '加载完成!';
         loadingProgress.value = 100;
-        
+
         // 延迟一小段时间后隐藏加载界面
         setTimeout(() => {
           isLoading.value = false;
@@ -100,19 +100,19 @@ export default defineComponent({
         loadingStatus.value = '初始化失败，请刷新页面重试';
       }
     };
-    
+
     // 加载完成回调
     const onLoadingComplete = () => {
       console.log('应用初始化完成');
       isLoading.value = false;
     };
-    
+
     // 组件挂载时
     onMounted(() => {
       // 初始化应用
       initializeApp();
     });
-    
+
     return {
       isLoading,
       loadingStatus,
@@ -224,4 +224,4 @@ body {
     max-height: 80%;
   }
 }
-</style> 
+</style>
