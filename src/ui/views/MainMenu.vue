@@ -5,19 +5,19 @@
         <h1 class="game-title">买房记</h1>
         <p class="game-version">v0.1.0</p>
       </div>
-      
+
       <div class="menu-buttons">
         <button class="menu-button" @click="showNewGameDialog">新游戏</button>
         <button class="menu-button" @click="goToSaves">读取存档</button>
         <button class="menu-button" @click="showInDevelopmentToast('设置')">设置</button>
         <button class="menu-button" @click="showAboutDialog">关于</button>
         <button class="menu-button" @click="quitGame">退出游戏</button>
-        
+
         <!-- 开发工具链接，仅在开发环境显示 -->
         <button v-if="isDev" class="menu-button dev-button" @click="goToDevTools">开发工具</button>
       </div>
     </div>
-    
+
     <!-- 新游戏对话框 -->
     <transition name="dialog-fade">
       <div v-if="showDialog" class="dialog-overlay" @click.self="cancelNewGame">
@@ -26,17 +26,17 @@
             <h2 class="dialog-title animate-item">开始新游戏</h2>
         <div class="dialog-content">
               <div class="form-group animate-item">
-            <label for="playerName">输入你的名字：</label>
-            <input 
-              type="text" 
-              id="playerName" 
-              v-model="playerName" 
-              placeholder="请输入玩家名称" 
+            <label for="playerName">用户名：</label>
+            <input
+              type="text"
+              id="playerName"
+              v-model="playerName"
+              placeholder="请输入用户名"
               maxlength="12"
               @keydown.enter="startNewGame"
             />
           </div>
-          
+
               <div class="form-group animate-item">
             <label>选择难度：</label>
             <div class="difficulty-options">
@@ -55,7 +55,7 @@
             </div>
           </div>
         </div>
-        
+
             <div class="dialog-actions animate-item">
           <button class="button primary" @click="startNewGame" :disabled="!playerName.trim() || isLoading">
             {{ isLoading ? '加载中...' : '开始游戏' }}
@@ -75,7 +75,7 @@
         <p class="loading-tip">{{ loadingTips[currentTipIndex] }}</p>
       </div>
     </div>
-    
+
     <!-- 开发中提示弹窗 -->
     <div v-if="showDevToast" class="dialog-overlay" @click="closeDevToast">
       <div class="dev-toast" @click.stop>
@@ -85,7 +85,7 @@
         <button class="button" @click="closeDevToast">确定</button>
       </div>
     </div>
-    
+
     <!-- 关于对话框 -->
     <div v-if="showAbout" class="dialog-overlay" @click="closeAboutDialog">
       <div class="about-dialog" @click.stop>
@@ -96,11 +96,11 @@
           <div class="about-logo">买房记</div>
           <div class="about-version">版本：v0.1.0</div>
           <p>这是一款模拟房地产投资的经营策略游戏，玩家将在游戏中体验房产投资的乐趣与挑战。</p>
-          
+
           <div class="about-history">
             <p>《买房记》原作是于2016推出的移动端游戏，您正游玩的是本作者根据其原作的创意进行重制的PC端游戏，本作者在2016接触到原作《买房记》时还在读小学，由于自己没有手机只能通过观看网上视频了解，但仍对当时幼小的我深有触动，直到大学阶段时仍不时勾起回忆。该作品是对原作的致敬，是对童年的回忆。</p>
           </div>
-          
+
           <div class="about-credits">
             <h4>制作团队</h4>
             <p>开发者：春卷</p>
@@ -186,18 +186,18 @@ async function startNewGame() {
   try {
     // 显示加载状态
     isLoading.value = true;
-    
+
     // 启动加载提示轮播
     startLoadingTips();
-    
+
     // 确保玩家名有效，否则使用默认名称
     const finalPlayerName = playerName.value.trim() || '玩家';
-    
+
     console.log('正在开始新游戏，玩家名称:', finalPlayerName, '难度:', difficulty.value);
-    
+
     // 延迟一小段时间，让加载界面显示出来
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     // 重置游戏状态
     gameCore.currentWeek = 1;
     gameCore.gameStarted = true;
@@ -206,15 +206,15 @@ async function startNewGame() {
     gameCore.victoryAchieved = false;
     gameCore.gameResult = null;
     gameCore.notifications = [];
-    
+
     // 确保调用startNewGame方法来设置玩家名称，并等待其完成
     await gameCore.startNewGame(finalPlayerName);
-    
+
     // 双重检查玩家名称已被设置
     if (!player.name) {
       player.name = finalPlayerName;
     }
-    
+
     // 设置难度
     if (difficulty.value === 'hard') {
       // 困难模式
@@ -225,10 +225,10 @@ async function startNewGame() {
       player.money = 5000;
       player.debt = 2000;
     }
-    
+
     // 保存玩家名称到本地存储
     localStorage.setItem('lastPlayerName', finalPlayerName);
-    
+
     // 导航到游戏页面
     router.push('/game');
   } catch (error) {
@@ -248,7 +248,7 @@ async function preloadData() {
       // 可以在这里添加一些预加载操作
       new Promise(resolve => setTimeout(resolve, 300)) // 模拟一些预加载时间
     ];
-    
+
     await Promise.all(promises);
   } catch (error) {
     handleError(error, 'MainMenu (views)', ErrorType.UNKNOWN, ErrorSeverity.WARNING);
@@ -307,10 +307,10 @@ onMounted(() => {
   if (savedName) {
     playerName.value = savedName;
   }
-  
+
   // 检查是否有查询参数，决定是否自动执行操作
   const { action } = router.currentRoute.value.query;
-  
+
   if (action === 'new-game') {
     // 延迟一点显示，等待页面完全加载
     setTimeout(() => {
@@ -794,4 +794,4 @@ onMounted(() => {
     transform: translateY(0);
   }
 }
-</style> 
+</style>
