@@ -5,7 +5,7 @@
         <h1 class="title" :class="{'victory': isVictory, 'failure': isBankruptcy}">{{ getGameOverTitle }}</h1>
         <p class="subtitle">{{ getResultDescription }}</p>
       </div>
-      
+
       <div class="result-summary">
         <div class="rank-display">
           <div class="rank-animation" :class="'rank-' + (gameStats.score?.rank || 'D')">
@@ -16,26 +16,26 @@
             <div class="score-value">{{ formatNumber(gameStats.score?.score || 0) }}</div>
           </div>
         </div>
-        
+
         <!-- 核心统计数据，集中在一行 -->
         <div class="core-stats">
           <div class="stat-item">
             <div class="stat-label">游戏周数</div>
             <div class="stat-value">{{ gameStats.weeksPassed || 0 }} / {{ gameState.maxWeeks }}</div>
           </div>
-          
+
           <div class="stat-item">
             <div class="stat-label">最终资金</div>
             <div class="stat-value">¥{{ formatNumber(gameStats.finalMoney || 0) }}</div>
           </div>
-          
+
           <div class="stat-item">
             <div class="stat-label">净资产</div>
             <div class="stat-value">¥{{ formatNumber(gameStats.finalAssets || 0) }}</div>
           </div>
         </div>
       </div>
-      
+
       <!-- 房产信息(如果有) -->
       <div v-if="player.purchasedHouses && player.purchasedHouses.length > 0" class="house-info">
         <div class="house-details">
@@ -53,7 +53,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 备选：从游戏状态中显示房屋信息 -->
       <div v-else-if="gameStats.purchasedHouse || (gameStats.data && gameStats.data.house)" class="house-info">
         <div class="house-details">
@@ -71,7 +71,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 交易统计 -->
       <div class="statistics-section" v-if="gameStats.tradeStats">
         <h2>交易统计</h2>
@@ -83,7 +83,7 @@
               <div class="stat-value">{{ gameStats.tradeStats?.totalTrades || 0 }}次</div>
             </div>
           </div>
-          
+
           <div class="stat-item">
             <div class="stat-icon">📈</div>
             <div class="stat-content">
@@ -95,7 +95,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 成就展示 -->
       <div v-if="hasAchievements" class="achievements-section">
         <h2>解锁成就</h2>
@@ -109,18 +109,18 @@
           </div>
         </div>
       </div>
-      
+
       <div class="actions">
         <button v-if="canContinueGame" @click="continueGame" class="btn btn-primary">
           <span class="btn-icon">🎮</span>
           <span class="btn-text">继续游戏</span>
         </button>
-        
+
         <button @click="restartGame" class="btn btn-success">
           <span class="btn-icon">🔄</span>
           <span class="btn-text">重新开始</span>
         </button>
-        
+
         <button @click="returnToMainMenu" class="btn btn-primary">
           <span class="btn-icon">🏠</span>
           <span class="btn-text">返回主菜单</span>
@@ -131,7 +131,7 @@
 </template>
 
 <script>
-import { formatNumber, formatCurrency, formatDate, formatGameTime } from '@/infrastructure/utils';
+import { formatNumber } from '@/infrastructure/utils';
 import { useGameCoreStore } from '@/stores/gameCore';
 
 export default {
@@ -163,7 +163,7 @@ export default {
     },
     resultClass() {
       const endReason = this.gameStats.endReason;
-      if (endReason === 'victory' || endReason === 'achievement' || 
+      if (endReason === 'victory' || endReason === 'achievement' ||
           endReason === 'victoryTimeLimit' || endReason === 'victoryOther' ||
           endReason === 'houseVictory') {
         return 'result-success';
@@ -173,9 +173,9 @@ export default {
     },
     isVictory() {
       const endReason = this.gameStats.endReason;
-      return endReason === 'victory' || 
-             endReason === 'achievement' || 
-             endReason === 'victoryTimeLimit' || 
+      return endReason === 'victory' ||
+             endReason === 'achievement' ||
+             endReason === 'victoryTimeLimit' ||
              endReason === 'victoryOther' ||
              endReason === 'houseVictory';
     },
@@ -184,7 +184,7 @@ export default {
     },
     getGameOverTitle() {
       const endReason = this.gameStats.endReason;
-      
+
       switch (endReason) {
         case 'houseVictory':
           return `恭喜！你成功购买了${this.gameStats.purchasedHouse?.name || '房产'}！`;
@@ -209,29 +209,29 @@ export default {
     getResultDescription() {
       const endReason = this.gameStats.endReason;
       const firstVictoryWeek = this.gameStats.data?.firstVictoryWeek;
-      
+
       switch (endReason) {
         case 'victory':
           return `你在第 ${this.gameStats.weeksPassed || 0} 周成功购买了豪宅，真是太棒了！`;
-        
+
         case 'victoryTimeLimit':
           return `你在第 ${firstVictoryWeek || '?'} 周成功购买了豪宅，并坚持到了第 ${this.gameStats.weeksPassed || 0} 周！最终资产达到了 ¥${this.formatNumber(this.gameStats.finalAssets || 0)}。`;
-        
+
         case 'victoryOther':
           return `你在第 ${firstVictoryWeek || '?'} 周成功购买了豪宅，并在第 ${this.gameStats.weeksPassed || 0} 周结束了游戏。最终资产达到了 ¥${this.formatNumber(this.gameStats.finalAssets || 0)}。`;
-        
+
         case 'timeLimit':
           return `52周时间已到，你积累了 ¥${this.formatNumber(this.gameStats.finalAssets || 0)} 的资产。`;
-        
+
         case 'bankruptcy':
           return `你破产了！无法偿还 ¥${this.formatNumber(this.gameStats.data?.debt || 0)} 的债务。`;
-        
+
         case 'achievement':
           return `你达成了特殊成就！资产达到 ¥${this.formatNumber(this.gameStats.finalAssets || 0)}。`;
-        
+
         case 'playerChoice':
           return `你在第 ${this.gameStats.weeksPassed || 0} 周选择结束游戏，最终资产达到 ¥${this.formatNumber(this.gameStats.finalAssets || 0)}。`;
-        
+
         default:
           return '游戏结束了，感谢你的游玩！';
       }
@@ -243,7 +243,7 @@ export default {
   mounted() {
     // 加载成就数据
     this.loadAchievements();
-    
+
     // 添加动画效果
     this.$nextTick(() => {
       this.animateScoreElements();
@@ -273,11 +273,11 @@ export default {
     loadAchievements() {
       // 这里应该从游戏状态加载成就数据
       this.achievements = [];
-      
+
       const endReason = this.gameStats.endReason;
       const weeksPassed = this.gameStats.weeksPassed;
       const firstVictoryWeek = this.gameStats.data?.firstVictoryWeek || weeksPassed;
-      
+
       // 胜利相关成就
       if (this.isVictory) {
         // 购买豪宅成就
@@ -285,7 +285,7 @@ export default {
           name: '安家梦想',
           description: '成功购买豪宅'
         });
-        
+
         // 根据购买时间添加不同的成就
         if (firstVictoryWeek < 30) {
           this.achievements.push({
@@ -298,14 +298,14 @@ export default {
             description: '在40周内购买豪宅'
           });
         }
-        
+
         // 如果是玩到最后的胜利
         if (endReason === 'victoryTimeLimit') {
           this.achievements.push({
             name: '坚持不懈',
             description: '在购买豪宅后继续游戏到最后一周'
           });
-          
+
           // 如果最终资产非常高
           if (this.gameStats.finalAssets > 2000000) {
             this.achievements.push({
@@ -315,7 +315,7 @@ export default {
           }
         }
       }
-      
+
       // 特殊成就
       if (endReason === 'achievement') {
         this.achievements.push({
@@ -323,7 +323,7 @@ export default {
           description: '资产超过100万'
         });
       }
-      
+
       // 交易相关成就
       if (this.gameStats.tradeStats && this.gameStats.tradeStats.totalProfit > 500000) {
         this.achievements.push({
@@ -331,14 +331,14 @@ export default {
           description: '总交易利润超过50万'
         });
       }
-      
+
       if (this.gameStats.tradeStats && this.gameStats.tradeStats.totalTrades > 100) {
         this.achievements.push({
           name: '频繁交易者',
           description: '交易次数超过100次'
         });
       }
-      
+
       // 破产成就
       if (endReason === 'bankruptcy') {
         this.achievements.push({
@@ -346,7 +346,7 @@ export default {
           description: '经历破产是成功的第一步'
         });
       }
-      
+
       // 如果没有任何成就，添加一个参与奖
       if (this.achievements.length === 0) {
         this.achievements.push({
@@ -364,7 +364,7 @@ export default {
           el.classList.add('animate-in');
         }, index * 100);
       });
-      
+
       // 排名动画
       const rankElement = document.querySelector('.rank-animation');
       if (rankElement) {
@@ -377,36 +377,45 @@ export default {
 
 <style scoped>
 .game-over-view {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background-color: #f5f7fa;
-  padding: 10px; /* 减小整体内边距 */
+  height: auto;
+  width: 100%;
+  background-color: transparent;
   color: #333;
+  margin: 0;
 }
 
 .game-over-container {
-  max-width: 800px; /* 减小最大宽度 */
+  position: relative;
+  max-width: 600px;
   width: 100%;
   background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  padding: 20px; /* 减小内边距 */
-  overflow: auto;
-  max-height: 85vh; /* 减小最大高度 */
+  border-radius: 30px; /* 大圆角 */
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.2);
+  padding: 15px 18px;
+  overflow: hidden;
+  max-height: 90vh;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+}
+
+/* 移除伪元素 */
+.game-over-view::before {
+  display: none;
 }
 
 .header-section {
   text-align: center;
-  margin-bottom: 15px; /* 减小下边距 */
-  padding-bottom: 15px; /* 减小下内边距 */
+  margin-bottom: 8px; /* 减小下边距 */
+  padding-bottom: 8px; /* 减小下内边距 */
   border-bottom: 1px solid #eee;
 }
 
 .title {
-  font-size: 2rem; /* 减小标题字体大小 */
-  margin-bottom: 5px; /* 减小下边距 */
+  font-size: 1.6rem; /* 减小标题字体大小 */
+  margin: 0 0 3px 0; /* 减小边距 */
   color: #2c3e50;
 }
 
@@ -419,27 +428,27 @@ export default {
 }
 
 .subtitle {
-  font-size: 1rem; /* 减小副标题字体大小 */
+  font-size: 0.9rem; /* 减小副标题字体大小 */
   color: #7f8c8d;
-  margin-bottom: 0;
+  margin: 0 0 5px 0; /* 调整边距 */
 }
 
 .rank-display {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 15px; /* 减小下边距 */
+  margin-bottom: 10px; /* 减小下边距 */
 }
 
 .rank-animation {
-  width: 80px; /* 减小排名图标尺寸 */
-  height: 80px; /* 减小排名图标尺寸 */
-  border-radius: 50%;
+  width: 70px; /* 减小排名图标尺寸 */
+  height: 70px; /* 减小排名图标尺寸 */
+  border-radius: 50%; /* 完全圆形 */
   display: flex;
   justify-content: center;
   align-items: center;
   margin-right: 15px; /* 减小右边距 */
-  font-size: 2.5rem; /* 减小字体大小 */
+  font-size: 2.2rem; /* 减小字体大小 */
   font-weight: bold;
   position: relative;
   overflow: hidden;
@@ -514,17 +523,17 @@ export default {
 }
 
 .statistics-section, .house-info, .score-breakdown, .location-stats, .suggestions, .achievements-section {
-  margin-bottom: 15px; /* 减小下边距 */
-  padding-bottom: 15px; /* 减小内边距 */
+  margin-bottom: 10px; /* 减小下边距 */
+  padding-bottom: 10px; /* 减小内边距 */
   border-bottom: 1px solid #eee;
 }
 
 h2 {
-  font-size: 1.3rem; /* 减小标题字体大小 */
+  font-size: 1.2rem; /* 减小标题字体大小 */
   color: #2c3e50;
-  margin-bottom: 10px; /* 减小下边距 */
+  margin-bottom: 8px; /* 减小下边距 */
   position: relative;
-  padding-left: 12px; /* 减小左内边距 */
+  padding-left: 10px; /* 减小左内边距 */
 }
 
 h2::before {
@@ -541,21 +550,20 @@ h2::before {
 
 .statistics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 减小网格项最小宽度 */
-  gap: 10px; /* 减小网格间隔 */
-  margin-bottom: 10px; /* 减小下边距 */
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* 减小网格项最小宽度 */
+  gap: 6px; /* 减小网格间隔 */
+  margin-bottom: 6px; /* 减小下边距 */
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  padding: 10px; /* 减小内边距 */
+  padding: 6px; /* 减小内边距 */
   background-color: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  opacity: 0;
-  transform: translateY(10px);
+  border-radius: 12px; /* 增加统计项圆角 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  opacity: 1; /* 确保始终可见 */
+  transform: none; /* 移除变换 */
 }
 
 .stat-item.animate-in {
@@ -564,8 +572,8 @@ h2::before {
 }
 
 .stat-icon {
-  font-size: 1.4rem; /* 减小图标大小 */
-  margin-right: 10px; /* 减小右边距 */
+  font-size: 1.2rem; /* 减小图标大小 */
+  margin-right: 8px; /* 减小右边距 */
   color: #3498db;
 }
 
@@ -574,13 +582,13 @@ h2::before {
 }
 
 .stat-label {
-  font-size: 0.8rem; /* 减小标签字体大小 */
+  font-size: 0.75rem; /* 减小标签字体大小 */
   color: #7f8c8d;
-  margin-bottom: 2px; /* 减小下边距 */
+  margin-bottom: 1px; /* 减小下边距 */
 }
 
 .stat-value {
-  font-size: 1rem; /* 减小值字体大小 */
+  font-size: 0.9rem; /* 减小值字体大小 */
   font-weight: bold;
   color: #2c3e50;
 }
@@ -594,12 +602,12 @@ h2::before {
 }
 
 .house-info {
-  padding: 15px; /* 减小内边距 */
-  margin-bottom: 15px; /* 减小下边距 */
-  background-color: #f5f7fa;
-  border-radius: 12px;
+  padding: 12px; /* 增加内边距 */
+  margin-bottom: 12px;
+  background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+  border-radius: 20px; /* 增大卡片圆角 */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e1e8ed;
+  border: 1px solid rgba(225, 232, 237, 0.8);
   position: relative;
   overflow: hidden;
 }
@@ -624,16 +632,16 @@ h2::before {
 
 .house-details {
   display: flex;
-  gap: 15px; /* 减小间隔 */
+  gap: 8px; /* 减小间隔 */
 }
 
 .house-image-container {
-  flex: 0 0 150px; /* 减小图片容器宽度 */
-  height: 120px; /* 减小图片容器高度 */
-  border-radius: 8px;
+  flex: 0 0 100px; /* 减小图片容器宽度 */
+  height: 80px; /* 减小图片容器高度 */
+  border-radius: 12px; /* 增加图片容器圆角 */
   overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #fff;
 }
 
 .house-image {
@@ -647,21 +655,14 @@ h2::before {
 }
 
 .house-name {
-  margin-top: 0;
-  margin-bottom: 5px; /* 减小下边距 */
+  margin: 0 0 3px 0; /* 减小边距 */
   color: #2c3e50;
-  font-size: 1.2rem; /* 减小标题字体大小 */
+  font-size: 1.1rem; /* 减小标题字体大小 */
 }
 
-.house-price {
-  font-weight: bold;
-  color: #e74c3c;
-  margin-bottom: 5px; /* 减小下边距 */
-}
-
-.house-week {
-  color: #7f8c8d;
-  margin-bottom: 5px; /* 减小下边距 */
+.house-price, .house-week {
+  margin: 0 0 3px 0; /* 减小边距 */
+  font-size: 0.9rem; /* 减小字体大小 */
 }
 
 .house-desc {
@@ -672,27 +673,28 @@ h2::before {
 
 .victory-info {
   background: linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(52, 152, 219, 0.1));
-  border-radius: 8px;
-  padding: 10px; /* 减小内边距 */
+  border-radius: 12px;
+  padding: 8px 10px;
   border-left: 3px solid #2ecc71;
-  margin-top: 10px; /* 减小上边距 */
+  margin-top: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .victory-badge {
   display: inline-block;
   background: linear-gradient(to right, #2ecc71, #3498db);
   color: white;
-  padding: 3px 8px; /* 减小内边距 */
-  border-radius: 20px;
+  padding: 2px 8px; /* 增加水平内边距 */
+  border-radius: 20px; /* 增加徽章圆角 */
   font-weight: bold;
-  margin-bottom: 5px; /* 减小下边距 */
-  font-size: 0.9rem;
+  margin-bottom: 3px; /* 减小下边距 */
+  font-size: 0.8rem; /* 减小字体大小 */
 }
 
 .victory-text {
   color: #2c3e50;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem; /* 减小字体大小 */
 }
 
 .score-items {
@@ -821,23 +823,33 @@ h2::before {
 
 .achievements-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 减小网格项最小宽度 */
-  gap: 10px; /* 减小间隔 */
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* 减小网格项最小宽度 */
+  gap: 6px; /* 减小间隔 */
 }
 
 .achievement-item {
   display: flex;
   align-items: center;
-  padding: 10px; /* 减小内边距 */
+  padding: 6px; /* 减小内边距 */
   background-color: #fff3cd;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  border-radius: 16px; /* 增大成就项圆角 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  opacity: 1; /* 确保始终可见 */
+  transform: none; /* 移除变换 */
 }
 
 .achievement-icon {
-  font-size: 2rem;
-  margin-right: 15px;
+  font-size: 1.6rem; /* 减小图标大小 */
+  margin-right: 10px; /* 减小右边距 */
   color: #ffc107;
+  background: rgba(255, 193, 7, 0.2);
+  padding: 5px;
+  border-radius: 50%;
+  height: 35px;
+  width: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .achievement-content {
@@ -845,39 +857,81 @@ h2::before {
 }
 
 .achievement-name {
-  font-size: 1.1rem;
+  font-size: 1rem; /* 减小文字大小 */
   font-weight: bold;
   color: #856404;
-  margin-bottom: 5px;
+  margin-bottom: 3px; /* 减小下边距 */
 }
 
 .achievement-desc {
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* 减小文字大小 */
   color: #856404;
 }
 
+/* 底部按钮区域 */
 .actions {
+  padding: 12px 10px 15px;
+  border-top: 1px solid rgba(238, 238, 238, 0.5);
+  margin-top: 12px;
+  margin-bottom: 0;
   display: flex;
   justify-content: center;
-  gap: 10px; /* 减小按钮间间隔 */
-  margin-top: 15px; /* 减小上边距 */
+  gap: 12px;
+  border-radius: 0 0 30px 30px; /* 匹配主容器圆角 */
+  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(249,249,249,0.8));
+  position: relative;
+  margin-left: -18px;
+  margin-right: -18px;
+  padding-left: 18px;
+  padding-right: 18px;
+  margin-bottom: -15px;
 }
 
 .btn {
-  padding: 8px 15px; /* 减小按钮内边距 */
+  min-width: 110px;
+  padding: 10px 20px; /* 增大按钮内边距 */
   border: none;
-  border-radius: 6px;
-  font-size: 0.9rem; /* 减小按钮字体大小 */
-  font-weight: 500;
+  border-radius: 30px; /* 显著增大按钮圆角 */
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  transition: all 0.2s ease;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 添加按钮闪光效果 */
+.btn:after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(to bottom right, rgba(255,255,255,0.2), rgba(255,255,255,0));
+  transform: rotate(45deg);
+  transition: all 0.5s;
+  opacity: 0;
+}
+
+.btn:hover:after {
+  opacity: 1;
+  top: -100%;
+  left: -100%;
 }
 
 .btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .btn-icon {
@@ -886,12 +940,12 @@ h2::before {
 }
 
 .btn-primary {
-  background-color: #3498db;
+  background: linear-gradient(135deg, #3498db, #2980b9);
   color: white;
 }
 
 .btn-success {
-  background-color: #2ecc71;
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
   color: white;
 }
 
@@ -904,22 +958,13 @@ h2::before {
 .core-stats {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 5px; /* 减小间距 */
+  margin-bottom: 8px;
 }
 
 .core-stats .stat-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  text-align: center;
-  transform: none;
-  opacity: 1;
+  padding: 5px; /* 减小内边距 */
+  margin: 0; /* 删除外边距 */
 }
 
 .core-stats .stat-label {
@@ -929,9 +974,33 @@ h2::before {
 }
 
 .core-stats .stat-value {
-  font-size: 1.1rem;
-  font-weight: bold;
+  font-size: 1rem; /* 减小字体大小 */
+}
+
+/* 优化成就部分 */
+.achievements-section, .statistics-section {
+  margin-bottom: 8px; /* 减小下边距 */
+  padding-bottom: 8px; /* 减小内边距 */
+}
+
+h2 {
+  font-size: 1.1rem; /* 减小标题字体大小 */
   color: #2c3e50;
+  margin: 3px 0 6px 0; /* 调整边距 */
+  position: relative;
+  padding-left: 8px; /* 减小左内边距 */
+}
+
+h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px; /* 减小宽度 */
+  height: 16px; /* 减小高度 */
+  background-color: #3498db;
+  border-radius: 2px;
 }
 
 /* 响应式设计 */
@@ -939,27 +1008,27 @@ h2::before {
   .game-over-container {
     padding: 20px;
   }
-  
+
   .title {
     font-size: 2rem;
   }
-  
+
   .statistics-grid, .score-items, .achievements-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .house-details {
     flex-direction: column;
   }
-  
+
   .house-image-container {
     width: 100%;
   }
-  
+
   .actions {
     flex-direction: column;
   }
-  
+
   .btn {
     width: 100%;
   }
@@ -983,23 +1052,77 @@ h2::before {
   .house-details {
     flex-direction: column;
   }
-  
+
   .house-image-container {
     width: 100%;
     height: 100px;
     margin-bottom: 10px;
   }
-  
+
   .statistics-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .score-items {
     grid-template-columns: 1fr;
   }
-  
+
   .achievements-grid {
     grid-template-columns: 1fr;
   }
 }
-</style> 
+
+/* 添加额外的圆角美化效果 */
+.statistics-grid, .achievements-grid {
+  margin-top: 5px;
+}
+
+.core-stats .stat-item {
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.core-stats .stat-item:hover {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.stat-item, .achievement-item {
+  transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-item:hover, .achievement-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.achievement-icon {
+  font-size: 1.6rem; /* 减小图标大小 */
+  margin-right: 10px; /* 减小右边距 */
+  color: #ffc107;
+  background: rgba(255, 193, 7, 0.2);
+  padding: 5px;
+  border-radius: 50%;
+  height: 35px;
+  width: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon {
+  font-size: 1.2rem;
+  margin-right: 8px;
+  color: #3498db;
+  background: rgba(52, 152, 219, 0.1);
+  padding: 5px;
+  border-radius: 50%;
+  height: 30px;
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>

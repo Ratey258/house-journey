@@ -1,9 +1,9 @@
 <template>
   <div class="game-view">
     <!-- 加载动画 -->
-    <GameLoader 
-      v-if="isLoading" 
-      :title="'正在加载游戏资源'" 
+    <GameLoader
+      v-if="isLoading"
+      :title="'正在加载游戏资源'"
       :status="loadingStatus"
       :progress="loadingProgress"
       @complete="onLoadingComplete"
@@ -20,24 +20,24 @@
           </div>
         </div>
       </div>
-      
+
       <div class="center-info">
         <h1 class="game-title">{{ $t('game.title') }}</h1>
       </div>
-      
+
       <div class="right-info">
         <button class="menu-button" @click="showGameMenu">
           {{ $t('game.menu') }}
         </button>
       </div>
     </header>
-    
+
     <!-- 通知区域 -->
     <div v-if="!isLoading" class="notifications-container">
       <transition-group name="notification">
-        <div 
-          v-for="notification in notifications" 
-          :key="notification.id" 
+        <div
+          v-for="notification in notifications"
+          :key="notification.id"
           class="notification"
           :class="notification.type"
         >
@@ -48,20 +48,20 @@
         </div>
       </transition-group>
     </div>
-    
+
     <!-- 主游戏区域 -->
     <div class="game-content">
       <!-- 左侧玩家信息面板 -->
       <div class="left-panel">
         <PlayerInfo />
-        
+
         <!-- 优化背包显示 -->
         <div class="mini-inventory">
           <div class="mini-header">
             <h3 class="mini-title">{{ $t('inventory.title') }}</h3>
-            <button 
-              class="view-all-btn" 
-              @click="activeTab = 'inventory'" 
+            <button
+              class="view-all-btn"
+              @click="activeTab = 'inventory'"
               title="查看完整背包"
             >
               <i class="icon-expand">⤢</i>
@@ -82,48 +82,48 @@
               <!-- 移除了更多物品提示，现在显示所有物品 -->
             </div>
           </div>
-          
+
           <!-- 移除了容量进度条显示 -->
         </div>
-        
+
         <!-- 删除进入下一周按钮 -->
       </div>
-      
+
       <!-- 中央内容区域 -->
       <div class="main-content">
         <div class="tab-buttons">
-          <button 
+          <button
             :class="['tab-button', { active: activeTab === 'market' }]"
             @click="activeTab = 'market'"
           >
             {{ $t('game.tabs.market') }}
           </button>
-          <button 
+          <button
             :class="['tab-button', { active: activeTab === 'inventory' }]"
             @click="activeTab = 'inventory'"
           >
             {{ $t('game.tabs.inventory') }}
           </button>
-          <button 
+          <button
             :class="['tab-button', { active: activeTab === 'houses' }]"
             @click="activeTab = 'houses'"
           >
             {{ $t('game.tabs.houses') }}
           </button>
         </div>
-        
+
         <div class="tab-content">
           <transition name="tab-fade" mode="out-in">
             <!-- 市场标签页 -->
             <div v-if="activeTab === 'market'" class="market-tab" key="market">
               <Market />
             </div>
-            
+
             <!-- 背包标签页 -->
             <div v-else-if="activeTab === 'inventory'" class="inventory-tab" key="inventory">
               <Inventory />
             </div>
-            
+
             <!-- 房屋标签页 -->
             <div v-else-if="activeTab === 'houses'" class="houses-tab" key="houses">
               <HouseMarket />
@@ -132,18 +132,18 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 教程系统 -->
-    <TutorialSystem 
+    <TutorialSystem
       :current-week="currentWeek"
       :current-location="currentLocation"
       :active-tab="activeTab"
       ref="tutorialSystem"
     />
-    
+
     <!-- 事件模态框 -->
     <EventModal ref="eventModal" />
-    
+
     <!-- 游戏菜单对话框 -->
     <transition name="fade">
       <div v-if="showMenu" class="dialog-overlay" @click.self="hideGameMenu">
@@ -170,7 +170,7 @@
         </transition>
       </div>
     </transition>
-    
+
     <!-- 保存游戏对话框 -->
     <transition name="fade">
       <div v-if="showSaveDialog" class="dialog-overlay" @click.self="cancelSave">
@@ -178,10 +178,10 @@
           <div class="dialog save-dialog">
             <h2 class="dialog-title">{{ $t('saveDialog.title') }}</h2>
             <div class="save-form">
-              <input 
-                v-model="saveName" 
-                type="text" 
-                class="save-input" 
+              <input
+                v-model="saveName"
+                type="text"
+                class="save-input"
                 :placeholder="$t('saveDialog.namePlaceholder')"
                 ref="saveInput"
                 @keyup.enter="confirmSave"
@@ -199,12 +199,12 @@
         </transition>
       </div>
     </transition>
-    
+
     <!-- 游戏结束对话框 -->
     <transition name="fade">
-      <div v-if="gameOver && showGameOverDialog" class="dialog-overlay">
+      <div v-if="gameOver && showGameOverDialog" class="dialog-overlay game-over-overlay">
         <transition name="scale-bounce">
-          <GameOverView 
+          <GameOverView
             :gameState="gameState"
             :player="player"
             :gameStats="gameResult"
@@ -302,11 +302,11 @@ watch(() => gameCoreStore.gameOver, (newValue) => {
 // 组件挂载时
 onMounted(() => {
   console.log('GameView组件挂载');
-  
+
   // 初始化加载状态
   isLoading.value = true;
   loadingProgress.value = 0;
-  
+
   // 检查是否为开发模式
   try {
     isDevelopmentMode.value = true; // 默认设为开发模式
@@ -315,33 +315,33 @@ onMounted(() => {
     console.warn('GameView - 无法检测环境模式:', error);
     isDevelopmentMode.value = true; // 默认为开发模式
   }
-  
+
   // 检查游戏是否已经初始化
   if (!gameCoreStore.gameStarted) {
     console.log('游戏未初始化，尝试从本地存储获取玩家名称');
     const savedPlayerName = localStorage.getItem('lastPlayerName') || '玩家';
     console.log('获取到玩家名称:', savedPlayerName);
-    
+
     // 设置玩家名称
     playerStore.name = savedPlayerName;
   }
-  
+
   // 确保游戏不会在初始状态下显示为结束
   if (gameCoreStore.gameOver) {
     console.log('重置游戏结束状态');
     gameCoreStore.gameOver = false;
     showGameOverDialog.value = false;
   }
-  
+
   // 加载游戏资源
   loadGameResources();
-  
+
   // 添加键盘事件监听
   window.addEventListener('keydown', handleKeyDown);
-  
+
   // 添加beforeunload事件监听
   window.addEventListener('beforeunload', handleBeforeUnload);
-  
+
   // 设置定时器，定期检查是否有活跃事件需要显示
   setInterval(() => {
     checkActiveEvents();
@@ -351,7 +351,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   // 移除键盘事件监听
   window.removeEventListener('keydown', handleKeyDown);
-  
+
   // 移除关闭前保存事件
   window.removeEventListener('beforeunload', handleBeforeUnload);
 });
@@ -362,7 +362,7 @@ const handleKeyDown = (event) => {
   if (showMenu.value || showSaveDialog.value || showGameOverDialog.value) {
     return;
   }
-  
+
   switch (event.key) {
     case ' ': // 空格键
       // 进入下一周
@@ -409,9 +409,9 @@ const formatNumber = (num) => {
 // 显示事件
 const showEvent = (event) => {
   if (!event || !eventModal.value) return;
-  
+
   eventModal.value.showEvent(event);
-  
+
   // 尝试触发教程事件
   try {
     if (typeof gameCoreStore.triggerTutorialEvent === 'function') {
@@ -428,7 +428,7 @@ const showEvent = (event) => {
 // 触发连锁事件
 const triggerNextEvent = (eventId) => {
   if (!eventId) return;
-  
+
   // 延迟一点时间再触发下一个事件，使UI有时间更新
   setTimeout(() => {
     gameCoreStore.triggerSpecificEvent(eventId);
@@ -440,7 +440,7 @@ const advanceWeek = () => {
   if (gameCoreStore.advanceWeek()) {
     // 不需要再次调用generateRandomEvent，因为advanceWeek方法中已经调用了
     // gameCoreStore.generateRandomEvent();
-    
+
     // 检查是否有活跃事件需要显示
     checkActiveEvents();
   }
@@ -448,12 +448,12 @@ const advanceWeek = () => {
 
 const checkActiveEvents = () => {
   console.log('GameView - 检查活跃事件');
-  
+
   // 检查事件存储中是否有活跃事件
   const eventStore = useEventStore();
   if (eventStore.activeEvent) {
     console.log('GameView - 在EventStore中发现活跃事件:', eventStore.activeEvent.id, eventStore.activeEvent.title);
-    
+
     // 显示事件对话框
     nextTick(() => {
       if (eventModal.value) {
@@ -465,7 +465,7 @@ const checkActiveEvents = () => {
     });
     return;
   }
-  
+
   // 检查游戏核心存储中是否有活跃事件
   console.log('GameView - 检查GameCore中的活跃事件队列:', gameCoreStore.activeEvents?.length || 0);
   if (gameCoreStore.activeEvents && gameCoreStore.activeEvents.length > 0) {
@@ -473,18 +473,18 @@ const checkActiveEvents = () => {
     const event = gameCoreStore.activeEvents[0];
     console.log('GameView - 在GameCore中发现活跃事件:', event.id, event.title);
     gameCoreStore.activeEvents.shift(); // 从队列移除
-    
+
     // 显示事件对话框
     nextTick(() => {
       if (eventModal.value) {
         console.log('GameView - 显示GameCore中的活跃事件');
-        
+
         // 确保事件模态框组件已经准备好
         if (typeof eventModal.value.showEvent !== 'function') {
           console.error('GameView - 事件模态框组件没有showEvent方法');
           return;
         }
-        
+
         // 确保事件对象有必要的属性
         if (!event.options || !Array.isArray(event.options) || event.options.length === 0) {
           console.warn('GameView - 事件没有选项，添加默认选项');
@@ -497,7 +497,7 @@ const checkActiveEvents = () => {
             }
           ];
         }
-        
+
         // 显示事件
         try {
       eventModal.value.showEvent(event);
@@ -528,7 +528,7 @@ const saveGame = () => {
   // 默认使用当前日期作为存档名
   const now = new Date();
   saveName.value = `存档-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
-  
+
   // 等待DOM更新后，聚焦输入框
   nextTick(() => {
     if (saveInput.value) {
@@ -540,12 +540,12 @@ const saveGame = () => {
 
 const confirmSave = async () => {
   if (!saveName.value) return;
-  
+
   try {
     // 使用正确的保存方法 - saveStore.saveGame
     const saveStore = useSaveStore();
     const result = await saveStore.saveGame(saveName.value);
-    
+
     if (result.success) {
       showSaveDialog.value = false;
       uiStore.showToast({
@@ -593,7 +593,7 @@ const getLocationName = (locationId) => {
 // 生成游戏结束建议
 const generateGameEndSuggestions = () => {
   const suggestions = [];
-  
+
   // 根据游戏结果生成建议
   if (gameCoreStore.gameResult?.endReason === 'bankruptcy') {
     suggestions.push('尝试减少债务，避免过度借贷');
@@ -602,26 +602,26 @@ const generateGameEndSuggestions = () => {
     suggestions.push('尝试更频繁地交易，增加交易量');
     suggestions.push('关注特色商品，它们通常有更大的利润空间');
   }
-  
+
   // 根据交易数据生成建议
   if ((gameCoreStore.player.statistics.totalProfit || 0) / (gameCoreStore.player.statistics.transactionCount || 1) < 1000) {
     suggestions.push('提高每笔交易的平均利润，关注价格波动较大的商品');
   }
-  
+
   // 根据地点访问数据生成建议
   const locationVisits = gameCoreStore.player.statistics.locationVisits || {};
   const visitCounts = Object.values(locationVisits);
   if (visitCounts.length > 0 && Math.max(...visitCounts) > 3 * Math.min(...visitCounts)) {
     suggestions.push('尝试探索更多不同的地点，每个地点都有独特的商品优势');
   }
-  
+
   // 如果建议太少，添加一些通用建议
   if (suggestions.length < 3) {
     suggestions.push('关注市场趋势，在低价时购入，高价时卖出');
     suggestions.push('合理利用贷款，但要注意控制债务比例');
     suggestions.push('积极参与事件选择，可能带来意外收益');
   }
-  
+
   return suggestions.slice(0, 5); // 最多返回5条建议
 };
 
@@ -652,14 +652,14 @@ const loadGameResources = async () => {
       { name: '教程事件', weight: 10, action: () => Promise.resolve(checkForTutorialEvents()) },
       { name: '游戏界面', weight: 10, action: () => new Promise(resolve => setTimeout(resolve, 200)) }
     ];
-    
+
     let progressSoFar = 5; // 起始进度
-    
+
     // 依次执行每个加载步骤
     for (const step of loadSteps) {
       loadingStatus.value = `加载中: ${step.name}`;
       console.log(`加载步骤: ${step.name}`);
-      
+
       try {
         await step.action();
         progressSoFar += step.weight;
@@ -670,16 +670,16 @@ const loadGameResources = async () => {
         // 继续执行下一步，不中断整个加载流程
       }
     }
-    
+
     // 完成加载
     loadingStatus.value = '加载完成！';
     loadingProgress.value = 100;
-    
+
     // 延迟一小段时间后隐藏加载界面
     setTimeout(() => {
       isLoading.value = false;
       console.log('游戏资源加载完成，隐藏加载界面');
-      
+
       // 检查是否有活跃事件
       checkActiveEvents();
     }, 500);
@@ -697,13 +697,13 @@ const checkForTutorialEvents = () => {
       console.log('检查教程提示系统');
       return true;
     }
-    
+
     // 触发初始教程事件
     if (gameCoreStore.currentWeek === 1 && typeof eventStore.triggerTutorialEvent === 'function') {
       console.log('尝试触发初始教程事件');
       eventStore.triggerTutorialEvent('tutorial_trading');
     }
-    
+
     return true;
   } catch (error) {
     handleError(error, 'GameView (views)', ErrorType.UNKNOWN, ErrorSeverity.WARNING);
@@ -716,7 +716,7 @@ const checkForTutorialEvents = () => {
 const onLoadingComplete = () => {
   console.log('GameView - 加载完成回调');
   isLoading.value = false;
-  
+
   // 检查是否有活跃事件
   checkActiveEvents();
 };
@@ -727,14 +727,14 @@ const handleBeforeUnload = async (event) => {
   if (gameCoreStore.gameStarted && !gameCoreStore.gameOver) {
     // 获取设置
     const settings = settingsStore.gameSettings;
-    
+
     // 检查是否开启自动保存功能
     if (settings && settings.autoSaveEnabled) {
       try {
         const now = new Date();
         const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
         const saveName = `autoSave_exit_W${gameCoreStore.currentWeek}_${timestamp}`;
-        
+
         // 进行保存
         await gameCoreStore.saveGame(saveName, true);
       } catch (error) {
@@ -769,16 +769,16 @@ const handleBeforeUnload = async (event) => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 10;
   }
-  
+
   .left-info, .right-info {
     flex: 1;
   }
-  
+
   .center-info {
     flex: 2;
     text-align: center;
   }
-  
+
   .game-title {
     margin: 0;
     font-size: 1.5rem;
@@ -851,11 +851,11 @@ const handleBeforeUnload = async (event) => {
     align-items: center;
     animation: slideIn 0.3s ease-out;
   }
-  
+
   .notification:last-child {
     margin-bottom: 0;
   }
-  
+
   .notification.info {
     background-color: #d1ecf1;
     border-left: 4px solid #17a2b8;
@@ -865,7 +865,7 @@ const handleBeforeUnload = async (event) => {
   background-color: #d4edda;
   border-left: 4px solid #28a745;
 }
-  
+
   .notification.warning {
     background-color: #fff3cd;
     border-left: 4px solid #ffc107;
@@ -884,7 +884,7 @@ const handleBeforeUnload = async (event) => {
     color: #6c757d;
     transition: color 0.2s;
   }
-  
+
   .close-btn:hover {
     color: #343a40;
 }
@@ -932,16 +932,16 @@ const handleBeforeUnload = async (event) => {
     margin: 4px; /* 添加外边距，确保圆角效果可见 */
     min-height: calc(100vh - 140px); /* 设置最小高度，与右侧内容区域保持一致 */
   }
-  
+
   /* 左侧面板滚动条样式 (Webkit浏览器) */
   .left-panel::-webkit-scrollbar {
     width: 6px;
   }
-  
+
   .left-panel::-webkit-scrollbar-track {
     background: #f8f9fa;
   }
-  
+
   .left-panel::-webkit-scrollbar-thumb {
     background-color: #cbd5e0;
     border-radius: 4px;
@@ -960,7 +960,7 @@ const handleBeforeUnload = async (event) => {
     overflow: hidden; /* 防止整体溢出 */
     transition: box-shadow 0.3s ease;
   }
-  
+
   .mini-inventory:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
   }
@@ -1003,16 +1003,16 @@ const handleBeforeUnload = async (event) => {
     scrollbar-width: thin; /* Firefox 滚动条样式 */
     scrollbar-color: #cbd5e0 #f8f9fa; /* Firefox 滚动条颜色 */
   }
-  
+
   /* 自定义滚动条样式 (Webkit浏览器) */
   .inventory-items::-webkit-scrollbar {
     width: 6px;
   }
-  
+
   .inventory-items::-webkit-scrollbar-track {
     background: #f8f9fa;
   }
-  
+
   .inventory-items::-webkit-scrollbar-thumb {
     background-color: #cbd5e0;
     border-radius: 4px;
@@ -1047,7 +1047,7 @@ const handleBeforeUnload = async (event) => {
     align-items: center;
     margin-bottom: 3px; /* 增加底部间距 */
   }
-  
+
   .inventory-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 3px 6px rgba(0,0,0,0.08);
@@ -1092,7 +1092,7 @@ const handleBeforeUnload = async (event) => {
     color: #6c757d;
     padding: 4px 0;
   }
-  
+
   /* 移除了容量显示相关样式 */
 
 .actions-panel {
@@ -1168,7 +1168,7 @@ const handleBeforeUnload = async (event) => {
   position: relative;
     overflow: hidden;
   }
-  
+
   .tab-button:hover {
     color: #495057;
     background-color: rgba(0, 0, 0, 0.03);
@@ -1211,7 +1211,7 @@ const handleBeforeUnload = async (event) => {
   background-color: #cbd5e0;
   border-radius: 4px;
   }
-  
+
   /* 标签页内容 */
   .market-tab, .inventory-tab, .houses-tab {
     min-height: 100%;
@@ -1479,7 +1479,7 @@ const handleBeforeUnload = async (event) => {
   .game-content {
     flex-direction: column;
   }
-  
+
   .left-panel {
     width: 100%;
     padding: 10px;
@@ -1741,4 +1741,32 @@ const handleBeforeUnload = async (event) => {
   border-left-color: #3498db;
   background-color: #f8f9fa;
 }
-</style> 
+
+/* 游戏结束对话框样式 */
+.game-over-overlay {
+  padding: 0; /* 移除内边距 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.75); /* 纯黑色半透明背景 */
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+/* 移除game-over-frame相关样式 */
+
+/* 结算动画效果 */
+.scale-bounce-enter-active {
+  animation: scale-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 添加弹性曲线 */
+}
+
+.scale-bounce-leave-active {
+  animation: scale-bounce 0.4s cubic-bezier(0.6, -0.28, 0.735, 0.045) reverse; /* 添加弹性曲线 */
+}
+
+@keyframes scale-bounce {
+  0% { transform: scale(0.8); opacity: 0; }
+  70% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>

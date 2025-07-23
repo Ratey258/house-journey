@@ -6,18 +6,18 @@
         <h1><span class="title-icon">💾</span> 游戏存档</h1>
         <button class="back-button" @click="goBack">返回</button>
       </div>
-      
+
       <div class="saves-content">
         <div v-if="isLoading" class="loading">
           <div class="loading-spinner-mini"></div>
           <p>正在加载存档列表...</p>
         </div>
-        
+
         <div v-else-if="error" class="error">
           <p>{{ error }}</p>
           <button class="button" @click="fetchSaves">重试</button>
         </div>
-        
+
         <div v-else-if="saves.length === 0" class="empty-state">
           <div class="empty-icon">📁</div>
           <h3>暂无游戏存档</h3>
@@ -27,14 +27,14 @@
             <button class="button new-game" @click="startNewGame">开始新游戏</button>
           </div>
         </div>
-        
+
         <div v-else class="saves-list">
           <transition-group name="save-item">
-            <div 
-              v-for="(save, index) in saves" 
-              :key="save.name" 
+            <div
+              v-for="(save, index) in saves"
+              :key="save.name"
               class="save-item"
-              :class="{ 
+              :class="{
                 'selected': selectedSave === save.name,
                 'autosave': isAutoSave(save.name)
               }"
@@ -48,12 +48,12 @@
                 </div>
                 <p class="save-date">{{ formatDate(save.lastModified) }}</p>
                 <p v-if="saveDetails[save.name]" class="save-details">
-                  第{{ saveDetails[save.name].currentWeek }}周 | 
-                  金钱: {{ formatCurrency(saveDetails[save.name].playerMoney) }} | 
+                  第{{ saveDetails[save.name].currentWeek }}周 |
+                  金钱: {{ formatCurrency(saveDetails[save.name].playerMoney) }} |
                   地点: {{ saveDetails[save.name].locationName || '未知' }}
                 </p>
               </div>
-              
+
               <div class="save-actions">
                 <button class="load-button" @click.stop="loadSave(save.name)">
                   <span class="button-icon">▶️</span>读取
@@ -67,7 +67,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 删除确认对话框 -->
     <transition name="fade">
       <div v-if="showDeleteConfirm" class="dialog-overlay" @click.self="cancelDelete">
@@ -87,15 +87,19 @@
         </transition>
       </div>
     </transition>
-    
+
     <!-- 加载指示器 -->
-    <div v-if="isLoading" class="loading-overlay">
-      <div class="loading-container">
-        <div class="loading-spinner"></div>
-        <p class="loading-text">正在加载游戏，请稍候...</p>
-        <p class="loading-tip">{{ loadingTips[currentTipIndex] }}</p>
+    <transition name="fade">
+      <div v-if="isLoading" class="loading-overlay">
+        <transition name="zoom">
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">正在加载游戏，请稍候...</p>
+            <p class="loading-tip">{{ loadingTips[currentTipIndex] }}</p>
+          </div>
+        </transition>
       </div>
-    </div>
+    </transition>
   </div>
 </template>
 
@@ -136,13 +140,13 @@ async function fetchSaves() {
   try {
     isLoading.value = true;
     error.value = null;
-    
+
     const result = await window.electronAPI.listSaves();
-    
+
     if (result.success) {
       saves.value = result.saves || [];
       console.log('已加载存档列表:', saves.value);
-      
+
       // 获取每个存档的详细信息
       for (const save of saves.value) {
         await fetchSaveDetails(save.name);
@@ -183,40 +187,40 @@ async function loadSave(saveName) {
     isLoading.value = true;
     // 启动提示轮播
     startLoadingTips();
-    
+
     // 显示加载中的提示
     uiStore.showToast({
       type: 'info',
       message: '正在加载存档...',
       duration: 2000
     });
-    
+
     // 延迟一下，让加载界面显示出来
     await new Promise(resolve => setTimeout(resolve, 200));
-    
+
     // 先尝试直接使用Electron API加载存档
     try {
       console.log('使用Electron API加载存档:', saveName);
       const electronResult = await window.electronAPI.loadGame(saveName);
-      
+
       if (electronResult && electronResult.success && electronResult.gameState) {
         console.log('存档从Electron加载成功，数据:', electronResult.gameState);
-        
+
         // 创建保存系统
         const saveStore = useSaveStore();
-        
+
         // 加载状态到游戏
         await saveStore.loadStoresFromSaveData(electronResult.gameState);
-        
+
         // 标记游戏已开始
         gameStore.gameStarted = true;
-        
+
         uiStore.showToast({
           type: 'success',
           message: '存档加载成功！',
           duration: 2000
         });
-        
+
         // 跳转到游戏页面
         router.push('/game');
         return;
@@ -224,30 +228,30 @@ async function loadSave(saveName) {
     } catch (electronError) {
       console.warn('Electron API加载存档失败，尝试备用方法:', electronError);
     }
-    
+
     // 如果Electron加载失败，尝试使用保存系统的方法
     // 查找存档ID
     const savesStore = useSaveStore();
     await savesStore.loadSaveList();
-    
+
     const saveInfo = savesStore.saveList.find(save => save.name === saveName);
-    
+
     if (!saveInfo) {
       throw new Error('找不到存档信息，无法加载');
     }
-    
+
     console.log('找到存档信息:', saveInfo);
-    
+
     // 使用ID调用loadGame方法
     const result = await savesStore.loadGame(saveInfo.id);
-    
+
     if (result.success) {
       uiStore.showToast({
         type: 'success',
         message: '存档加载成功！',
         duration: 2000
       });
-      
+
       // 跳转到游戏页面
       router.push('/game');
     } else {
@@ -280,12 +284,12 @@ function confirmDelete(saveName) {
 async function deleteSave() {
   try {
     const result = await window.electronAPI.deleteSave(saveToDelete.value);
-    
+
     if (result.success) {
       if (selectedSave.value === saveToDelete.value) {
         selectedSave.value = null;
       }
-      
+
       // 重新加载存档列表
       await fetchSaves();
       uiStore.showToast({
@@ -328,7 +332,7 @@ function formatSaveName(name) {
     // 匹配自动存档的周数 (W后面的数字)
     const weekMatch = name.match(/W(\d+)/);
     const week = weekMatch ? weekMatch[1] : '?';
-    
+
     // 提取类型 (exit表示退出时存档，其他情况)
     let type = '周期';
     if (name.includes('_exit_')) {
@@ -336,10 +340,10 @@ function formatSaveName(name) {
     } else if (name.includes('_buyHouse_')) {
       type = '购房时';
     }
-    
+
     return `自动存档 (${type}, 第${week}周)`;
   }
-  
+
   // 手动存档直接显示名称
   return name;
 }
@@ -363,11 +367,11 @@ async function fetchSaveDetails(saveName) {
       if (result.gameState.gameCore) {
         currentWeek = result.gameState.gameCore.currentWeek || '?';
       }
-      
+
       if (result.gameState.player) {
         playerMoney = result.gameState.player.money || 0;
       }
-      
+
       if (result.gameState.market && result.gameState.market.currentLocation) {
         // 如果存储的是ID，尝试找到位置名称
         const locationId = result.gameState.market.currentLocation;
@@ -381,14 +385,14 @@ async function fetchSaveDetails(saveName) {
           locationName = locationId.name;
         }
       }
-      
+
       // 保存提取的数据
       saveDetails.value[saveName] = {
         currentWeek,
         playerMoney,
         locationName
       };
-      
+
       console.log(`加载存档 ${saveName} 详情:`, saveDetails.value[saveName]);
     } else {
       console.warn(`无法获取存档 ${saveName} 的详情:`, result.error || '未知错误');
@@ -874,7 +878,7 @@ onMounted(() => {
 }
 
 .game-particles::after {
-  background-image: 
+  background-image:
     radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 5%),
     radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 5%),
     radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 8%);
@@ -1043,8 +1047,8 @@ onMounted(() => {
   transform-origin: 50% 50%;
 }
 
-.load-button:focus:not(:active)::after, 
-.delete-button:focus:not(:active)::after, 
+.load-button:focus:not(:active)::after,
+.delete-button:focus:not(:active)::after,
 .button:focus:not(:active)::after {
   animation: ripple 0.6s ease-out;
 }
@@ -1108,4 +1112,4 @@ onMounted(() => {
 .saves-content::-webkit-scrollbar-thumb:hover {
   background-color: rgba(52, 152, 219, 0.8);
 }
-</style> 
+</style>

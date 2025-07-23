@@ -7,27 +7,27 @@
         <div class="event-header">
           <h2 class="event-title">{{ currentEvent?.title || '事件' }}</h2>
         </div>
-        
+
         <!-- 事件内容 -->
         <div class="event-content">
           <p class="event-description">{{ currentEvent?.description }}</p>
-          
+
           <!-- 事件图片 -->
           <div v-if="eventImageUrl" class="event-image">
             <img :src="eventImageUrl" :alt="currentEvent?.title" />
           </div>
         </div>
-        
+
         <!-- 事件选项 -->
         <div class="event-options">
           <div v-if="resultMessage" class="event-result">
             <p>{{ resultMessage }}</p>
-            
+
             <!-- 添加效果显示区域 -->
             <div v-if="effectResults.length > 0" class="effect-results">
               <h3>效果变化:</h3>
               <div class="effect-list">
-                <div v-for="(effect, index) in effectResults" :key="index" 
+                <div v-for="(effect, index) in effectResults" :key="index"
                      :class="['effect-item', effect.type]">
                   <span v-if="effect.type === 'money'" class="effect-icon">
                     {{ effect.value > 0 ? '💰' : '💸' }}
@@ -41,7 +41,7 @@
                   <span v-else-if="effect.type === 'market'" class="effect-icon">📊</span>
                   <span v-else-if="effect.type === 'attribute'" class="effect-icon">✨</span>
                   <span v-else class="effect-icon">🔄</span>
-                  
+
                   <span class="effect-description">
                     <template v-if="effect.type === 'money'">
                       {{ effect.value > 0 ? '获得金钱: ' : '支出金钱: ' }}{{ Math.abs(effect.value) }}元
@@ -71,12 +71,12 @@
                 </div>
               </div>
             </div>
-            
+
             <button class="event-option-button" @click="hideModal">确定</button>
           </div>
           <div v-else-if="currentEvent?.options" class="event-option-list">
-            <button 
-              v-for="option in currentEvent.options" 
+            <button
+              v-for="option in currentEvent.options"
               :key="option.id"
               class="event-option-button"
               @click="selectOption(option)"
@@ -130,16 +130,16 @@ onMounted(() => {
       play: () => console.log('EventModal - 使用空音效')
     };
   }
-  
+
   // 强制检查模态框状态
   nextTick(() => {
     console.log('EventModal - 组件挂载完成，模态框状态:', showModal.value);
   });
-  
+
   // 检查彩蛋事件图片路径
   const testImagePath = './resources/assets/images/events/special_encounter.jpg';
   console.log('EventModal - 测试彩蛋图片路径:', testImagePath);
-  
+
   // 尝试加载图片来验证路径是否正确
   const testImage = new Image();
   testImage.onload = () => console.log('EventModal - 彩蛋图片加载成功!');
@@ -150,7 +150,7 @@ onMounted(() => {
 // 处理资源路径的辅助函数
 const resolveResourcePath = (url) => {
   if (!url) return null;
-  
+
   // 如果是绝对路径，需要调整
   if (url.startsWith('/assets/')) {
     // 路径模式1：/assets/images/... -> ./resources/assets/images/...
@@ -165,7 +165,7 @@ const resolveResourcePath = (url) => {
       return `./resources${matches[0]}`;
     }
   }
-  
+
   // 默认直接返回原路径
   return url;
 };
@@ -173,20 +173,20 @@ const resolveResourcePath = (url) => {
 // 计算属性：事件图片URL
 const eventImageUrl = computed(() => {
   if (!currentEvent.value) return null;
-  
+
   // 尝试从imageUrl属性获取
   if (currentEvent.value.imageUrl) {
     console.log('EventModal - 从imageUrl属性获取图片:', currentEvent.value.imageUrl);
     return resolveResourcePath(currentEvent.value.imageUrl);
   }
-  
+
   // 尝试从事件对象的第9个参数获取
   const eventArray = Object.values(currentEvent.value);
   if (eventArray.length >= 9 && typeof eventArray[8] === 'string' && eventArray[8].includes('/assets/images/')) {
     console.log('EventModal - 从事件对象第9个参数获取图片:', eventArray[8]);
     return resolveResourcePath(eventArray[8]);
   }
-  
+
   return null;
 });
 
@@ -197,10 +197,10 @@ const eventImageUrl = computed(() => {
  */
 const getMarketEffectDescription = (effect) => {
   if (!effect || !effect.effect) return '未知市场变化';
-  
+
   const marketEffect = effect.effect;
   const descriptions = [];
-  
+
   if (marketEffect.globalPriceModifier) {
     const percentage = Math.round((marketEffect.globalPriceModifier - 1) * 100);
     if (percentage > 0) {
@@ -209,7 +209,7 @@ const getMarketEffectDescription = (effect) => {
       descriptions.push(`全球价格下跌 ${Math.abs(percentage)}%`);
     }
   }
-  
+
   if (marketEffect.categoryModifiers) {
     for (const [category, modifier] of Object.entries(marketEffect.categoryModifiers)) {
       const percentage = Math.round((modifier - 1) * 100);
@@ -220,18 +220,18 @@ const getMarketEffectDescription = (effect) => {
       }
     }
   }
-  
+
   if (marketEffect.productModifiers) {
     const productCount = Object.keys(marketEffect.productModifiers).length;
     descriptions.push(`影响 ${productCount} 个特定商品价格`);
   }
-  
+
   // 添加持续时间描述
   if (marketEffect.duration) {
     const weeks = Math.round(marketEffect.duration / (86400 * 7)); // 秒转周
     descriptions.push(`持续 ${weeks} 周`);
   }
-  
+
   return descriptions.join('，');
 };
 
@@ -249,13 +249,13 @@ const handleOverlayClick = () => {
  */
 const showEvent = (event) => {
   console.log('EventModal - 尝试显示事件:', event ? event.id : 'undefined');
-  
+
   // 如果没有传入事件对象，则不执行任何操作
   if (!event) {
     console.warn('EventModal - 没有传入事件对象，无法显示事件');
     return;
   }
-  
+
   try {
     console.log('EventModal - 显示事件:', event.id, event.title);
     console.log('EventModal - 事件详情:', {
@@ -265,7 +265,7 @@ const showEvent = (event) => {
       imageUrl: event.imageUrl, // 添加图片URL调试信息
       rawEvent: JSON.stringify(event) // 输出整个事件对象
     });
-    
+
     // 确保事件对象有必要的属性
     if (!event.options || !Array.isArray(event.options) || event.options.length === 0) {
       console.warn('EventModal - 事件没有选项，添加默认选项');
@@ -278,37 +278,37 @@ const showEvent = (event) => {
         }
       ];
     }
-    
+
     currentEvent.value = event;
     showModal.value = true;
     selectedOption.value = null;
-    
+
     if (resultMessage.value) {
       resultMessage.value = null;
     }
-    
+
     if (applyingEffects.value) {
       applyingEffects.value = false;
     }
-    
+
     // 清空上次的效果结果
     effectResults.value = [];
-    
+
     // 添加事件到历史记录
     if (event.id && !eventHistory.value.includes(event.id)) {
       eventHistory.value.push(event.id);
     }
-    
+
     // 播放音效
     if (eventSound && eventSound.play && typeof eventSound.play === 'function') {
       eventSound.play();
     }
-    
+
     // 发送显示事件的消息
     eventEmitter.emit('event:shown', { eventId: event.id });
-    
+
     console.log('EventModal - 事件模态框已显示');
-    
+
     // 调试信息：输出当前模态框状态
     console.log('EventModal - 模态框状态:', {
       showModal: showModal.value,
@@ -323,41 +323,41 @@ const showEvent = (event) => {
 // 选择事件选项
 const selectOption = (option) => {
   console.log('EventModal - 选择选项:', option);
-  
+
   if (!option) {
     console.warn('EventModal - 无法选择选项: 选项对象为空');
     return;
   }
-  
+
   try {
     // 标记正在应用效果
     applyingEffects.value = true;
-    
+
     // 设置选中的选项
     selectedOption.value = option;
-    
+
     // 显示结果消息
     resultMessage.value = option.result || '你做出了选择。';
-    
+
     // 清空上次的效果结果
     effectResults.value = [];
-    
+
     // 如果有事件操作模块，调用处理选项方法
     if (eventActions && typeof eventActions.handleEventOption === 'function') {
       console.log('EventModal - 调用事件操作模块处理选项');
       const result = eventActions.handleEventOption(option);
       console.log('EventModal - 选项处理结果:', result);
-      
+
       // 处理效果结果
       if (result && result.appliedEffects) {
         // 过滤掉不需要显示的效果类型
-        effectResults.value = result.appliedEffects.filter(effect => 
-          effect.type !== 'next_event' && 
+        effectResults.value = result.appliedEffects.filter(effect =>
+          effect.type !== 'next_event' &&
           effect.type !== 'location_change'
         );
-        
+
         console.log('EventModal - 应用的效果:', effectResults.value);
-        
+
         // 确保至少显示1秒的结果，即使没有效果
         if (effectResults.value.length === 0) {
           effectResults.value = [{
@@ -380,13 +380,13 @@ const selectOption = (option) => {
         description: '选项已执行'
       }];
     }
-    
+
     // 发送选项选择事件
     eventEmitter.emit('event:option_selected', {
       eventId: currentEvent.value?.id,
       optionId: option.id || option.text
     });
-    
+
     // 延迟一段时间后允许关闭
     setTimeout(() => {
       applyingEffects.value = false;
@@ -395,7 +395,7 @@ const selectOption = (option) => {
     console.error('EventModal - 处理选项时出错:', error);
     applyingEffects.value = false;
     resultMessage.value = '处理选项时出错，请稍后再试。';
-    
+
     // 添加错误效果
     effectResults.value = [{
       type: 'error',
@@ -445,65 +445,31 @@ defineExpose({
 
 .event-modal {
   background-color: white;
-  border-radius: 12px;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
   width: 90%;
-  max-width: 520px;
-  max-height: 85vh;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 0 10px rgba(0, 0, 0, 0.1);
-  animation: modal-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  display: flex;
-  flex-direction: column;
+  max-width: 550px; /* 减小最大宽度 */
   position: relative;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.event-modal.with-image {
-  max-width: 650px;
-  display: flex;
-  flex-direction: row;
-}
-
-.event-image {
-  flex: 0 0 40%;
-  background-size: cover;
-  background-position: center;
-  background-color: #e2e8f0;
-  overflow: hidden; /* Ensure image doesn't overflow */
-}
-
-.event-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* Cover the area without distortion */
-}
-
-.event-content-wrapper {
-  flex: 1;
+  overflow: hidden;
+  margin: 0 auto;
+  max-height: 75vh; /* 减小最大高度 */
   display: flex;
   flex-direction: column;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-@keyframes modal-appear {
-  from { opacity: 0; transform: translateY(-30px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .event-header {
-  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  background-color: #4299e1;
   color: white;
-  padding: 18px 25px;
-  position: relative;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 10px 15px; /* 减小内边距 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.event-header h2 {
+.event-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.2rem; /* 减小字体大小 */
   font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .event-type {
@@ -519,58 +485,59 @@ defineExpose({
 }
 
 .event-content {
-  padding: 25px 20px;
-  flex-grow: 1;
+  padding: 10px 15px; /* 减小内边距 */
+  flex: 1;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  background-color: #f9fafb;
-  align-items: center;
+  max-height: 40vh; /* 限制内容高度 */
 }
 
 .event-description {
-  font-size: 1.05rem;
-  color: #333;
-  margin-bottom: 20px;
-  line-height: 1.7;
-  width: 85%;
-  max-width: 450px;
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #2d3748;
+}
+
+.event-image {
+  width: 100%;
+  margin: 10px 0; /* 减小外边距 */
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 180px; /* 限制图片高度 */
+}
+
+.event-image img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 6px;
 }
 
 .event-options {
-  margin-top: 20px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  padding: 10px 15px; /* 减小内边距 */
+  background-color: #f7fafc;
+  border-top: 1px solid #e2e8f0;
 }
 
 .event-option-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  width: 85%;
-  max-width: 450px;
+  gap: 8px; /* 减小选项间距 */
 }
 
 .event-option-button {
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  margin: 5px 0;
-  width: 100%;
-  font-size: 1.05rem;
+  background-color: #ebf4ff;
+  border: 1px solid #bee3f8;
+  color: #3182ce;
+  padding: 8px 12px; /* 减小内边距 */
+  border-radius: 6px;
+  font-size: 0.95rem; /* 减小字体大小 */
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  position: relative;
-  overflow: hidden;
   text-align: left;
-  display: flex;
-  align-items: center;
+  position: relative;
+  transition: all 0.2s;
+  width: 100%;
 }
 
 .event-option-button::after {
@@ -674,14 +641,14 @@ defineExpose({
 
 .event-result {
   background-color: #f0f9ff;
-  padding: 20px;
+  padding: 15px; /* 减小内边距 */
   border-radius: 8px;
-  margin-bottom: 15px;
+  margin-bottom: 10px; /* 减小下边距 */
   text-align: center;
   border-left: 4px solid #38b2ac;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  width: 85%;
-  max-width: 450px;
+  width: 90%; /* 减小宽度 */
+  max-width: 400px; /* 减小最大宽度 */
   margin-left: auto;
   margin-right: auto;
   animation: fade-in 0.3s ease-in-out;
@@ -689,8 +656,8 @@ defineExpose({
 }
 
 .event-result p {
-  margin-bottom: 15px;
-  font-size: 1.05rem;
+  margin-bottom: 12px; /* 减小下边距 */
+  font-size: 1rem; /* 减小字体大小 */
   color: #2d3748;
 }
 
@@ -812,4 +779,4 @@ defineExpose({
   font-size: 0.9rem;
   color: #4a5568;
 }
-</style> 
+</style>
