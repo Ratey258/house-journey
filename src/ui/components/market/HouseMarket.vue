@@ -214,13 +214,6 @@ const purchaseHouse = () => {
   const success = playerStore.purchaseHouse(selectedHouse.value);
 
   if (success) {
-    // 购买成功的消息
-    uiStore.showToast({
-      type: 'success',
-      message: t('market.houseMarket.purchaseSuccess', { name: selectedHouse.value.name }),
-      duration: 5000
-    });
-
     // 尝试触发自动保存
     try {
       const saveStore = useSaveStore();

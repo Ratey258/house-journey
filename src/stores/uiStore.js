@@ -35,6 +35,12 @@ export const useUiStore = defineStore('ui', () => {
 
   // 添加Toast通知
   function addToast({ type = 'info', message = '', duration = 3000, action = null, actionText = '确定', actionCallback = null }) {
+    // 如果有相同内容的消息，先移除它
+    const existingToast = toasts.value.find(t => t.message === message);
+    if (existingToast) {
+      removeToast(existingToast.id);
+    }
+
     const id = Date.now() + Math.random().toString(36).substring(2, 10);
 
     const toast = {
@@ -58,12 +64,10 @@ export const useUiStore = defineStore('ui', () => {
       }
     }
 
-    // 设置自动隐藏
-    if (duration > 0) {
-      toastTimeouts.value[id] = setTimeout(() => {
-        removeToast(id);
-      }, duration);
-    }
+    // 设置自动隐藏（强制使用3秒）
+    toastTimeouts.value[id] = setTimeout(() => {
+      removeToast(id);
+    }, 3000);
 
     return id;
   }

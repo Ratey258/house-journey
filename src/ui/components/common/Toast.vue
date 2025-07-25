@@ -124,6 +124,7 @@ onMounted(() => {
   gap: 12px;
   pointer-events: auto;
   transition: all 0.3s ease;
+  animation: fadeInOut 3s ease-in-out;
 }
 
 .toast-success {
@@ -140,6 +141,25 @@ onMounted(() => {
 
 .toast-error {
   border-left: 4px solid #E74C3C;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
 }
 
 .toast-icon {
