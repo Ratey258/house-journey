@@ -98,14 +98,29 @@ export class EventSystem {
       return null;
     }
     
-    // 调整正面/负面事件比例
+    // 调整正面/负面事件比例和地点事件概率
     let positiveChance = config.events.positiveEventChance;
     
     // 游戏前期增加正面事件概率，后期增加负面事件概率
     if (currentStage === EventStage.EARLY) {
-      positiveChance *= 1.3; // 增加30%正面事件概率（原来是1.2）
+      positiveChance *= 1.3; // 增加30%正面事件概率
     } else if (currentStage === EventStage.LATE) {
-      positiveChance *= 0.8; // 减少20%正面事件概率（原来是0.9）
+      positiveChance *= 0.8; // 减少20%正面事件概率
+    }
+
+    // 获取当前地点已触发的事件数量
+    const currentLocation = gameState.currentLocation?.id;
+    if (currentLocation) {
+      const locationEvents = this.eventHistory.filter(record => {
+        const event = this.getEventById(record.id);
+        return event?.conditions?.locations?.includes(currentLocation);
+      });
+
+      // 如果地点事件过多，降低该地点事件的触发概率
+      if (locationEvents.length > 3) {
+        const locationEventReduction = Math.min(0.8, Math.pow(0.9, locationEvents.length - 3));
+        eventProbability *= locationEventReduction;
+      }
     }
 
     // 根据玩家资金情况额外调整事件类型
@@ -442,7 +457,28 @@ export class EventSystem {
     
     // 设置冷却期
     const event = this.getEventById(eventId);
-    const cooldownWeeks = event?.cooldown || 5; // 增加默认冷却时间从3周到5周
+    let cooldownWeeks;
+
+    // 根据事件类型设置不同的冷却时间
+    switch (event?.type) {
+      case EventType.PERSONAL:
+        cooldownWeeks = 8; // 个人事件冷却8周
+        break;
+      case EventType.MARKET:
+        cooldownWeeks = 4; // 市场事件冷却4周
+        break;
+      case EventType.LOCATION:
+        cooldownWeeks = 3; // 地点事件冷却3周
+        break;
+      default:
+        cooldownWeeks = 6; // 其他事件默认冷却6周
+    }
+    
+    // 非重复事件标记为永久冷却
+    if (event && !event.repeatable) {
+      cooldownWeeks = 999;
+    }
+
     this.setEventCooldown(eventId, week, cooldownWeeks);
   }
   
@@ -478,16 +514,17 @@ export class EventSystem {
         weight *= 1.3; // 连锁事件有更高权重
       }
       
-      // 彩蛋事件特殊处理 - 极大提高彩蛋事件的权重
+      // 彩蛋事件特殊处理
       if (event.id === 'meet_mucs') {
-        weight *= 3.0; // 彩蛋事件权重提升3倍
-        
-        // 如果还未触发过，则进一步提高权重
-        if (!this.triggeredEvents.has(event.id)) {
-          weight *= 1.5;
+        // 如果已经触发过，直接返回0权重防止再次触发
+        if (this.triggeredEvents.has(event.id)) {
+          return 0;
         }
         
-        // 每10周增加一次触发彩蛋的机会
+        // 未触发过时大幅提高权重
+        weight *= 5.0; // 提高5倍基础权重
+        
+        // 每15周增加一次额外触发机会
         const weeksSinceStart = Math.max(1, gameProgress * 52);
         if (weeksSinceStart % 10 <= 2) { // 每10周的前3周增加权重
           weight *= 2.0;
@@ -508,10 +545,32 @@ export class EventSystem {
       // 记录当前事件在历史记录中出现的次数
       const occurrenceCount = this.eventHistory.filter(record => record.id === event.id).length;
       
-      // 根据历史出现次数进一步调整权重
+      // 根据历史出现次数和重复属性调整权重
       if (occurrenceCount > 0) {
-        // 出现次数越多，权重越低，大幅降低重复出现的概率
-        weight *= Math.pow(0.5, occurrenceCount); // 从0.6降低到0.5，每多出现一次，权重降低50%
+        // 不可重复的事件直接返回0权重
+        if (!event.repeatable) {
+          return 0;
+        }
+        
+        // 可重复事件根据出现次数调整权重
+        const baseReduction = 0.4; // 基础衰减率
+        const maxReduction = 0.1; // 最低保留权重比例
+        
+        // 使用指数衰减，但保留最低权重
+        const reduction = Math.max(maxReduction, Math.pow(baseReduction, occurrenceCount));
+        weight *= reduction;
+        
+        // 根据距离上次触发的时间调整权重
+        const lastOccurrence = this.eventHistory
+          .filter(record => record.id === event.id)
+          .sort((a, b) => b.week - a.week)[0];
+          
+        if (lastOccurrence) {
+          const weeksSinceLastOccurrence = gameState.currentWeek - lastOccurrence.week;
+          // 时间越久，权重恢复越多
+          const timeBonus = Math.min(1, weeksSinceLastOccurrence / 20); // 最多20周后恢复原始权重
+          weight *= (1 + timeBonus);
+        }
       }
       
       console.log(`事件权重计算 - ${event.id}: ${weight.toFixed(2)}`);

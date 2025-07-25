@@ -163,12 +163,15 @@ export default {
     },
     resultClass() {
       const endReason = this.gameStats.endReason;
-      if (endReason === 'victory' || endReason === 'achievement' ||
-          endReason === 'victoryTimeLimit' || endReason === 'victoryOther' ||
-          endReason === 'houseVictory') {
-        return 'result-success';
+      if (endReason === 'victory' || endReason === 'houseVictory') {
+        return 'result-house-victory'; // 购房胜利
+      } else if (endReason === 'victoryTimeLimit') {
+        return 'result-game-complete'; // 购房后坚持到最后的完美胜利
+      } else if (endReason === 'bankruptcy') {
+        return 'result-bankruptcy'; // 破产失败
+      } else if (endReason === 'timeLimit') {
+        return 'result-time-expired'; // 时间到失败
       }
-      if (endReason === 'bankruptcy') return 'result-failure';
       return 'result-neutral';
     },
     isVictory() {
@@ -184,22 +187,22 @@ export default {
     },
     getGameOverTitle() {
       const endReason = this.gameStats.endReason;
-
+      
       switch (endReason) {
         case 'houseVictory':
-          return `恭喜！你成功购买了${this.gameStats.purchasedHouse?.name || '房产'}！`;
         case 'victory':
-          return '恭喜！你成功购买了豪宅！';
+          const houseName = this.gameStats.purchasedHouse?.name || this.player.purchasedHouses?.[0]?.name || '房产';
+          return `🎉 恭喜购得${houseName}！`;
+          
         case 'victoryTimeLimit':
-          return '游戏完成！你成功购买了豪宅并坚持到最后！';
-        case 'victoryOther':
-          return '游戏结束！你已经成功购买了豪宅！';
+          return '🏆 完美通关！事业有成！';
+          
         case 'timeLimit':
-          return '时间到！游戏结束';
+          return '⌛ 时间已到，未能实现购房梦';
+          
         case 'bankruptcy':
-          return '破产了！游戏结束';
-        case 'achievement':
-          return '成就达成！游戏结束';
+          return '💸 破产清算，游戏结束';
+          
         case 'playerChoice':
           return '你选择了结束游戏';
         default:
@@ -209,25 +212,30 @@ export default {
     getResultDescription() {
       const endReason = this.gameStats.endReason;
       const firstVictoryWeek = this.gameStats.data?.firstVictoryWeek;
+      const currentWeek = this.gameStats.weeksPassed || 0;
+      const finalAssets = this.formatNumber(this.gameStats.finalAssets || 0);
+      const totalTrades = this.gameStats.tradeStats?.totalTrades || 0;
+      const totalProfit = this.formatNumber(Math.abs(this.gameStats.tradeStats?.totalProfit || 0));
+      const profitPrefix = (this.gameStats.tradeStats?.totalProfit || 0) >= 0 ? '盈利' : '亏损';
 
       switch (endReason) {
         case 'victory':
-          return `你在第 ${this.gameStats.weeksPassed || 0} 周成功购买了豪宅，真是太棒了！`;
+        case 'houseVictory':
+          return `恭喜你在第 ${currentWeek} 周成功实现购房梦想！\n` +
+                 `通过 ${totalTrades} 次交易，总计${profitPrefix} ¥${totalProfit}。`;
 
         case 'victoryTimeLimit':
-          return `你在第 ${firstVictoryWeek || '?'} 周成功购买了豪宅，并坚持到了第 ${this.gameStats.weeksPassed || 0} 周！最终资产达到了 ¥${this.formatNumber(this.gameStats.finalAssets || 0)}。`;
-
-        case 'victoryOther':
-          return `你在第 ${firstVictoryWeek || '?'} 周成功购买了豪宅，并在第 ${this.gameStats.weeksPassed || 0} 周结束了游戏。最终资产达到了 ¥${this.formatNumber(this.gameStats.finalAssets || 0)}。`;
+          return `你用 ${firstVictoryWeek} 周买到了心仪的房子，并继续奋斗到第 ${currentWeek} 周！\n` +
+                 `最终资产达到 ¥${finalAssets}，完美诠释了"赢家通吃"！`;
 
         case 'timeLimit':
-          return `52周时间已到，你积累了 ¥${this.formatNumber(this.gameStats.finalAssets || 0)} 的资产。`;
+          return `52周时间已到，你累积了 ¥${finalAssets} 的资产。\n` +
+                 `通过 ${totalTrades} 次交易，总计${profitPrefix} ¥${totalProfit}。继续努力，下次一定能实现购房梦！`;
 
         case 'bankruptcy':
-          return `你破产了！无法偿还 ¥${this.formatNumber(this.gameStats.data?.debt || 0)} 的债务。`;
-
-        case 'achievement':
-          return `你达成了特殊成就！资产达到 ¥${this.formatNumber(this.gameStats.finalAssets || 0)}。`;
+          const debt = this.formatNumber(this.gameStats.data?.debt || 0);
+          return `很遗憾，由于无力偿还 ¥${debt} 的债务导致破产。\n` +
+                 `通过 ${totalTrades} 次交易，总计${profitPrefix} ¥${totalProfit}。吸取教训，东山再起！`;
 
         case 'playerChoice':
           return `你在第 ${this.gameStats.weeksPassed || 0} 周选择结束游戏，最终资产达到 ¥${this.formatNumber(this.gameStats.finalAssets || 0)}。`;
