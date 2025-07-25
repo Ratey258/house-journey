@@ -12,10 +12,10 @@
         <div class="event-content">
           <p class="event-description">{{ currentEvent?.description }}</p>
 
-          <!-- 事件图片 -->
-          <div v-if="eventImageUrl" class="event-image">
+          <!-- 事件图片 - 暂时禁用 -->
+          <!-- <div v-if="eventImageUrl" class="event-image">
             <img :src="eventImageUrl" :alt="currentEvent?.title" />
-          </div>
+          </div> -->
         </div>
 
         <!-- 事件选项 -->
@@ -135,16 +135,6 @@ onMounted(() => {
   nextTick(() => {
     console.log('EventModal - 组件挂载完成，模态框状态:', showModal.value);
   });
-
-  // 检查彩蛋事件图片路径
-  const testImagePath = './resources/assets/images/events/special_encounter.jpg';
-  console.log('EventModal - 测试彩蛋图片路径:', testImagePath);
-
-  // 尝试加载图片来验证路径是否正确
-  const testImage = new Image();
-  testImage.onload = () => console.log('EventModal - 彩蛋图片加载成功!');
-  testImage.onerror = (err) => console.error('EventModal - 彩蛋图片加载失败:', err);
-  testImage.src = testImagePath;
 });
 
 // 处理资源路径的辅助函数

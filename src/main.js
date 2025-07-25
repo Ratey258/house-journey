@@ -101,12 +101,7 @@ function validateCriticalResources() {
   try {
     console.log('开始验证关键资源...');
 
-    // 验证彩蛋事件图片
-    const easterEggImagePaths = [
-      './resources/assets/images/events/special_encounter.jpg'
-    ];
-
-    // 记录资源状态
+    // 验证游戏资源
     const resourceStatus = {};
 
     // 检查图片资源

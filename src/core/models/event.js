@@ -67,7 +67,8 @@ export class Event {
     this.repeatable = repeatable;
     this.type = type;
     this.weight = weight;
-    this.imageUrl = imageUrl;
+    // 暂时禁用事件图片
+    this.imageUrl = null; // imageUrl;
   }
   
   /**
@@ -1860,38 +1861,7 @@ const predefinedEvents = [
     '/assets/images/events/market_surge.jpg'
   ),
   
-  // --- 特殊彩蛋事件 ---
-  createEvent({
-    id: 'meet_mucs',
-    title: '意外相遇',
-    description: '你在路上匆忙赶路，不小心撞到了一位看起来很不好惹的年轻人，他似乎叫"暮成霜"...',
-    options: [
-      createEventOption(
-        '道歉',
-        '你立即向他道歉，但他看起来非常愤怒，给了你一巴掌，然后傲慢地扔给你500块钱说："买点药吧！"',
-        createEventEffects({
-          money: 500,
-          attributes: { health: -0.5 }
-        })
-      ),
-      createEventOption(
-        '争辩',
-        '你试图和他争辩是谁的错，但他看起来更加愤怒了，结果你不仅挨了一巴掌，还被他训斥了一番。最后他还是扔给你500块钱说："买点药，别跟我犟嘴！"',
-        createEventEffects({
-          money: 500,
-          attributes: { health: -1, happiness: -1 }
-        })
-      )
-    ],
-    conditions: createEventConditions({
-      probability: 0.3, // 从0.05提高到0.3，大幅增加触发概率
-      minWeek: 2  // 从第5周降低到第2周，更早出现
-    }),
-    repeatable: true, // 可重复触发的事件
-    type: EventType.PERSONAL,
-    weight: 2.0, // 从0.5提高到2.0，大幅增加权重
-    imageUrl: '/assets/images/events/special_encounter.jpg'
-  }),
+  // --- 特殊彩蛋事件已移除 ---
 
   // ============ 房产连锁事件系列 ============
   

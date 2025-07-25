@@ -514,23 +514,9 @@ export class EventSystem {
         weight *= 1.3; // 连锁事件有更高权重
       }
       
-      // 彩蛋事件特殊处理
+      // 彩蛋事件已禁用
       if (event.id === 'meet_mucs') {
-        // 如果已经触发过，直接返回0权重防止再次触发
-        if (this.triggeredEvents.has(event.id)) {
-          return 0;
-        }
-        
-        // 未触发过时大幅提高权重
-        weight *= 5.0; // 提高5倍基础权重
-        
-        // 每15周增加一次额外触发机会
-        const weeksSinceStart = Math.max(1, gameProgress * 52);
-        if (weeksSinceStart % 10 <= 2) { // 每10周的前3周增加权重
-          weight *= 2.0;
-        }
-        
-        console.log(`彩蛋事件 ${event.id} 的最终权重: ${weight.toFixed(2)}`);
+        return 0; // 直接返回0权重，确保彩蛋事件不会被触发
       }
       
       // 检查事件是否已触发过
