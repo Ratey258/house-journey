@@ -6,7 +6,7 @@
       </div>
       <div class="player-name-container">
         <h2 class="player-name">{{ player.name }}</h2>
-        <div class="player-week">第 {{ currentWeek }} / 52 周</div>
+        <div class="player-week">第 {{ currentWeek }} {{ isEndlessMode ? '周' : '/ 52 周' }}</div>
       </div>
     </div>
     
@@ -133,6 +133,11 @@ const { t } = useI18n();
 
 const player = computed(() => gameStore.player);
 const currentWeek = computed(() => gameStore.currentWeek);
+// 确保这里正确获取无尽模式状态
+const isEndlessMode = computed(() => gameStore.isEndlessMode);
+
+console.log('PlayerInfo - 当前模式:', isEndlessMode.value ? '无尽模式' : '经典模式');
+console.log('PlayerInfo - 当前周数:', currentWeek.value, '总周数:', isEndlessMode.value ? '无限' : '52');
 
 // 还款相关
 const showRepayModal = ref(false);

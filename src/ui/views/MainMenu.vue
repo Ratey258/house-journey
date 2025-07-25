@@ -70,6 +70,23 @@
               </label>
             </div>
           </div>
+
+          <div class="form-group animate-item">
+            <label>选择模式：</label>
+            <div class="mode-options">
+              <label class="radio-label">
+                <input type="radio" v-model="gameMode" value="classic" />
+                经典模式
+              </label>
+              <label class="radio-label">
+                <input type="radio" v-model="gameMode" value="endless" />
+                无尽模式
+              </label>
+            </div>
+            <div class="mode-description">
+              {{ gameModeDescription }}
+            </div>
+          </div>
         </div>
 
             <div class="dialog-actions animate-item">
@@ -131,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGameCoreStore } from '../../stores/gameCore';
 import { usePlayerStore } from '../../stores/player';
@@ -152,6 +169,7 @@ const isDev = import.meta.env.DEV;
 const showDialog = ref(false);
 const playerName = ref('');
 const difficulty = ref('standard');
+const gameMode = ref('classic'); // 添加游戏模式选择，默认为经典模式
 const isLoading = ref(false);
 const currentTipIndex = ref(0);
 
@@ -161,6 +179,15 @@ const devToastMessage = ref('');
 
 // 关于对话框状态
 const showAbout = ref(false);
+
+// 游戏模式描述
+const gameModeDescription = computed(() => {
+  if (gameMode.value === 'classic') {
+    return '经典模式：在52周内完成游戏目标，体验原汁原味的买房挑战。';
+  } else {
+    return '无尽模式：没有周数限制，可以无限游玩，慢慢积累财富。';
+  }
+});
 
 // 加载提示
 const loadingTips = [
@@ -209,7 +236,7 @@ async function startNewGame() {
     // 确保玩家名有效，否则使用默认名称
     const finalPlayerName = playerName.value.trim() || '玩家';
 
-    console.log('正在开始新游戏，玩家名称:', finalPlayerName, '难度:', difficulty.value);
+    console.log('正在开始新游戏，玩家名称:', finalPlayerName, '难度:', difficulty.value, '模式:', gameMode.value);
 
     // 延迟一小段时间，让加载界面显示出来
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -222,6 +249,15 @@ async function startNewGame() {
     gameCore.victoryAchieved = false;
     gameCore.gameResult = null;
     gameCore.notifications = [];
+    
+    // 根据游戏模式设置周数限制
+    if (gameMode.value === 'endless') {
+      // 无尽模式，设置一个非常大的数字作为周数限制
+      gameCore.maxWeeks = 999999;
+    } else {
+      // 经典模式，使用默认的52周
+      gameCore.maxWeeks = 52;
+    }
 
     // 确保调用startNewGame方法来设置玩家名称，并等待其完成
     await gameCore.startNewGame(finalPlayerName);
@@ -643,6 +679,25 @@ onMounted(() => {
 
 .radio-label input:checked + span {
   font-weight: 500;
+}
+
+.mode-options {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  gap: 10px;
+}
+
+.mode-description {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+  line-height: 1.4;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #3498db;
 }
 
 .dialog-actions {

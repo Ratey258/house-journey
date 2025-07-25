@@ -168,7 +168,71 @@ export const useGameCoreStore = defineStore('gameCore', {
         
         return true;
       } else {
-        this.gameOver = true;
+        // 只有在经典模式下（maxWeeks为52）才设置游戏结束状态
+        if (this.maxWeeks === 52) {
+          this.gameOver = true;
+        } else {
+          // 无尽模式下继续游戏
+          this.currentWeek++;
+          
+          // 同样需要更新玩家和市场状态
+          const playerStore = usePlayerStore();
+          const marketStore = useMarketStore();
+          const eventStore = useEventStore();
+          
+          // 更新玩家信息（债务等）
+          playerStore.updateWeeklyPlayerState(this.currentWeek);
+          
+          // 更新市场
+          marketStore.updateMarketState(this.currentWeek);
+          
+          // 生成随机事件 - 无尽模式下仍然保持事件生成
+          const playerData = {
+            money: playerStore.money,
+            debt: playerStore.debt,
+            inventory: playerStore.inventory,
+            statistics: playerStore.statistics,
+            purchasedHouses: playerStore.purchasedHouses,
+            name: playerStore.name,
+            capacity: playerStore.capacity,
+            inventoryUsed: playerStore.inventoryUsed
+          };
+          
+          const marketData = {
+            marketModifiers: marketStore.marketModifiers,
+            currentLocation: marketStore.currentLocation,
+            productPrices: marketStore.productPrices,
+            products: marketStore.products,
+            locations: marketStore.locations
+          };
+          
+          // 调用事件系统生成随机事件
+          let event = eventStore.generateRandomEvent(
+            this.currentWeek, 
+            playerData, 
+            marketData
+          );
+          
+          // 如果第一次没有生成事件，并且当前周数是3的倍数，再尝试一次
+          if (!event && this.currentWeek % 3 === 0) {
+            event = eventStore.generateRandomEvent(
+              this.currentWeek, 
+              playerData, 
+              marketData
+            );
+          }
+          
+          if (event) {
+            if (!eventStore.activeEvents.includes(event)) {
+              eventStore.activeEvents.push(event);
+            }
+          }
+          
+          // 检查游戏结束条件（破产等）
+          this.checkGameEnd();
+          
+          return true;
+        }
         return false;
       }
     },
@@ -215,8 +279,8 @@ export const useGameCoreStore = defineStore('gameCore', {
       const money = playerStore.money;
       const debt = playerStore.debt;
       
-      // 周数限制检查
-      if (this.currentWeek >= this.maxWeeks) {
+      // 周数限制检查 - 仅对经典模式适用
+      if (this.currentWeek >= this.maxWeeks && this.maxWeeks === 52) {
         this.endGame(this.victoryAchieved ? 'victoryTimeLimit' : 'timeLimit');
         return;
       }
@@ -671,6 +735,12 @@ export const useGameCoreStore = defineStore('gameCore', {
      * @returns {number} 进度百分比(0-100)
      */
     gameProgress() {
+      // 判断是否为无尽模式
+      if (this.maxWeeks > 52) {
+        // 无尽模式下，不显示进度条，或者显示一个固定的低值
+        return Math.min(5, (this.currentWeek / 1000) * 100);
+      }
+      // 经典模式下，正常计算进度
       return (this.currentWeek / this.maxWeeks) * 100;
     },
     
@@ -687,7 +757,19 @@ export const useGameCoreStore = defineStore('gameCore', {
      * @returns {number} 剩余周数
      */
     remainingWeeks() {
+      // 无尽模式下显示"无限"
+      if (this.maxWeeks > 52) {
+        return '∞';
+      }
       return this.maxWeeks - this.currentWeek;
+    },
+    
+    /**
+     * 判断当前是否为无尽模式
+     * @returns {boolean} 是否为无尽模式
+     */
+    isEndlessMode() {
+      return this.maxWeeks > 52;
     }
   }
 }); 

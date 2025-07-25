@@ -159,7 +159,10 @@
 
       <div class="status-grid">
         <div class="status-item">
-          <strong>当前周数:</strong> {{ gameStore.currentWeek }}/{{ gameStore.maxWeeks }}
+          <strong>玩家名称:</strong> {{ playerStore.name }}
+        </div>
+        <div class="status-item">
+          <strong>当前周数:</strong> {{ gameStore.currentWeek }}{{ isEndlessMode ? '' : '/' + gameStore.maxWeeks }}
         </div>
         <div class="status-item">
           <strong>玩家资金:</strong> ¥{{ formatNumber(gameStore.player.money) }}
@@ -219,6 +222,9 @@ const weekToSet = ref(gameStore.currentWeek);
 
 // 计算属性
 const products = computed(() => gameStore.products);
+
+// 游戏状态
+const isEndlessMode = computed(() => gameStore.isEndlessMode);
 
 // 返回上一页
 const goBack = () => {

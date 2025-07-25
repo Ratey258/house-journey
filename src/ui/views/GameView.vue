@@ -14,9 +14,9 @@
       <div class="left-info">
         <div class="week-indicator">
           <span class="label">{{ $t('game.week') }}:</span>
-          <span class="value">{{ currentWeek }} / {{ maxWeeks }}</span>
+          <span class="value">{{ currentWeek }}{{ isEndlessMode ? '' : ' / ' + maxWeeks }}</span>
           <div class="progress-bar">
-            <div class="progress" :style="{ width: `${(currentWeek / maxWeeks) * 100}%` }"></div>
+            <div class="progress" :style="{ width: `${gameProgress}%` }"></div>
           </div>
         </div>
       </div>
@@ -289,6 +289,10 @@ const gameState = computed(() => ({
   maxWeeks: maxWeeks.value,
   gameOver: gameOver.value
 }));
+
+// 获取游戏相关状态
+const gameProgress = computed(() => gameCoreStore.gameProgress);
+const isEndlessMode = computed(() => gameCoreStore.isEndlessMode);
 
 // 当游戏结束时显示结束对话框
 watch(() => gameCoreStore.gameOver, (newValue) => {

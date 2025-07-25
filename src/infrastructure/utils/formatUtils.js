@@ -101,6 +101,10 @@ export function getPriceChangeClass(percent) {
  * @returns {string} 格式化后的周数字符串
  */
 export function formatGameWeek(week, totalWeeks) {
+  // 判断是否为无尽模式（总周数大于52表示无尽模式）
+  if (totalWeeks > 52) {
+    return `${week}`;
+  }
   return `${week} / ${totalWeeks}`;
 }
 
