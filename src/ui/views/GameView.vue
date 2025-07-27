@@ -215,6 +215,17 @@
 
     <!-- 移除详细统计对话框 -->
   </div>
+
+  <!-- 添加交易Toast提示 -->
+  <transition name="fade">
+    <div v-if="showTransactionToast" class="transaction-toast" :class="transactionToastClass">
+      <div class="toast-content">
+        <span class="toast-icon">{{ transactionToastIcon }}</span>
+        <span class="toast-message">{{ transactionToastMessage }}</span>
+      </div>
+      <div class="toast-progress-bar"></div>
+    </div>
+  </transition>
 </template>
 
 <script setup>
@@ -228,6 +239,7 @@ import { usePlayerStore } from '@/stores/player';
 import { useMarketStore } from '@/stores/market';
 import { useEventStore } from '@/stores/events';
 import { useSaveStore } from '@/stores/persistence';
+import eventEmitter from '@/infrastructure/eventEmitter';
 
 // 导入组件
 import PlayerInfo from '@/ui/components/player/PlayerInfo.vue';
@@ -300,6 +312,12 @@ watch(() => gameCoreStore.gameOver, (newValue) => {
   }
 });
 
+// 交易提示相关状态
+const showTransactionToast = ref(false);
+const transactionToastMessage = ref('');
+const transactionToastClass = ref('');
+const transactionToastIcon = ref('');
+
 // 组件挂载时
 onMounted(() => {
   console.log('GameView组件挂载');
@@ -347,6 +365,9 @@ onMounted(() => {
   setInterval(() => {
     checkActiveEvents();
   }, 2000); // 每2秒检查一次
+
+  // 添加交易提示事件监听
+  eventEmitter.on('show:transaction_toast', handleTransactionToast);
 });
 
 onBeforeUnmount(() => {
@@ -355,6 +376,9 @@ onBeforeUnmount(() => {
 
   // 移除关闭前保存事件
   window.removeEventListener('beforeunload', handleBeforeUnload);
+
+  // 移除交易提示事件监听
+  eventEmitter.off('show:transaction_toast', handleTransactionToast);
 });
 
 // 处理键盘快捷键
@@ -745,6 +769,26 @@ const handleBeforeUnload = async (event) => {
     }
   }
 };
+
+// 处理交易提示
+const handleTransactionToast = (data) => {
+  transactionToastMessage.value = data.message;
+  transactionToastClass.value = data.class;
+  transactionToastIcon.value = data.icon;
+  
+  // 重置之前的提示（如果存在）
+  showTransactionToast.value = false;
+  
+  // 延迟一帧后显示，确保动画正确播放
+  requestAnimationFrame(() => {
+    showTransactionToast.value = true;
+    
+    // 弹窗将通过CSS动画自动淡出
+    setTimeout(() => {
+      showTransactionToast.value = false;
+    }, 3000);
+  });
+};
 </script>
 
 <style scoped>
@@ -766,13 +810,13 @@ const handleBeforeUnload = async (event) => {
   align-items: center;
   padding: 12px 24px;
   background: linear-gradient(135deg, #2980b9, #3498db);
-  color: white;
+    color: white;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-  z-index: 10;
+    z-index: 10;
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
-}
+  }
 
 /* 添加一个背景装饰效果 */
 .game-header::before {
@@ -803,7 +847,7 @@ const handleBeforeUnload = async (event) => {
 .week-indicator {
   display: flex;
   align-items: center;
-  gap: 10px;
+    gap: 10px;
   background-color: rgba(255, 255, 255, 0.1);
   padding: 6px 12px;
   border-radius: 20px;
@@ -818,16 +862,16 @@ const handleBeforeUnload = async (event) => {
 }
 
 .week-label {
-  font-weight: 500;
+    font-weight: 500;
   opacity: 0.8;
   font-size: 0.9rem;
 }
 
 .week-value {
   font-weight: 700;
-  background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.2);
   padding: 3px 12px;
-  border-radius: 12px;
+    border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   letter-spacing: 0.5px;
   display: flex;
@@ -847,7 +891,7 @@ const handleBeforeUnload = async (event) => {
 .progress {
   height: 100%;
   background-color: #2ecc71;
-  border-radius: 3px;
+    border-radius: 3px;
   transition: width 0.3s ease;
   box-shadow: 0 0 4px rgba(46, 204, 113, 0.5);
 }
@@ -855,13 +899,13 @@ const handleBeforeUnload = async (event) => {
 .menu-button {
   background-color: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
+    color: white;
   padding: 8px 16px;
   border-radius: 20px;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s ease;
-  float: right;
+    float: right;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
@@ -1817,5 +1861,120 @@ const handleBeforeUnload = async (event) => {
   0% { transform: scale(0.8); opacity: 0; }
   70% { transform: scale(1.03); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
+}
+
+/* 交易提示样式 */
+.transaction-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border-radius: 10px;
+  background-color: rgba(44, 62, 80, 0.9);
+  color: white;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  z-index: 9999; /* 提高z-index确保在最上层 */
+  min-width: 220px;
+  backdrop-filter: blur(4px);
+  animation: toast-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-align: center;
+  overflow: hidden;
+  pointer-events: none; /* 防止提示框影响下方元素的交互 */
+}
+
+/* 进度条动画 */
+.toast-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.toast-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  animation: progress 3s linear forwards;
+}
+
+@keyframes progress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+@keyframes toast-in {
+  from {
+    transform: translate(-50%, 20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.toast-icon {
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.toast-message {
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.purchase-success {
+  border-top: 3px solid #2ecc71;
+}
+
+.purchase-success .toast-icon {
+  background-color: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+}
+
+.purchase-failed {
+  border-top: 3px solid #e74c3c;
+}
+
+.purchase-failed .toast-icon {
+  background-color: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
+}
+
+.sale-success {
+  border-top: 3px solid #3498db;
+}
+
+.sale-success .toast-icon {
+  background-color: rgba(52, 152, 219, 0.2);
+  color: #3498db;
+}
+
+.location-change {
+  border-top: 3px solid #f39c12;
+}
+
+.location-change .toast-icon {
+  background-color: rgba(243, 156, 18, 0.2);
+  color: #f39c12;
 }
 </style>

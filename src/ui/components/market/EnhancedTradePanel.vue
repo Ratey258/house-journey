@@ -93,7 +93,7 @@
         <button 
           class="execute-trade-btn" 
           :disabled="!canTrade" 
-          @click="openConfirmDialog"
+          @click="executeTrade"
         >
           {{ tradeType === 'buy' ? '购买' : '出售' }}
         </button>
@@ -101,32 +101,7 @@
       </div>
     </div>
     
-    <!-- 交易结果反馈 -->
-    <transition name="feedback">
-      <div v-if="showFeedback" class="trade-feedback" :class="feedbackType">
-        <i :class="feedbackIcon"></i>
-        <span>{{ feedbackMessage }}</span>
-      </div>
-    </transition>
-    
-    <!-- 交易确认弹窗 -->
-    <transition name="confirm">
-    <div v-if="showConfirmDialog" class="confirm-dialog-backdrop" @click.self="cancelConfirmation">
-      <div class="confirm-dialog">
-        <h3>{{ tradeType === 'buy' ? '确认购买' : '确认出售' }}</h3>
-        <p>
-          {{ tradeType === 'buy' 
-            ? `确定要购买 ${quantity} 个 ${selectedProduct?.name} 吗？总价：${formatPrice(totalCost)}` 
-            : `确定要出售 ${quantity} 个 ${selectedProduct?.name} 吗？总收入：${formatPrice(totalCost)}` 
-          }}
-        </p>
-        <div class="confirm-buttons">
-          <button class="cancel-btn" @click="cancelConfirmation">取消</button>
-          <button class="confirm-btn" @click="confirmTrade">确认</button>
-        </div>
-      </div>
-    </div>
-    </transition>
+    <!-- 交易结果反馈 - 移除旧版本的内部反馈 -->
   </div>
 </template>
 
@@ -134,8 +109,9 @@
 import { ref, computed, watch } from 'vue';
 import { useGameStore } from '../../../stores';
 import MiniPriceChart from './MiniPriceChart.vue';
-import { formatNumber, formatCurrency } from '@/infrastructure/utils';
+import { formatNumber, formatCurrency } from '@/infrastructure/utils/formatUtils';
 import { handleError, ErrorType, ErrorSeverity } from '../../../infrastructure/utils/errorHandler';
+import eventEmitter from '@/infrastructure/eventEmitter';
 
 const props = defineProps({
   selectedProduct: {
@@ -150,12 +126,6 @@ const emit = defineEmits(['close']);
 const tradeType = ref('buy');
 const selectedProduct = ref(props.selectedProduct);
 const quantity = ref(1);
-const showFeedback = ref(false);
-const feedbackType = ref('success');
-const feedbackMessage = ref('');
-
-// 添加确认弹窗状态
-const showConfirmDialog = ref(false);
 
 // 获取store
 const gameStore = useGameStore();
@@ -236,10 +206,6 @@ const canTrade = computed(() => {
   }
 });
 
-const feedbackIcon = computed(() => {
-  return feedbackType.value === 'success' ? 'icon-success' : 'icon-error';
-});
-
 // 获取库存中该商品的数量
 const inventoryQuantity = computed(() => {
   if (!selectedProduct.value) return 0;
@@ -301,8 +267,6 @@ const setTradeType = (type) => {
   tradeType.value = type;
   // 重置数量
   quantity.value = 1;
-  // 隐藏反馈
-  showFeedback.value = false;
 };
 
 function increaseQuantity() {
@@ -317,8 +281,31 @@ function setQuantity(value) {
   quantity.value = Math.max(1, Math.floor(value));
 }
 
+// 修改getCurrentPrice函数，确保它始终返回正确的价格
 function getCurrentPrice(productId) {
-  return gameStore.getCurrentProductPrice(productId);
+  if (!productId) return 0;
+  
+  // 将productId转换为字符串以确保一致的比较
+  const productIdStr = String(productId);
+  
+  // 首先尝试从gameStore中获取价格
+  const price = gameStore.getCurrentProductPrice(productIdStr);
+  
+  // 如果获取到价格是0，尝试从availableProducts中找到商品的当前价格
+  if (price === 0 && selectedProduct.value) {
+    // 如果selectedProduct存在且ID匹配，使用其currentPrice
+    if (String(selectedProduct.value.id) === productIdStr && selectedProduct.value.currentPrice) {
+      return selectedProduct.value.currentPrice;
+    }
+    
+    // 尝试从product对象获取basePrice作为备选
+    const product = gameStore.marketStore.products.find(p => String(p.id) === productIdStr);
+    if (product && product.basePrice) {
+      return product.basePrice;
+    }
+  }
+  
+  return price;
 }
 
 function getPriceHistory(productId) {
@@ -329,28 +316,18 @@ function formatPrice(price) {
   return formatCurrency(price);
 }
 
-/**
- * 显示确认对话框
- */
-function openConfirmDialog() {
-  if (!canTrade.value) return;
-  showConfirmDialog.value = true;
-}
-
-/**
- * 取消确认
- */
-function cancelConfirmation() {
-  showConfirmDialog.value = false;
-}
-
-/**
- * 执行交易
- */
-const executeTrade = () => {
+// 修改执行交易的方法
+function executeTrade() {
   if (!canTrade.value || !selectedProduct.value) return;
   
   try {
+    // 确保当前价格不为0
+    const currentPrice = getCurrentPrice(selectedProduct.value.id);
+    if (currentPrice <= 0) {
+      showFeedbackMessage('error', '无法确定商品价格，请稍后再试');
+      return;
+    }
+    
     let result;
     
     if (tradeType.value === 'buy') {
@@ -358,7 +335,7 @@ const executeTrade = () => {
       result = gameStore.buyProduct(selectedProduct.value.id, quantity.value);
       
       if (result.success) {
-        showFeedbackMessage('success', `成功购买 ${quantity.value} 个 ${selectedProduct.value.name}`);
+        showFeedbackMessage('success', `已购买 ${quantity.value} 个 ${selectedProduct.value.name}`);
       } else {
         showFeedbackMessage('error', result.message || '购买失败');
       }
@@ -366,46 +343,52 @@ const executeTrade = () => {
       // 出售操作
       result = gameStore.sellProduct(selectedProduct.value.id, quantity.value);
     
-    if (result.success) {
-        const profitText = result.profit > 0 
-          ? `，获利 ${formatPrice(result.profit)}` 
-          : result.profit < 0 
-            ? `，亏损 ${formatPrice(Math.abs(result.profit))}` 
-            : '';
+      if (result.success) {
+        let message = `已出售 ${quantity.value} 个 ${selectedProduct.value.name}`;
+        
+        if (result.income) {
+          message += `，获得 ${formatNumber(result.income)} 元`;
+        }
+        
+        if (result.profit) {
+          const profitText = result.profit > 0 
+            ? `，盈利 ${formatNumber(result.profit)}` 
+            : `，亏损 ${formatNumber(Math.abs(result.profit))}`;
+          message += profitText;
+        }
         
         showFeedbackMessage(
           result.profit >= 0 ? 'success' : 'warning',
-          `成功出售 ${quantity.value} 个 ${selectedProduct.value.name}，获得 ${formatPrice(result.income)}${profitText}`
+          message
         );
-    } else {
+      } else {
         showFeedbackMessage('error', result.message || '出售失败');
-    }
+      }
     }
     
     // 重置数量
     quantity.value = 1;
+    
+    // 完成交易后关闭面板
+    emit('close');
   } catch (error) {
     console.error('交易执行出错:', error);
     showFeedbackMessage('error', '交易过程中发生错误');
   }
-};
+}
 
-// 显示反馈消息
+// 修改显示反馈消息的函数，使用事件发射器通知父组件显示全局提示
 const showFeedbackMessage = (type, message) => {
-  feedbackType.value = type;
-  feedbackMessage.value = message;
-  showFeedback.value = true;
-  
-  // 3秒后自动隐藏
-  setTimeout(() => {
-    showFeedback.value = false;
-  }, 3000);
-};
-
-// 确认交易
-const confirmTrade = () => {
-  showConfirmDialog.value = false;
-  executeTrade();
+  // 使用事件发射器发送事件
+  eventEmitter.emit('show:transaction_toast', {
+    message,
+    type,
+    icon: type === 'success' ? '✓' : 
+          type === 'warning' ? '⚠️' : 
+          type === 'error' ? '✗' : '📣',
+    class: type === 'success' ? (tradeType.value === 'buy' ? 'purchase-success' : 'sale-success') : 
+           type === 'error' ? 'purchase-failed' : 'purchase-failed'
+  });
 };
 
 // 监听选中商品变化
@@ -665,177 +648,5 @@ watch(selectedProduct, () => {
   cursor: not-allowed;
 }
 
-.trade-feedback {
-  position: fixed;
-  bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 0.5rem 1rem;
-  background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  z-index: 900;
-  font-size: 0.9rem;
-}
-
-.trade-feedback.success {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.trade-feedback.error {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-/* 反馈消息动画 */
-.feedback-enter-active {
-  animation: feedback-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-.feedback-leave-active {
-  animation: feedback-out 0.3s ease forwards;
-}
-
-@keyframes feedback-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 20px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
-@keyframes feedback-out {
-  from {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-  to {
-  opacity: 0;
-    transform: translate(-50%, -20px);
-  }
-}
-
-.confirm-dialog-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.confirm-dialog {
-  background-color: white;
-  border-radius: 8px;
-  padding: 1.2rem;
-  width: 90%;
-  max-width: 320px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform-origin: center;
-}
-
-/* 确认对话框动画 */
-.confirm-enter-active {
-  animation: confirm-backdrop-in 0.2s ease-out forwards;
-}
-
-.confirm-leave-active {
-  animation: confirm-backdrop-out 0.2s ease-in forwards;
-}
-
-.confirm-enter-active .confirm-dialog {
-  animation: confirm-zoom-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-.confirm-leave-active .confirm-dialog {
-  animation: confirm-zoom-out 0.2s ease-in forwards;
-}
-
-@keyframes confirm-backdrop-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes confirm-backdrop-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes confirm-zoom-in {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes confirm-zoom-out {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-}
-
-.confirm-dialog h3 {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  color: #4a6fa5;
-  font-size: 1.1rem;
-}
-
-.confirm-dialog p {
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-
-.confirm-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-.confirm-buttons button {
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-}
-
-.confirm-buttons .cancel-btn {
-  background-color: #f8f9fa;
-  border: 1px solid #ddd;
-}
-
-.confirm-buttons .cancel-btn:hover {
-  background-color: #e9ecef;
-}
-
-.confirm-buttons .confirm-btn {
-  background-color: #4a6fa5;
-  color: white;
-  border: none;
-}
-
-.confirm-buttons .confirm-btn:hover {
-  background-color: #3d5d8a;
-}
+/* 移除交易反馈相关样式 */
 </style> 

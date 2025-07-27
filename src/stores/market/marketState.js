@@ -553,24 +553,19 @@ export const useMarketStore = defineStore('market', {
      */
     getCurrentProductPrice(productId) {
       if (!productId) {
-        console.warn('MarketStore - getCurrentProductPrice: 找不到商品价格 (ID: ${productId})');
-        
-        // 尝试查找商品的基础价格
-        const product = this.products.find(p => p.id === productId);
-        if (product) {
-          console.log(`MarketStore - 使用商品基础价格: ${product.basePrice}`);
-          return product.basePrice || 0;
-        }
-        
+        console.warn(`MarketStore - getCurrentProductPrice: 无效的商品ID: ${productId}`);
         return 0;
       }
+      
+      // 确保将productId转换为字符串进行比较
+      const productIdStr = String(productId);
       
       // 检查价格是否存在
-      if (!this.productPrices || !this.productPrices[productId]) {
-        console.warn(`MarketStore - getCurrentProductPrice: 找不到商品价格 (ID: ${productId})`);
+      if (!this.productPrices || !this.productPrices[productIdStr]) {
+        console.warn(`MarketStore - getCurrentProductPrice: 找不到商品价格 (ID: ${productIdStr})`);
         
         // 尝试查找商品的基础价格
-        const product = this.products.find(p => p.id === productId);
+        const product = this.products.find(p => String(p.id) === productIdStr);
         if (product) {
           console.log(`MarketStore - 使用商品基础价格: ${product.basePrice}`);
           return product.basePrice || 0;
@@ -579,7 +574,7 @@ export const useMarketStore = defineStore('market', {
         return 0;
       }
       
-      return this.productPrices[productId].price;
+      return this.productPrices[productIdStr].price || 0;
     },
     
     /**

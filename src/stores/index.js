@@ -199,7 +199,23 @@ export const useGameStore = defineStore('gameCompat', () => {
   }
   
   function getCurrentProductPrice(productId) {
-    return market.productPrices[productId]?.price || 0;
+    if (!productId) return 0;
+    
+    // 确保将productId转换为字符串进行比较
+    const productIdStr = String(productId);
+    
+    const price = market.productPrices[productIdStr]?.price;
+    if (price !== undefined && price !== null) {
+      return price;
+    }
+    
+    // 如果在productPrices中找不到价格，尝试从products列表中获取basePrice
+    const product = market.products.find(p => String(p.id) === productIdStr);
+    if (product && product.basePrice) {
+      return product.basePrice;
+    }
+    
+    return 0;
   }
   
   // 添加getProductPriceTrend方法

@@ -6,7 +6,7 @@
         <!-- 事件标题 -->
         <div class="event-header">
           <div class="event-header-content">
-            <h2 class="event-title">{{ currentEvent?.title || '事件' }}</h2>
+          <h2 class="event-title">{{ currentEvent?.title || '事件' }}</h2>
             <div class="event-icon">{{ getEventIcon(currentEvent?.type) }}</div>
           </div>
         </div>
@@ -26,7 +26,7 @@
           <div v-if="resultMessage" class="event-result">
             <div class="result-message">
               <div class="result-icon">✓</div>
-              <p>{{ resultMessage }}</p>
+            <p>{{ resultMessage }}</p>
             </div>
 
             <!-- 添加效果显示区域 -->
