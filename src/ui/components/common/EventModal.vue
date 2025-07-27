@@ -2,30 +2,36 @@
   <div v-show="showModal" class="event-modal-container">
     <!-- 事件模态框 -->
     <div class="event-modal-overlay" @click.self="handleOverlayClick">
-      <div class="event-modal">
+      <div class="event-modal" :class="{ 'with-result': resultMessage }">
         <!-- 事件标题 -->
         <div class="event-header">
-          <h2 class="event-title">{{ currentEvent?.title || '事件' }}</h2>
+          <div class="event-header-content">
+            <h2 class="event-title">{{ currentEvent?.title || '事件' }}</h2>
+            <div class="event-icon">{{ getEventIcon(currentEvent?.type) }}</div>
+          </div>
         </div>
 
         <!-- 事件内容 -->
         <div class="event-content">
           <p class="event-description">{{ currentEvent?.description }}</p>
 
-          <!-- 事件图片 - 暂时禁用 -->
-          <!-- <div v-if="eventImageUrl" class="event-image">
+          <!-- 事件图片 - 如果有的话 -->
+          <div v-if="eventImageUrl" class="event-image">
             <img :src="eventImageUrl" :alt="currentEvent?.title" />
-          </div> -->
+          </div>
         </div>
 
         <!-- 事件选项 -->
         <div class="event-options">
           <div v-if="resultMessage" class="event-result">
-            <p>{{ resultMessage }}</p>
+            <div class="result-message">
+              <div class="result-icon">✓</div>
+              <p>{{ resultMessage }}</p>
+            </div>
 
             <!-- 添加效果显示区域 -->
             <div v-if="effectResults.length > 0" class="effect-results">
-              <h3>效果变化:</h3>
+              <h3>效果变化</h3>
               <div class="effect-list">
                 <div v-for="(effect, index) in effectResults" :key="index"
                      :class="['effect-item', effect.type]">
@@ -72,7 +78,7 @@
               </div>
             </div>
 
-            <button class="event-option-button" @click="hideModal">确定</button>
+            <button class="event-confirm-button" @click="hideModal">确定</button>
           </div>
           <div v-else-if="currentEvent?.options" class="event-option-list">
             <button
@@ -160,6 +166,28 @@ const resolveResourcePath = (url) => {
   return url;
 };
 
+// 根据事件类型获取图标
+const getEventIcon = (type) => {
+  switch (type) {
+    case 'market':
+      return '📊';
+    case 'player':
+      return '👤';
+    case 'house':
+      return '🏠';
+    case 'random':
+      return '🎲';
+    case 'news':
+      return '📰';
+    case 'disaster':
+      return '🌪️';
+    case 'opportunity':
+      return '💼';
+    default:
+      return '📣';
+  }
+};
+
 // 计算属性：事件图片URL
 const eventImageUrl = computed(() => {
   if (!currentEvent.value) return null;
@@ -179,6 +207,18 @@ const eventImageUrl = computed(() => {
 
   return null;
 });
+
+// 获取属性显示名称
+const getAttributeDisplayName = (attribute) => {
+  const attributeNames = {
+    luck: "幸运",
+    charisma: "魅力",
+    intelligence: "智力",
+    stamina: "体力"
+  };
+  
+  return attributeNames[attribute] || attribute;
+};
 
 /**
  * 获取市场效果描述
@@ -419,9 +459,8 @@ defineExpose({
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  /* 移除背景模糊效果 */
-  /* backdrop-filter: blur(3px); */
-  padding: 20px; /* Add some padding for mobile screens */
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.3s ease;
 }
 
 .event-modal-overlay {
@@ -435,114 +474,133 @@ defineExpose({
 
 .event-modal {
   background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   width: 90%;
-  max-width: 550px; /* 减小最大宽度 */
+  max-width: 550px;
   position: relative;
   overflow: hidden;
   margin: 0 auto;
-  max-height: 75vh; /* 减小最大高度 */
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
+  animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .event-header {
-  background-color: #4299e1;
+  background-color: #3498db;
   color: white;
-  padding: 10px 15px; /* 减小内边距 */
+  padding: 15px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+}
+
+.event-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .event-title {
   margin: 0;
-  font-size: 1.2rem; /* 减小字体大小 */
+  font-size: 1.4rem;
   font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  flex-grow: 1;
+  color: white;
 }
 
-.event-type {
-  position: absolute;
-  top: -10px;
-  right: 10px;
-  background-color: #3182ce;
-  color: white;
-  font-size: 0.8rem;
-  padding: 3px 8px;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+.event-icon {
+  font-size: 1.8rem;
+  margin-left: 12px;
+  background-color: rgba(255, 255, 255, 0.2);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .event-content {
-  padding: 10px 15px; /* 减小内边距 */
+  padding: 20px;
   flex: 1;
   overflow-y: auto;
-  max-height: 40vh; /* 限制内容高度 */
+  background-color: white;
+  max-height: 40vh;
 }
 
 .event-description {
-  margin: 0 0 10px 0;
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #2d3748;
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #333;
 }
 
 .event-image {
   width: 100%;
-  margin: 10px 0; /* 减小外边距 */
+  margin: 15px 0;
   border-radius: 8px;
   overflow: hidden;
-  max-height: 180px; /* 限制图片高度 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .event-image img {
   width: 100%;
   height: auto;
   object-fit: cover;
-  border-radius: 6px;
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.event-image:hover img {
+  transform: scale(1.03);
 }
 
 .event-options {
-  padding: 10px 15px; /* 减小内边距 */
-  background-color: #f7fafc;
-  border-top: 1px solid #e2e8f0;
+  padding: 0 20px 20px;
+  background-color: white;
 }
 
 .event-option-list {
   display: flex;
   flex-direction: column;
-  gap: 8px; /* 减小选项间距 */
+  gap: 12px;
 }
 
 .event-option-button {
-  background-color: #ebf4ff;
-  border: 1px solid #bee3f8;
-  color: #3182ce;
-  padding: 8px 12px; /* 减小内边距 */
-  border-radius: 6px;
-  font-size: 0.95rem; /* 减小字体大小 */
+  background-color: #3498db;
+  color: white;
+  padding: 14px 20px;
+  border-radius: 8px;
+  font-size: 1.05rem;
   font-weight: 500;
   cursor: pointer;
   text-align: left;
   position: relative;
-  transition: all 0.2s;
-  width: 100%;
+  transition: all 0.2s ease;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .event-option-button::after {
   content: '›';
-  position: absolute;
-  right: 15px;
-  font-size: 1.5rem;
-  opacity: 0.7;
-  transition: transform 0.3s ease;
+  font-size: 1.6rem;
+  line-height: 1;
+  opacity: 0.8;
+  transition: transform 0.2s ease;
 }
 
 .event-option-button:hover {
-  background-color: #3a7bc8;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: #2980b9;
   transform: translateY(-2px);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
 }
 
 .event-option-button:hover::after {
@@ -555,145 +613,98 @@ defineExpose({
 }
 
 .event-option-button:disabled {
-  background-color: #a0aec0;
+  background-color: #bdc3c7;
+  color: #ecf0f1;
   cursor: not-allowed;
   box-shadow: none;
   opacity: 0.7;
 }
 
-/* 结果确认按钮样式 */
-.event-result .event-option-button {
-  background-color: #38b2ac;
+.event-option-button:disabled::after {
+  opacity: 0.3;
+}
+
+/* 结果样式 */
+.event-result {
+  padding: 20px 0 10px;
   text-align: center;
-  justify-content: center;
-  font-weight: 600;
-  max-width: 180px;
-  margin: 15px auto 0;
-  padding: 10px 25px;
-  border-radius: 20px;
+  animation: fadeIn 0.4s ease;
 }
 
-.event-result .event-option-button::after {
-  content: none;
-}
-
-.event-result .event-option-button:hover {
-  background-color: #319795;
-}
-
-.option-effects {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background-color: #f7fafc;
-  border-radius: 5px;
-  font-size: 0.9rem;
-  border-left: 3px solid #4299e1;
-}
-
-.effect-item {
+.result-message {
+  background-color: #f1f9ff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border-left: 4px solid #3498db;
   display: flex;
   align-items: center;
-  margin: 5px 0;
-  font-size: 0.85rem;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-.effect-icon {
-  margin-right: 8px;
-}
-
-.money {
-  color: #38a169;
-}
-
-.money:not(.positive) {
-  color: #e53e3e;
-}
-
-.debt {
-  color: #e53e3e;
-}
-
-.debt:not(.positive) {
-  color: #38a169;
-}
-
-.capacity {
-  color: #4299e1;
-}
-
-.inventory {
-  color: #805ad5;
-}
-
-.market {
-  color: #dd6b20;
-}
-
-.event-result {
-  background-color: #f0f9ff;
-  padding: 15px; /* 减小内边距 */
-  border-radius: 8px;
-  margin-bottom: 10px; /* 减小下边距 */
-  text-align: center;
-  border-left: 4px solid #38b2ac;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  width: 90%; /* 减小宽度 */
-  max-width: 400px; /* 减小最大宽度 */
-  margin-left: auto;
-  margin-right: auto;
-  animation: fade-in 0.3s ease-in-out;
-  display: block; /* 确保始终显示 */
-}
-
-.event-result p {
-  margin-bottom: 12px; /* 减小下边距 */
-  font-size: 1rem; /* 减小字体大小 */
-  color: #2d3748;
-}
-
-.event-actions {
-  padding: 0 20px 20px;
+.result-icon {
+  background-color: #3498db;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   display: flex;
+  align-items: center;
   justify-content: center;
+  font-size: 0.9rem;
+  margin-right: 12px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
 }
 
-.event-close {
-  width: 100%;
-  background-color: #4299e1;
+.result-message p {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #2c3e50;
+}
+
+.event-confirm-button {
+  background-color: #2ecc71;
   color: white;
   border: none;
-  border-radius: 5px;
-  padding: 12px 15px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  padding: 12px 30px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.event-close:hover {
-  background-color: #3182ce;
+.event-confirm-button:hover {
+  background-color: #27ae60;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.event-close:active {
-  transform: scale(0.98);
+.event-confirm-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* 效果结果样式 */
 .effect-results {
-  margin-top: 15px;
-  background-color: #f8fafc;
+  background-color: #f8f9fa;
   border-radius: 8px;
-  padding: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
   text-align: left;
-  border: 1px solid #e2e8f0;
-  width: 100%;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
 }
 
 .effect-results h3 {
-  font-size: 1rem;
-  margin: 0 0 10px 0;
-  color: #4a5568;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 5px;
+  font-size: 1.05rem;
+  margin: 0 0 12px 0;
+  color: #495057;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 8px;
+  text-align: center;
 }
 
 .effect-list {
@@ -705,68 +716,110 @@ defineExpose({
 .effect-item {
   display: flex;
   align-items: center;
-  padding: 5px;
-  border-radius: 4px;
-  background-color: #fff;
-  border-left: 3px solid #cbd5e0;
-  animation: fade-in 0.3s ease-in-out;
+  padding: 10px 12px;
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease;
+  animation-fill-mode: both;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+.effect-item:nth-child(1) { animation-delay: 0.1s; }
+.effect-item:nth-child(2) { animation-delay: 0.2s; }
+.effect-item:nth-child(3) { animation-delay: 0.3s; }
+.effect-item:nth-child(4) { animation-delay: 0.4s; }
+.effect-item:nth-child(5) { animation-delay: 0.5s; }
 
-.effect-item.money {
-  border-left-color: #38a169;
-}
-
-.effect-item.debt {
-  border-left-color: #e53e3e;
-}
-
-.effect-item.capacity {
-  border-left-color: #4299e1;
-}
-
-.effect-item.item_add {
-  border-left-color: #805ad5;
-}
-
-.effect-item.item_remove {
-  border-left-color: #dd6b20;
-}
-
-.effect-item.market {
-  border-left-color: #f6ad55;
-}
-
-.effect-item.attribute {
-  border-left-color: #9f7aea;
-}
-
-.effect-item.info {
-  border-left-color: #4299e1;
-  background-color: #ebf8ff;
-}
-
-.effect-item.error {
-  border-left-color: #e53e3e;
-  background-color: #fff5f5;
+.effect-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
 .effect-icon {
   font-size: 1.2rem;
-  margin-right: 10px;
+  margin-right: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
 }
 
 .effect-description {
-  font-size: 0.9rem;
-  color: #4a5568;
+  font-size: 0.95rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+/* 不同效果类型样式 */
+.effect-item.money {
+  background-color: #e8f5e9;
+}
+.effect-item.money .effect-icon {
+  background-color: #4caf50;
+  color: white;
+}
+
+.effect-item.debt {
+  background-color: #ffebee;
+}
+.effect-item.debt .effect-icon {
+  background-color: #f44336;
+  color: white;
+}
+
+.effect-item.capacity {
+  background-color: #e3f2fd;
+}
+.effect-item.capacity .effect-icon {
+  background-color: #2196f3;
+  color: white;
+}
+
+.effect-item.item_add {
+  background-color: #f3e5f5;
+}
+.effect-item.item_add .effect-icon {
+  background-color: #9c27b0;
+  color: white;
+}
+
+.effect-item.item_remove {
+  background-color: #fff3e0;
+}
+.effect-item.item_remove .effect-icon {
+  background-color: #ff9800;
+  color: white;
+}
+
+.effect-item.market {
+  background-color: #fff8e1;
+}
+.effect-item.market .effect-icon {
+  background-color: #ffc107;
+  color: white;
+}
+
+.effect-item.attribute {
+  background-color: #ede7f6;
+}
+.effect-item.attribute .effect-icon {
+  background-color: #673ab7;
+  color: white;
+}
+
+.with-result .event-header {
+  background-color: #2ecc71;
+}
+
+@keyframes scaleIn {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>
