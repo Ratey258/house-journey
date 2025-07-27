@@ -48,7 +48,7 @@
           <div class="input-group">
             <button @click="advanceWeek" class="action-button">+1周</button>
             <button @click="advanceMultipleWeeks(5)" class="action-button">+5周</button>
-            <input type="number" v-model.number="weekToSet" min="1" :max="isEndlessMode ? 999999 : gameStore.maxWeeks" placeholder="周数" />
+            <input type="number" v-model.number="weekToSet" min="1" :max="gameStore.maxWeeks" placeholder="周数" />
             <button @click="setCurrentWeek" class="action-button">设置</button>
           </div>
         </div>
@@ -294,9 +294,6 @@ const positionStyle = computed(() => {
   };
 });
 
-const currentPlayer = computed(() => playerStore.player);
-const isEndlessMode = computed(() => gameStore.isEndlessMode);
-
 // 方法
 // 拖动相关
 const startDrag = (e) => {
@@ -407,14 +404,9 @@ const advanceMultipleWeeks = (weeks) => {
   }
 };
 
-// 周数操作
 const setCurrentWeek = () => {
-  if (weekToSet.value !== null && weekToSet.value >= 1 && 
-      (isEndlessMode.value || weekToSet.value <= gameStore.maxWeeks)) {
+  if (weekToSet.value !== null && weekToSet.value >= 1 && weekToSet.value <= gameStore.maxWeeks) {
     gameStore.currentWeek = weekToSet.value;
-    toast.success(`已将当前周数设置为 ${weekToSet.value}`);
-  } else {
-    toast.error('无效的周数值');
   }
 };
 
