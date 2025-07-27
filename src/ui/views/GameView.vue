@@ -21,10 +21,6 @@
         </div>
       </div>
 
-      <div class="center-info">
-        <!-- 移除logo图片，保留空白区域 -->
-      </div>
-
       <div class="right-info">
         <button class="menu-button" @click="showGameMenu">
           <span class="menu-icon">≡</span>
@@ -792,34 +788,16 @@ const handleBeforeUnload = async (event) => {
   z-index: -1;
 }
 
-.left-info, .right-info {
+.left-info {
   flex: 1;
-}
-
-.center-info {
-  flex: 2;
-  text-align: center;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: flex-start;
 }
 
-.game-logo {
-  height: 36px;
+.right-info {
+  flex: 1;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  transition: transform 0.3s ease;
-}
-
-.game-logo:hover {
-  transform: scale(1.05);
-}
-
-.game-logo-img {
-  height: 100%;
-  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.2));
+  justify-content: flex-end;
 }
 
 .week-indicator {
