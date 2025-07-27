@@ -383,11 +383,13 @@ const showFeedbackMessage = (type, message) => {
   eventEmitter.emit('show:transaction_toast', {
     message,
     type,
-    icon: type === 'success' ? '✓' : 
-          type === 'warning' ? '⚠️' : 
-          type === 'error' ? '✗' : '📣',
-    class: type === 'success' ? (tradeType.value === 'buy' ? 'purchase-success' : 'sale-success') : 
-           type === 'error' ? 'purchase-failed' : 'purchase-failed'
+    icon: tradeType.value === 'buy' 
+      ? (type === 'success' ? '✓' : type === 'warning' ? '⚠️' : type === 'error' ? '✗' : '📣')
+      : '💰', // 出售时始终使用💰图标，与快速出售保持一致
+    class: type === 'success' 
+      ? (tradeType.value === 'buy' ? 'purchase-success' : 'sale-success') 
+      : (tradeType.value === 'sell' && type === 'warning' ? 'sale-success' : 'purchase-failed')
+      // 确保出售亏损时也使用sale-success类
   });
 };
 
