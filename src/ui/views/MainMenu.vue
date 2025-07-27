@@ -1,5 +1,7 @@
 <template>
   <div class="main-menu">
+    <div class="animated-bg"></div>
+    
     <div class="menu-container">
       <div class="title-section">
         <h1 class="game-title">买房记</h1>
@@ -38,66 +40,68 @@
     <transition name="dialog-fade">
       <div v-if="showDialog" class="dialog-overlay" @click.self="cancelNewGame">
         <transition name="dialog-zoom">
-          <div class="dialog" v-if="showDialog">
+          <div class="dialog magic-card" v-if="showDialog">
             <h2 class="dialog-title animate-item">开始新游戏</h2>
-        <div class="dialog-content">
+            <div class="dialog-content">
               <div class="form-group animate-item">
-            <label for="playerName">用户名：</label>
-            <input
-              type="text"
-              id="playerName"
-              v-model="playerName"
-              placeholder="请输入用户名"
-              maxlength="12"
-              @keydown.enter="startNewGame"
-            />
-          </div>
+                <label for="playerName">用户名：</label>
+                <div class="input-container">
+                  <input
+                    type="text"
+                    id="playerName"
+                    v-model="playerName"
+                    placeholder="请输入用户名"
+                    maxlength="12"
+                    @keydown.enter="startNewGame"
+                    class="shine-input"
+                  />
+                  <div class="input-shine"></div>
+                </div>
+              </div>
 
               <div class="form-group animate-item">
-            <label>选择难度：</label>
-            <div class="difficulty-options">
-              <label class="radio-label">
-                <input type="radio" v-model="difficulty" value="easy" />
-                简单
-              </label>
-              <label class="radio-label">
-                <input type="radio" v-model="difficulty" value="standard" />
-                标准
-              </label>
-              <label class="radio-label">
-                <input type="radio" v-model="difficulty" value="hard" />
-                困难
-              </label>
-            </div>
-          </div>
+                <label>选择难度：</label>
+                <div class="difficulty-options">
+                  <label class="menu-option-card" :class="{ 'selected': difficulty === 'easy' }">
+                    <input type="radio" v-model="difficulty" value="easy" />
+                    <span>简单</span>
+                  </label>
+                  <label class="menu-option-card" :class="{ 'selected': difficulty === 'standard' }">
+                    <input type="radio" v-model="difficulty" value="standard" />
+                    <span>标准</span>
+                  </label>
+                  <label class="menu-option-card" :class="{ 'selected': difficulty === 'hard' }">
+                    <input type="radio" v-model="difficulty" value="hard" />
+                    <span>困难</span>
+                  </label>
+                </div>
+              </div>
 
-          <div class="form-group animate-item">
-            <label>选择模式：</label>
-            <div class="mode-options">
-              <label class="radio-label">
-                <input type="radio" v-model="gameMode" value="classic" />
-                经典模式
-              </label>
-              <label class="radio-label">
-                <input type="radio" v-model="gameMode" value="endless" />
-                无尽模式
-              </label>
+              <div class="form-group animate-item">
+                <label>选择模式：</label>
+                <div class="mode-options">
+                  <label class="menu-option-card" :class="{ 'selected': gameMode === 'classic' }">
+                    <input type="radio" v-model="gameMode" value="classic" />
+                    <span>经典模式</span>
+                  </label>
+                  <label class="menu-option-card" :class="{ 'selected': gameMode === 'endless' }">
+                    <input type="radio" v-model="gameMode" value="endless" />
+                    <span>无尽模式</span>
+                  </label>
+                </div>
+                <!-- 移除模式描述框 -->
+              </div>
             </div>
-            <div class="mode-description">
-              {{ gameModeDescription }}
-            </div>
-          </div>
-        </div>
 
             <div class="dialog-actions animate-item">
-          <button class="button" @click="cancelNewGame" :disabled="isLoading">取消</button>
-          <button class="button primary" @click="startNewGame" :disabled="!playerName.trim() || isLoading">
-            {{ isLoading ? '加载中...' : '开始游戏' }}
-          </button>
-        </div>
-      </div>
+              <button class="game-btn cancel-btn" @click="cancelNewGame" :disabled="isLoading">取消</button>
+              <button class="game-btn primary-btn" @click="startNewGame" :disabled="!playerName.trim() || isLoading">
+                {{ isLoading ? '加载中...' : '开始游戏' }}
+              </button>
+            </div>
+          </div>
         </transition>
-    </div>
+      </div>
     </transition>
 
     <!-- 加载指示器 -->
@@ -180,15 +184,6 @@ const devToastMessage = ref('');
 // 关于对话框状态
 const showAbout = ref(false);
 
-// 游戏模式描述
-const gameModeDescription = computed(() => {
-  if (gameMode.value === 'classic') {
-    return '经典模式：在52周内完成游戏目标，体验原汁原味的买房挑战。';
-  } else {
-    return '无尽模式：没有周数限制，可以无限游玩，慢慢积累财富。';
-  }
-});
-
 // 加载提示
 const loadingTips = [
   "正在准备市场数据...",
@@ -201,6 +196,99 @@ const loadingTips = [
 // 显示新游戏对话框
 function showNewGameDialog() {
   showDialog.value = true;
+  // 在下一个事件循环添加鼠标跟踪效果
+  setTimeout(() => {
+    initMagicCard();
+  }, 100);
+}
+
+// Magic Card 鼠标跟随效果
+function initMagicCard() {
+  const magicCard = document.querySelector('.magic-card');
+  if (magicCard) {
+    // 对话框鼠标跟随效果
+    magicCard.addEventListener('mousemove', (e) => {
+      const rect = magicCard.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      magicCard.style.setProperty('--x', `${x}%`);
+      magicCard.style.setProperty('--y', `${y}%`);
+    });
+    
+    // 初始化输入框光效
+    const inputContainer = magicCard.querySelector('.input-container');
+    if (inputContainer) {
+      const shine = inputContainer.querySelector('.input-shine');
+      
+      inputContainer.addEventListener('mousemove', (e) => {
+        const rect = inputContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        if (shine) {
+          shine.style.opacity = '0.6';
+          shine.style.left = `${x - 20}px`;
+        }
+      });
+      
+      inputContainer.addEventListener('mouseleave', () => {
+        if (shine) {
+          shine.style.opacity = '0';
+        }
+      });
+      
+      const input = inputContainer.querySelector('input');
+      if (input) {
+        input.addEventListener('focus', () => {
+          inputContainer.style.transform = 'translateY(-2px)';
+          inputContainer.style.boxShadow = '0 4px 15px rgba(58, 99, 184, 0.15), 0 0 0 1px rgba(58, 99, 184, 0.3)';
+        });
+        
+        input.addEventListener('blur', () => {
+          inputContainer.style.transform = '';
+          inputContainer.style.boxShadow = '';
+        });
+      }
+    }
+    
+    // 选项卡悬停效果增强
+    const optionCards = magicCard.querySelectorAll('.menu-option-card');
+    optionCards.forEach(card => {
+      card.addEventListener('mouseenter', () => {
+        const span = card.querySelector('span');
+        if (span) {
+          span.style.transform = 'translateY(-2px)';
+        }
+      });
+      
+      card.addEventListener('mouseleave', () => {
+        if (!card.classList.contains('selected')) {
+          const span = card.querySelector('span');
+          if (span) {
+            span.style.transform = '';
+          }
+        }
+      });
+    });
+    
+    // 按钮增强效果
+    const buttons = magicCard.querySelectorAll('.game-btn');
+    buttons.forEach(button => {
+      button.addEventListener('mouseenter', () => {
+        button.style.transform = 'translateY(-2px)';
+        
+        if (button.classList.contains('primary-btn')) {
+          const buttonRect = button.getBoundingClientRect();
+          button.style.boxShadow = '0 6px 20px rgba(58, 99, 184, 0.3)';
+        } else {
+          button.style.boxShadow = '0 6px 15px rgba(0, 0, 0, 0.15)';
+        }
+      });
+      
+      button.addEventListener('mouseleave', () => {
+        button.style.transform = '';
+        button.style.boxShadow = '';
+      });
+    });
+  }
 }
 
 // 显示开发中提示
@@ -409,6 +497,71 @@ onMounted(() => {
   100% { background-position: 0% 50%; }
 }
 
+.animated-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+  animation: pulse 10s infinite;
+  z-index: -1; /* 确保背景在其他内容下方 */
+  overflow: hidden;
+}
+
+.animated-bg::before,
+.animated-bg::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+/* 闪烁星星效果 */
+.animated-bg::before {
+  background-image: 
+    radial-gradient(2px 2px at 40px 70px, #fff 100%, transparent),
+    radial-gradient(2px 2px at 100px 150px, #fff 100%, transparent),
+    radial-gradient(1px 1px at 200px 50px, #fff 100%, transparent),
+    radial-gradient(1px 1px at 300px 250px, #fff 100%, transparent),
+    radial-gradient(2px 2px at 400px 100px, #fff 100%, transparent),
+    radial-gradient(1px 1px at 500px 200px, #fff 100%, transparent);
+  background-repeat: repeat;
+  background-size: 600px 600px;
+  opacity: 0.3;
+  animation: stars 6s linear infinite;
+}
+
+/* 流星效果 */
+.animated-bg::after {
+  background-image: 
+    linear-gradient(to bottom right, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+  transform: rotate(-45deg) translate(0, -100%) scale(2);
+  animation: meteor 10s ease-in infinite;
+}
+
+@keyframes stars {
+  0% { background-position: 0 0; opacity: 0.1; }
+  50% { opacity: 0.3; }
+  100% { background-position: 600px 600px; opacity: 0.1; }
+}
+
+@keyframes meteor {
+  0% { transform: rotate(-45deg) translate(-100%, -100%) scale(0.5); opacity: 0; }
+  10% { opacity: 0.8; }
+  20% { transform: rotate(-45deg) translate(100%, 100%) scale(0.5); opacity: 0; }
+  100% { transform: rotate(-45deg) translate(100%, 100%) scale(0.5); opacity: 0; }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 0.5; }
+}
+
 .menu-container {
   background-color: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
@@ -588,13 +741,45 @@ onMounted(() => {
 }
 
 .dialog {
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-  width: 400px;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.3);
+  width: 450px;
   padding: 30px;
   animation: dialogIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 对话框背景 */
+.dialog-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(58, 99, 184, 0.1) 0%, transparent 60%),
+    radial-gradient(circle at 80% 80%, rgba(58, 99, 184, 0.08) 0%, transparent 60%);
+  z-index: -1;
+}
+
+/* Magic Card 效果 */
+.magic-card:before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), 
+                            rgba(255, 255, 255, 0.3) 0%, 
+                            transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.magic-card:hover:before {
+  opacity: 1;
 }
 
 @keyframes dialogIn {
@@ -603,23 +788,30 @@ onMounted(() => {
 }
 
 .dialog-title {
-  font-size: 24px;
-  margin-bottom: 20px;
-  color: #1a2a6c;
+  font-size: 28px;
+  margin-bottom: 24px;
+  color: #233863;
   text-align: center;
   position: relative;
+  font-weight: bold;
+  letter-spacing: 1px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.dialog-title:after {
-  content: '';
-  position: absolute;
-  width: 80px;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, #3498db, transparent);
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: 2px;
+/* Aurora Text 效果 - 使用主菜单标题风格 */
+.aurora-text {
+  background-image: linear-gradient(90deg, #233863, #3a63b8, #233863);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: aurora 4s ease infinite;
+}
+
+@keyframes aurora {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .form-group {
@@ -628,86 +820,143 @@ onMounted(() => {
 
 .form-group label {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   font-weight: 500;
   color: #2c3e50;
+  font-size: 16px;
 }
 
-.form-group input[type="text"] {
+/* 文本输入框样式 */
+.input-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+
+.shine-input {
   width: 100%;
   padding: 12px 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
   font-size: 16px;
+  background-color: #fafafa;
   transition: all 0.3s;
-  background-color: #f8f9fa;
+  position: relative;
+  z-index: 1;
 }
 
-.form-group input[type="text"]:focus {
-  border-color: #3498db;
+.shine-input:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  border-color: #3a63b8;
   background-color: #fff;
 }
 
-.difficulty-options {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-  gap: 10px;
+/* 发光效果 */
+.input-shine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.6),
+    transparent
+  );
+  transform: skewX(-15deg);
+  animation: shine 6s infinite;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
 }
 
-.radio-label {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 10px 15px;
-  border-radius: 6px;
-  flex: 1;
-  transition: all 0.3s;
-  background-color: #f8f9fa;
-  border: 2px solid #e0e0e0;
+.input-container:hover .input-shine,
+.shine-input:focus + .input-shine {
+  opacity: 0.6;
 }
 
-.radio-label:hover {
-  background-color: #edf2f7;
+@keyframes shine {
+  0% { left: -100%; }
+  20%, 100% { left: 100%; }
 }
 
-.radio-label input {
-  margin-right: 8px;
-}
-
-.radio-label input:checked + span {
-  font-weight: 500;
-}
-
+/* 单选按钮卡片样式 */
+.difficulty-options,
 .mode-options {
   display: flex;
   justify-content: space-between;
-  margin-top: 10px;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
-.mode-description {
-  margin-top: 12px;
-  font-size: 0.9rem;
-  color: #666;
-  font-style: italic;
-  line-height: 1.4;
-  padding: 8px 12px;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  border-left: 3px solid #3498db;
+.menu-option-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  flex: 1;
+  background-color: #f5f7fa;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  border: 1px solid transparent;
+  color: #34495e;
+  text-align: center;
+}
+
+.menu-option-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.08);
+}
+
+.menu-option-card input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.menu-option-card span {
+  font-weight: 500;
+  z-index: 1;
+  transition: all 0.2s;
+}
+
+/* 选中效果 */
+.menu-option-card.selected {
+  background-color: #f0f4ff;
+  border-color: #3a63b8;
+  box-shadow: 0 2px 10px rgba(58, 99, 184, 0.2);
+}
+
+.menu-option-card.selected span {
+  font-weight: 600;
+}
+
+/* Text Reveal 效果 */
+.text-reveal {
+  opacity: 0;
+  animation: text-fade-in 1s ease forwards;
+  animation-delay: 0.3s;
+}
+
+@keyframes text-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .dialog-actions {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 20px;
   margin-top: 30px;
 }
 
-.button {
+/* 按钮样式 */
+.game-btn {
   padding: 12px 24px;
   border-radius: 8px;
   font-size: 16px;
@@ -716,46 +965,58 @@ onMounted(() => {
   transition: all 0.3s;
   min-width: 120px;
   font-weight: 500;
+  position: relative;
+  overflow: hidden;
 }
 
-.button.primary {
-  background-color: #3498db;
-  color: white;
-  box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
-}
-
-.button.primary:hover {
-  background-color: #2980b9;
-  box-shadow: 0 6px 8px rgba(52, 152, 219, 0.3);
-  transform: translateY(-2px);
-}
-
-.button.primary:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
-}
-
-.button.primary:disabled {
-  background-color: #95a5a6;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.button:not(.primary) {
+.cancel-btn {
   background-color: #f1f2f6;
   color: #34495e;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e0e0e0;
 }
 
-.button:not(.primary):hover {
-  background-color: #dfe4ea;
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
+.cancel-btn:hover {
+  background-color: #e8ecf5;
   transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-.button:not(.primary):active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+.primary-btn {
+  background-color: #3a63b8;
+  color: #fff;
+  position: relative;
+}
+
+.primary-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: all 0.6s;
+}
+
+.primary-btn:hover {
+  background-color: #2d4f99;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(58, 99, 184, 0.25);
+}
+
+.primary-btn:hover::before {
+  left: 100%;
+}
+
+.primary-btn:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* 加载指示器样式 */

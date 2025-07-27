@@ -13,8 +13,8 @@
     <header v-if="!isLoading" class="game-header">
       <div class="left-info">
         <div class="week-indicator">
-          <span class="label">{{ $t('game.week') }}:</span>
-          <span class="value">{{ currentWeek }}{{ isEndlessMode ? '' : ' / ' + maxWeeks }}</span>
+          <div class="week-label">{{ $t('game.week') }}</div>
+          <div class="week-value">{{ currentWeek }}{{ isEndlessMode ? ' / ∞' : ' / ' + maxWeeks }}</div>
           <div class="progress-bar">
             <div class="progress" :style="{ width: `${gameProgress}%` }"></div>
           </div>
@@ -22,12 +22,13 @@
       </div>
 
       <div class="center-info">
-        <h1 class="game-title">{{ $t('game.title') }}</h1>
+        <!-- 移除logo图片，保留空白区域 -->
       </div>
 
       <div class="right-info">
         <button class="menu-button" @click="showGameMenu">
-          {{ $t('game.menu') }}
+          <span class="menu-icon">≡</span>
+          <span class="menu-text">{{ $t('game.menu') }}</span>
         </button>
       </div>
     </header>
@@ -767,45 +768,93 @@ const handleBeforeUnload = async (event) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-    padding: 10px 20px;
-    background-color: #3498db;
-    color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-  }
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #2980b9, #3498db);
+  color: white;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
 
-  .left-info, .right-info {
-    flex: 1;
-  }
+/* 添加一个背景装饰效果 */
+.game-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('../.././../resources/assets/images/placeholder.txt') no-repeat;
+  background-size: cover;
+  opacity: 0.05;
+  z-index: -1;
+}
 
-  .center-info {
-    flex: 2;
-    text-align: center;
-  }
+.left-info, .right-info {
+  flex: 1;
+}
 
-  .game-title {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+.center-info {
+  flex: 2;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game-logo {
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.game-logo:hover {
+  transform: scale(1.05);
+}
+
+.game-logo-img {
+  height: 100%;
+  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.2));
 }
 
 .week-indicator {
   display: flex;
   align-items: center;
-    gap: 10px;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.week-indicator .label {
-    font-weight: 500;
+.week-indicator:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
-.week-indicator .value {
-    font-weight: 600;
-    background-color: rgba(255, 255, 255, 0.2);
-    padding: 2px 8px;
-    border-radius: 12px;
+.week-label {
+  font-weight: 500;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.week-value {
+  font-weight: 700;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 3px 12px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .progress-bar {
@@ -814,29 +863,47 @@ const handleBeforeUnload = async (event) => {
   background-color: rgba(255, 255, 255, 0.3);
   border-radius: 3px;
   overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .progress {
   height: 100%;
   background-color: #2ecc71;
-    border-radius: 3px;
+  border-radius: 3px;
   transition: width 0.3s ease;
+  box-shadow: 0 0 4px rgba(46, 204, 113, 0.5);
 }
 
 .menu-button {
-  background-color: rgba(255, 255, 255, 0.2);
-  border: none;
-    color: white;
-  padding: 6px 12px;
-  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
   cursor: pointer;
   font-weight: 500;
-    transition: background-color 0.2s;
-    float: right;
+  transition: all 0.2s ease;
+  float: right;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-icon {
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .menu-button:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
+}
+
+.menu-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* 通知区域 */

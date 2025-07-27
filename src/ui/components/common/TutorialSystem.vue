@@ -8,7 +8,9 @@
           <span>{{ currentTip.title }}</span>
         </div>
         <div class="tip-controls">
-          <button v-if="!minimized" class="minimize-btn" @click.stop="minimized = true">_</button>
+          <button v-if="!minimized" class="minimize-btn" @click.stop="minimized = true">
+            <span class="minimize-icon"></span>
+          </button>
           <button class="close-btn" @click.stop="closeTip">×</button>
         </div>
       </div>
@@ -380,72 +382,126 @@ export default {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 350px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  width: 380px;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18), 
+              0 1px 1px rgba(255, 255, 255, 0.3) inset,
+              0 -1px 1px rgba(0, 0, 0, 0.05) inset;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 1000;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform-origin: bottom right;
+  animation: tipEntrance 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes tipEntrance {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .tutorial-tip.minimized {
-  width: 200px;
+  width: 220px;
   height: auto;
+  transform: scale(0.9);
+  opacity: 0.9;
 }
 
 .tip-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #3498db;
+  background: linear-gradient(135deg, #1a2a6c, #3498db);
   color: white;
-  padding: 10px 15px;
+  padding: 12px 16px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tip-header:hover {
+  background: linear-gradient(135deg, #1a2a6c, #2980b9);
 }
 
 .tip-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
 .tip-icon {
   font-size: 1.2rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
 .tip-controls {
   display: flex;
-  gap: 5px;
+  gap: 8px;
 }
 
 .minimize-btn, .close-btn {
   background: none;
   border: none;
   color: white;
-  font-size: 1rem;
+  font-size: 1.1rem;
   cursor: pointer;
-  padding: 0 5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.minimize-btn:hover, .close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.minimize-icon {
+  display: block;
+  width: 12px;
+  height: 2px;
+  background-color: white;
+  border-radius: 1px;
 }
 
 .tip-content {
-  padding: 15px;
+  padding: 18px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .tip-body {
-  margin-bottom: 15px;
-  line-height: 1.5;
+  margin-bottom: 18px;
+  line-height: 1.6;
   color: #2c3e50;
+  font-size: 15px;
 }
 
 .tip-footer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .tip-navigation {
@@ -459,8 +515,15 @@ export default {
   border: none;
   color: #3498db;
   cursor: pointer;
-  padding: 5px;
+  padding: 5px 8px;
   font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background-color: rgba(52, 152, 219, 0.1);
 }
 
 .nav-btn:disabled {
@@ -471,31 +534,54 @@ export default {
 .tip-counter {
   font-size: 0.9rem;
   color: #7f8c8d;
+  font-weight: 500;
 }
 
 .tip-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 4px;
 }
 
 .dont-show-again {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.8rem;
+  gap: 6px;
+  font-size: 0.85rem;
   color: #7f8c8d;
   cursor: pointer;
 }
 
+.dont-show-again input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: #3498db;
+}
+
 .got-it-btn {
-  background-color: #3498db;
+  background: linear-gradient(to bottom, #3498db, #2980b9);
   color: white;
   border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
+  border-radius: 6px;
+  padding: 8px 16px;
   cursor: pointer;
   font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.got-it-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(to bottom, #2980b9, #2573a7);
+}
+
+.got-it-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* 帮助按钮样式 */
@@ -507,25 +593,31 @@ export default {
 }
 
 .help-button {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
-  background-color: #3498db;
+  background: linear-gradient(135deg, #1a2a6c, #3498db);
   color: white;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2),
+              0 1px 1px rgba(255, 255, 255, 0.15) inset;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .help-button:hover {
-  transform: scale(1.1);
-  background-color: #2980b9;
+  transform: scale(1.1) translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25),
+              0 1px 1px rgba(255, 255, 255, 0.15) inset;
+}
+
+.help-button:active {
+  transform: scale(0.95);
 }
 
 /* 帮助面板样式 */
@@ -535,35 +627,54 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: fadeIn 0.3s ease;
 }
 
 .help-panel {
   background-color: white;
-  border-radius: 8px;
-  width: 80%;
-  max-width: 800px;
-  max-height: 80vh;
+  border-radius: 12px;
+  width: 85%;
+  max-width: 850px;
+  max-height: 85vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25),
+              0 1px 1px rgba(255, 255, 255, 0.5) inset;
+  animation: panelEntrance 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes panelEntrance {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .help-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
+  padding: 18px 24px;
   border-bottom: 1px solid #eee;
+  background: linear-gradient(to right, #f8f9fa, white);
 }
 
 .help-header h2 {
   margin: 0;
-  color: #2c3e50;
+  color: #1a2a6c;
+  font-size: 24px;
+  font-weight: 600;
 }
 
 .help-content {
@@ -577,22 +688,28 @@ export default {
   display: flex;
   border-bottom: 1px solid #eee;
   background-color: #f8f9fa;
+  padding: 0 10px;
 }
 
 .tab-btn {
-  padding: 12px 20px;
+  padding: 15px 22px;
   border: none;
   background: none;
   font-size: 1rem;
   cursor: pointer;
   color: #7f8c8d;
   position: relative;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .tab-btn.active {
   color: #3498db;
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.tab-btn:hover:not(.active) {
+  color: #34495e;
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
 .tab-btn.active::after {
@@ -603,45 +720,57 @@ export default {
   width: 100%;
   height: 3px;
   background-color: #3498db;
+  transform: scaleX(0.8);
+  transition: transform 0.3s ease;
+}
+
+.tab-btn.active:hover::after {
+  transform: scaleX(1);
 }
 
 .tab-content {
-  padding: 20px;
+  padding: 24px;
   overflow-y: auto;
   flex: 1;
 }
 
 .help-section {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .help-section h3 {
-  color: #2c3e50;
+  color: #1a2a6c;
   margin-top: 0;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .help-section p {
-  margin-bottom: 15px;
-  line-height: 1.5;
+  margin-bottom: 16px;
+  line-height: 1.6;
   color: #2c3e50;
 }
 
 .help-section ul {
-  padding-left: 20px;
-  margin-bottom: 15px;
+  padding-left: 24px;
+  margin-bottom: 16px;
 }
 
 .help-section li {
-  margin-bottom: 5px;
-  line-height: 1.5;
+  margin-bottom: 8px;
+  line-height: 1.6;
   color: #2c3e50;
 }
 
 @media (max-width: 768px) {
   .tutorial-tip {
     width: calc(100% - 40px);
-    max-width: 350px;
+    max-width: 380px;
+  }
+  
+  .tutorial-tip.minimized {
+    width: 180px;
   }
   
   .help-panel {
