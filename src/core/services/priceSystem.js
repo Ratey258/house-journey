@@ -224,6 +224,27 @@ export function calculateNewPrice(product, week, previousPrice = null, locationF
   const categoryModifier = marketModifiers.categoryModifiers?.[category] || 1;
   const productModifier = marketModifiers.productModifiers?.[productId] || 1;
 
+  // 新增：地区价格修正和地区内特定商品价格修正
+  const currentLocationId = marketModifiers.currentLocationId; // 当前地区ID
+  let locationModifier = 1;
+  let locationProductModifier = 1;
+
+  // 如果有当前地区ID，应用地区特定修正
+  if (currentLocationId) {
+    // 应用地区价格修正因子
+    locationModifier = marketModifiers.locationModifiers?.[currentLocationId] || 1;
+
+    // 应用地区内特定商品价格修正因子
+    if (marketModifiers.locationProductModifiers?.[currentLocationId]?.[productId]) {
+      locationProductModifier = marketModifiers.locationProductModifiers[currentLocationId][productId];
+    }
+    
+    // 调试输出
+    if (locationModifier !== 1 || locationProductModifier !== 1) {
+      console.log(`应用地区价格修正 - 地区: ${currentLocationId}, 商品: ${productId}, 地区修正: ${locationModifier.toFixed(2)}, 地区商品修正: ${locationProductModifier.toFixed(2)}`);
+    }
+  }
+
   // 8. 一次性计算总价格调整因子
   const totalFactor = volatilityBase * 
     (1 + trendContinuationFactor) * 
@@ -234,7 +255,9 @@ export function calculateNewPrice(product, week, previousPrice = null, locationF
     randomNoise * 
     globalMarketModifier * 
     categoryModifier * 
-    productModifier;
+    productModifier * 
+    locationModifier * // 新增：地区价格修正
+    locationProductModifier; // 新增：地区内特定商品价格修正
 
   // 确保至少有最小变化率，避免价格停滞不变
   const minChangeRate = 0.005; // 至少0.5%的变化
@@ -357,54 +380,66 @@ function determineTrendFast(changePercent, price, minPrice, maxPrice) {
 }
 
 /**
- * 高性能批量价格更新函数
- * 优化了大量产品的价格计算，使用了并行处理和批量计算策略
+ * 批量更新价格
+ * 优化性能的批量价格计算函数
  * 
- * @param {Array} products - 产品列表
- * @param {number} currentWeek - 当前周数
- * @param {Object} priceHistory - 价格历史记录
- * @param {Object} marketModifiers - 市场修正因子
- * @returns {Object} 更新后的价格结果
+ * @param {Array} products 产品列表
+ * @param {number} currentWeek 当前周数
+ * @param {Object} priceHistory 价格历史数据
+ * @param {Object} marketModifiers 市场调整因子
+ * @returns {Object} 更新后的价格对象
  */
 export function batchUpdatePrices(products, currentWeek, priceHistory = {}, marketModifiers = {}) {
-  // 预先计算共享的周期值，避免重复计算
-  const weekMod = currentWeek & 0x3ff;
-  const globalModifier = marketModifiers?.globalPriceModifier || 1;
+  console.time('BatchPriceUpdate');
   
-  // 提前解构市场修正因子，减少访问次数
-  const { categoryModifiers = {}, productModifiers = {}, specialProducts = [] } = marketModifiers;
+  // 添加当前位置ID到marketModifiers
+  if (marketModifiers.currentLocation) {
+    marketModifiers.currentLocationId = marketModifiers.currentLocation.id;
+  }
   
-  // 创建结果对象
-  const results = {};
+  const result = {};
+  const productCount = products.length;
   
-  // 为大量产品批量计算 - 每批次处理产品
-  const BATCH_SIZE = 50; // 每批次处理的商品数量
+  console.log(`批量更新价格 - 商品总数: ${productCount}, 当前周数: ${currentWeek}, 市场修正因子:`, {
+    global: marketModifiers.globalPriceModifier || 1,
+    categories: Object.keys(marketModifiers.categoryModifiers || {}).length,
+    products: Object.keys(marketModifiers.productModifiers || {}).length,
+    locations: Object.keys(marketModifiers.locationModifiers || {}).length,
+    locationProducts: Object.keys(marketModifiers.locationProductModifiers || {}).reduce((count, locationId) => {
+      return count + Object.keys(marketModifiers.locationProductModifiers[locationId] || {}).length;
+    }, 0),
+    currentLocationId: marketModifiers.currentLocationId
+  });
   
-  // 将产品分批处理
-  for (let i = 0; i < products.length; i += BATCH_SIZE) {
-    const batch = products.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < productCount; i++) {
+    const product = products[i];
+    const productId = product.id;
     
-    // 处理当前批次
-    for (const product of batch) {
-      const prevPriceData = priceHistory[product.id];
-      
-      // 使用缓存计算每个产品的价格
-      results[product.id] = calculatePriceWithCache(
+    // 获取上周价格数据
+    const previousPrice = priceHistory[productId] || null;
+    
+    // 计算新价格
+    try {
+      result[productId] = calculatePriceWithCache(
         product,
         currentWeek,
-        prevPriceData,
-        1, // 默认位置因子
-        { 
-          globalPriceModifier: globalModifier,
-          categoryModifiers: categoryModifiers,
-          productModifiers: productModifiers,
-          specialProducts: specialProducts
-        }
+        previousPrice,
+        1, // 默认locationFactor为1，将使用marketModifiers中的值
+        marketModifiers
       );
+    } catch (error) {
+      console.error(`更新商品 ${productId} 价格时出错:`, error);
+      // 使用默认值作为回退
+      result[productId] = {
+        price: product.basePrice,
+        trend: 'stable',
+        changePercent: 0
+      };
     }
   }
   
-  return results;
+  console.timeEnd('BatchPriceUpdate');
+  return result;
 }
 
 /**
@@ -433,7 +468,8 @@ export function generateLocationProducts(products, location, priceHistory, week,
   // 复制marketModifiers并添加地点特产
   const locationMarketModifiers = { 
     ...marketModifiers,
-    specialProducts: location.specialties || [] 
+    specialProducts: location.specialties || [],
+    currentLocationId: location.id // 添加当前地区ID
   };
   
   // 创建专属于该地点的商品列表

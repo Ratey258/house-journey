@@ -270,6 +270,19 @@ export const usePlayerStore = defineStore('player', {
     },
     
     /**
+     * 计算玩家总资金（现金+背包商品价值）
+     * @returns {number} 总资金
+     */
+    totalMoney: (state) => {
+      // 资金 + 背包价值（按原价计算）
+      const inventoryValue = state.inventory.reduce(
+        (total, item) => total + (item.quantity * item.purchasePrice), 0
+      );
+      
+      return state.money + inventoryValue;
+    },
+    
+    /**
      * 判断是否拥有最高级别房屋
      * @returns {boolean} 是否拥有最高级别房屋
      */

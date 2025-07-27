@@ -246,6 +246,11 @@ export const useGameCoreStore = defineStore('gameCore', {
       const marketStore = useMarketStore();
       const playerMoney = playerStore.money;
       
+      // 如果玩家背包中有物品，则认为仍然有能力参与市场，不算破产
+      if (playerStore.inventoryUsed > 0) {
+        return true;
+      }
+      
       // 检查所有地点的所有商品
       for (const location of marketStore.locations) {
         // 先切换到该地点

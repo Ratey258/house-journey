@@ -239,7 +239,7 @@ export class EventSystem {
       if (eligibleEvents.length === 0) return null;
       
       // 按权重选择事件
-      const selectedEvent = this.selectEventByWeight(eligibleEvents);
+      const selectedEvent = this.selectEventByWeight(eligibleEvents, gameProgress);
       
       if (selectedEvent) {
         console.log('事件系统 - 已选择事件:', selectedEvent.id, selectedEvent.title);
@@ -265,7 +265,7 @@ export class EventSystem {
       
       if (allEligibleEvents.length > 0) {
         // 按权重选择事件
-        event = this.selectEventByWeight(allEligibleEvents);
+        event = this.selectEventByWeight(allEligibleEvents, gameProgress);
         console.log('事件系统 - 选择事件:', event ? event.id : '无');
       } else {
         console.log('事件系统 - 没有找到符合条件的事件');
@@ -410,9 +410,20 @@ export class EventSystem {
       return false;
     }
     
-    // 概率筛选
-    if (conditions.probability !== undefined && Math.random() > conditions.probability) {
-      return false;
+    // 概率筛选 - 提高通过概率
+    if (conditions.probability !== undefined) {
+      // 未触发过的事件增加通过概率
+      let adjustedProbability = conditions.probability;
+      const hasTriggered = this.triggeredEvents.has(event.id);
+      
+      if (!hasTriggered) {
+        // 未触发过的事件，概率提高50%，但不超过0.95
+        adjustedProbability = Math.min(0.95, adjustedProbability * 1.5);
+      }
+      
+      if (Math.random() > adjustedProbability) {
+        return false;
+      }
     }
     
     return true;
@@ -462,16 +473,16 @@ export class EventSystem {
     // 根据事件类型设置不同的冷却时间
     switch (event?.type) {
       case EventType.PERSONAL:
-        cooldownWeeks = 8; // 个人事件冷却8周
+        cooldownWeeks = 6; // 个人事件冷却从8周减少到6周
         break;
       case EventType.MARKET:
-        cooldownWeeks = 4; // 市场事件冷却4周
+        cooldownWeeks = 3; // 市场事件冷却从4周减少到3周
         break;
       case EventType.LOCATION:
-        cooldownWeeks = 3; // 地点事件冷却3周
+        cooldownWeeks = 2; // 地点事件冷却从3周减少到2周
         break;
       default:
-        cooldownWeeks = 6; // 其他事件默认冷却6周
+        cooldownWeeks = 4; // 其他事件默认冷却从6周减少到4周
     }
     
     // 非重复事件标记为永久冷却
@@ -525,7 +536,7 @@ export class EventSystem {
         weight *= 0.2; // 从0.3降低到0.2，进一步降低已触发过事件的权重
       } else {
         // 从未触发过的事件权重增加
-        weight *= 2.0; // 从1.8提高到2.0，进一步提高新事件的权重
+        weight *= 2.0; // 从1.2提高到2.0，大幅提高未触发事件的权重
       }
       
       // 记录当前事件在历史记录中出现的次数
@@ -539,24 +550,12 @@ export class EventSystem {
         }
         
         // 可重复事件根据出现次数调整权重
-        const baseReduction = 0.4; // 基础衰减率
-        const maxReduction = 0.1; // 最低保留权重比例
+        const baseReduction = 0.5; // 基础衰减率从0.4提高到0.5，减少重复事件的衰减
+        const maxReduction = 0.2; // 最低保留权重比例从0.1提高到0.2
         
         // 使用指数衰减，但保留最低权重
         const reduction = Math.max(maxReduction, Math.pow(baseReduction, occurrenceCount));
         weight *= reduction;
-        
-        // 根据距离上次触发的时间调整权重
-        const lastOccurrence = this.eventHistory
-          .filter(record => record.id === event.id)
-          .sort((a, b) => b.week - a.week)[0];
-          
-        if (lastOccurrence) {
-          const weeksSinceLastOccurrence = gameState.currentWeek - lastOccurrence.week;
-          // 时间越久，权重恢复越多
-          const timeBonus = Math.min(1, weeksSinceLastOccurrence / 20); // 最多20周后恢复原始权重
-          weight *= (1 + timeBonus);
-        }
       }
       
       console.log(`事件权重计算 - ${event.id}: ${weight.toFixed(2)}`);
@@ -564,6 +563,11 @@ export class EventSystem {
       totalWeight += weight;
       return weight;
     });
+    
+    // 如果总权重为0，可能所有事件都不适合触发
+    if (totalWeight <= 0) {
+      return null;
+    }
     
     // 随机选择
     let random = Math.random() * totalWeight;
@@ -959,11 +963,21 @@ export class EventSystem {
         }
       }
       
-      result.appliedEffects.push({
-        type: 'market',
-        effect: marketEffect,
-        success: true
-      });
+      // 确保只添加一次市场效果
+      if (!result.appliedEffects.some(effect => effect.type === 'market')) {
+        result.appliedEffects.push({
+          type: 'market',
+          effect: {
+            globalPriceModifier: marketEffect.globalPriceModifier,
+            categoryModifiers: marketEffect.categoryModifiers,
+            productModifiers: marketEffect.productModifiers,
+            locationModifiers: marketEffect.locationModifiers,
+            locationProductModifiers: marketEffect.locationProductModifiers,
+            duration: marketEffect.duration
+          },
+          success: true
+        });
+      }
     }
     
     // 处理后续事件

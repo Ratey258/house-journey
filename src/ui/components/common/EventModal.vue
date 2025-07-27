@@ -33,7 +33,9 @@
             <div v-if="effectResults.length > 0" class="effect-results">
               <h3>效果变化</h3>
               <div class="effect-list">
-                <div v-for="(effect, index) in effectResults" :key="index"
+                <!-- 普通效果项 -->
+                <div v-for="(effect, index) in effectResults.filter(e => e.type !== 'market')" 
+                     :key="`normal-${index}`"
                      :class="['effect-item', effect.type]">
                   <span v-if="effect.type === 'money'" class="effect-icon">
                     {{ effect.value > 0 ? '💰' : '💸' }}
@@ -44,8 +46,7 @@
                   <span v-else-if="effect.type === 'capacity'" class="effect-icon">🎒</span>
                   <span v-else-if="effect.type === 'item_add'" class="effect-icon">📦</span>
                   <span v-else-if="effect.type === 'item_remove'" class="effect-icon">🗑️</span>
-                  <span v-else-if="effect.type === 'market'" class="effect-icon">📊</span>
-                  <span v-else-if="effect.type === 'attribute'" class="effect-icon">✨</span>
+                  <span v-else-if="effect.type === 'info'" class="effect-icon">ℹ️</span>
                   <span v-else class="effect-icon">🔄</span>
 
                   <span class="effect-description">
@@ -64,17 +65,27 @@
                     <template v-else-if="effect.type === 'item_remove'">
                       失去物品: {{ effect.productId }} x {{ effect.quantity }}
                     </template>
-                    <template v-else-if="effect.type === 'market'">
-                      市场变化: {{ getMarketEffectDescription(effect) }}
-                    </template>
                     <template v-else-if="effect.type === 'attribute'">
                       {{ getAttributeDisplayName(effect.attribute) }}: {{ effect.oldValue }} → {{ effect.newValue }}
                     </template>
+                    <template v-else-if="effect.type === 'info'">
+                      {{ effect.description || '信息' }}
+                    </template>
                     <template v-else>
-                      {{ effect.type }}: {{ JSON.stringify(effect) }}
+                      {{ effect.description || effect.type }}
                     </template>
                   </span>
                 </div>
+
+                <!-- 市场效果项，单独处理，每条描述一行 -->
+                <template v-for="(effect, effectIndex) in effectResults.filter(e => e.type === 'market')" :key="`market-${effectIndex}`">
+                  <div v-for="(description, descIndex) in getMarketEffectDescription(effect)" 
+                       :key="`market-${effectIndex}-${descIndex}`"
+                       class="effect-item market">
+                    <span class="effect-icon">📊</span>
+                    <span class="effect-description">{{ description }}</span>
+                  </div>
+                </template>
               </div>
             </div>
 
@@ -223,20 +234,31 @@ const getAttributeDisplayName = (attribute) => {
 /**
  * 获取市场效果描述
  * @param {Object} effect 市场效果对象
- * @returns {string} 市场效果描述
+ * @returns {Array} 市场效果描述数组，每个元素是一行描述
  */
 const getMarketEffectDescription = (effect) => {
-  if (!effect || !effect.effect) return '未知市场变化';
+  if (!effect || !effect.effect) return ['未知市场变化'];
 
   const marketEffect = effect.effect;
   const descriptions = [];
+  
+  // 确定持续时间文本
+  let durationText = '';
+  if (marketEffect.duration) {
+    // 确认duration是否已经是周数，如果是秒数则需要转换
+    let weeks = marketEffect.duration;
+    if (marketEffect.duration > 52) { // 如果duration大于52，可能是以秒为单位
+      weeks = Math.round(marketEffect.duration / (7 * 24 * 3600));
+    }
+    durationText = `，持续 ${weeks} 周`;
+  }
 
   if (marketEffect.globalPriceModifier) {
     const percentage = Math.round((marketEffect.globalPriceModifier - 1) * 100);
     if (percentage > 0) {
-      descriptions.push(`全球价格上涨 ${percentage}%`);
+      descriptions.push(`全球价格上涨 ${percentage}%${durationText}`);
     } else if (percentage < 0) {
-      descriptions.push(`全球价格下跌 ${Math.abs(percentage)}%`);
+      descriptions.push(`全球价格下跌 ${Math.abs(percentage)}%${durationText}`);
     }
   }
 
@@ -244,25 +266,162 @@ const getMarketEffectDescription = (effect) => {
     for (const [category, modifier] of Object.entries(marketEffect.categoryModifiers)) {
       const percentage = Math.round((modifier - 1) * 100);
       if (percentage > 0) {
-        descriptions.push(`${category}类别价格上涨 ${percentage}%`);
+        descriptions.push(`${category}类别价格上涨 ${percentage}%${durationText}`);
       } else if (percentage < 0) {
-        descriptions.push(`${category}类别价格下跌 ${Math.abs(percentage)}%`);
+        descriptions.push(`${category}类别价格下跌 ${Math.abs(percentage)}%${durationText}`);
       }
     }
   }
 
+  // 显示地点特定修改器
+  if (marketEffect.locationModifiers) {
+    for (const [locationId, modifier] of Object.entries(marketEffect.locationModifiers)) {
+      const percentage = Math.round((modifier - 1) * 100);
+      const locationName = getLocationName(locationId);
+      if (percentage > 0) {
+        descriptions.push(`${locationName}价格上涨 ${percentage}%${durationText}`);
+      } else if (percentage < 0) {
+        descriptions.push(`${locationName}价格下跌 ${Math.abs(percentage)}%${durationText}`);
+      }
+    }
+  }
+
+  // 显示地点内特定商品修改器
+  if (marketEffect.locationProductModifiers) {
+    for (const [locationId, products] of Object.entries(marketEffect.locationProductModifiers)) {
+      const locationName = getLocationName(locationId);
+      for (const [productId, modifier] of Object.entries(products)) {
+        const percentage = Math.round((modifier - 1) * 100);
+        const productName = getProductName(productId);
+        if (percentage > 0) {
+          descriptions.push(`${locationName}的${productName}价格上涨 ${percentage}%${durationText}`);
+        } else if (percentage < 0) {
+          descriptions.push(`${locationName}的${productName}价格下跌 ${Math.abs(percentage)}%${durationText}`);
+        }
+      }
+    }
+  }
+
+  // 显示具体影响的产品
   if (marketEffect.productModifiers) {
-    const productCount = Object.keys(marketEffect.productModifiers).length;
-    descriptions.push(`影响 ${productCount} 个特定商品价格`);
+    const productModifiers = Object.entries(marketEffect.productModifiers);
+    
+    // 不管产品数量多少，都单独显示每个产品
+    for (const [productId, modifier] of productModifiers) {
+      const percentage = Math.round((modifier - 1) * 100);
+      const productName = getProductName(productId);
+      if (percentage > 0) {
+        descriptions.push(`${productName}价格上涨 ${percentage}%${durationText}`);
+      } else if (percentage < 0) {
+        descriptions.push(`${productName}价格下跌 ${Math.abs(percentage)}%${durationText}`);
+      }
+    }
   }
 
-  // 添加持续时间描述
-  if (marketEffect.duration) {
-    const weeks = Math.round(marketEffect.duration / (86400 * 7)); // 秒转周
-    descriptions.push(`持续 ${weeks} 周`);
+  // 如果没有任何描述，添加一个默认描述
+  if (descriptions.length === 0) {
+    descriptions.push(`市场没有明显变化${durationText}`);
   }
 
-  return descriptions.join('，');
+  return descriptions;
+};
+
+// 获取地点名称
+const getLocationName = (locationId) => {
+  const locationMap = {
+    'commodity_market': '大宗商品市场',
+    'second_hand_market': '二手市场',
+    'premium_mall': '高端商场',
+    'electronics_hub': '电子产品中心',
+    'black_market': '黑市'
+  };
+  return locationMap[locationId] || locationId;
+};
+
+// 获取产品名称
+const getProductName = (productId) => {
+  // 将productId转为字符串，以便统一处理数字和字符串ID
+  const id = String(productId);
+  
+  // 处理特殊格式的ID，比如house_a, land_a这类
+  if (id.startsWith('house_')) {
+    const houseType = id.split('_')[1]?.toUpperCase() || '';
+    return `${houseType}型房产`;
+  } else if (id.startsWith('land_')) {
+    const landType = id.split('_')[1]?.toUpperCase() || '';
+    return `${landType}类土地`;
+  }
+  
+  // 这里添加所有商品的中文名称映射
+  const productMap = {
+    // 字符串ID商品
+    'phone': '手机',
+    'laptop': '笔记本电脑',
+    'smartwatch': '智能手表',
+    'tablet': '平板电脑',
+    'camera': '相机',
+    'tv': '电视',
+    'console': '游戏机',
+    'headphones': '耳机',
+    'speaker': '音箱',
+    'watch': '手表',
+    'jewelry': '珠宝',
+    'handbag': '手提包',
+    'painting': '画作',
+    'antique': '古董',
+    'collectible': '收藏品',
+    'gold': '黄金',
+    'silver': '白银',
+    'oil': '原油',
+    'wheat': '小麦',
+    'corn': '玉米',
+    'coffee': '咖啡',
+    'copper': '铜',
+    'steel': '钢铁',
+    'cotton': '棉花',
+    'rice': '大米',
+    'antique_painting': '古画',
+    
+    // 数字ID商品 - 日常用品 (101-199)
+    '101': '卫生纸',
+    '102': '洗发水',
+    '103': '牙膏',
+    '104': '肥皂',
+    '105': '毛巾',
+    '106': '二手衣物',
+    '107': '二手家具',
+    
+    // 食品 (201-299)
+    '201': '鸡蛋',
+    '202': '大米',
+    '203': '食用油',
+    '204': '新鲜蔬菜',
+    '205': '水果',
+    
+    // 电子产品 (301-399)
+    '301': '手机',
+    '302': '电视',
+    '303': '笔记本电脑',
+    '304': '平板电脑',
+    '305': '智能手表',
+    
+    // 奢侈品 (401-499)
+    '401': '名牌手表',
+    '402': '钻石项链',
+    '403': '设计师包包',
+    '404': '高级香水',
+    '405': '名牌服装',
+    '406': '高级红酒',
+    
+    // 收藏品 (501-599)
+    '501': '古董钟表',
+    '502': '邮票',
+    '503': '古画',
+    '504': '老式相机',
+    '505': '纪念币'
+  };
+  
+  return productMap[id] || `商品(${id})`;
 };
 
 // 处理背景点击
@@ -350,19 +509,18 @@ const showEvent = (event) => {
   }
 };
 
-// 选择事件选项
+// 选择选项
 const selectOption = (option) => {
   console.log('EventModal - 选择选项:', option);
-
-  if (!option) {
-    console.warn('EventModal - 无法选择选项: 选项对象为空');
+  
+  // 防止重复点击
+  if (applyingEffects.value) {
     return;
   }
-
+  
+  applyingEffects.value = true;
+  
   try {
-    // 标记正在应用效果
-    applyingEffects.value = true;
-
     // 设置选中的选项
     selectedOption.value = option;
 
@@ -377,7 +535,7 @@ const selectOption = (option) => {
       console.log('EventModal - 调用事件操作模块处理选项');
       const result = eventActions.handleEventOption(option);
       console.log('EventModal - 选项处理结果:', result);
-
+      
       // 处理效果结果
       if (result && result.appliedEffects) {
         // 过滤掉不需要显示的效果类型
@@ -388,18 +546,83 @@ const selectOption = (option) => {
 
         console.log('EventModal - 应用的效果:', effectResults.value);
 
+        // 去重：确保相同类型的效果不重复显示
+        const uniqueEffects = [];
+        const effectTypes = new Set();
+        
+        effectResults.value.forEach(effect => {
+          // 对于市场效果，检查effect.effect的内容是否相同
+          if (effect.type === 'market') {
+            const marketEffect = JSON.stringify(effect.effect);
+            if (!effectTypes.has(marketEffect)) {
+              effectTypes.add(marketEffect);
+              uniqueEffects.push(effect);
+            }
+          } else {
+            // 对于其他类型的效果，简单检查类型
+            if (!effectTypes.has(effect.type)) {
+              effectTypes.add(effect.type);
+              uniqueEffects.push(effect);
+            }
+          }
+        });
+        
+        effectResults.value = uniqueEffects;
+
         // 确保至少显示1秒的结果，即使没有效果
         if (effectResults.value.length === 0) {
+          // 根据事件标题和类型，提供更具体的默认效果描述
+          let defaultDescription = '选项已生效';
+          
+          // 根据事件标题进行简单分析
+          const eventTitle = currentEvent.value.title || '';
+          
+          if (eventTitle.includes('市场') || eventTitle.includes('价格') || eventTitle.includes('商品')) {
+            defaultDescription = '你将在市场中看到价格变化';
+          } else if (eventTitle.includes('投资') || eventTitle.includes('理财')) {
+            defaultDescription = '你的投资决策已记录，结果将在后续显现';
+          } else if (eventTitle.includes('对话') || eventTitle.includes('交流') || eventTitle.includes('顾问')) {
+            defaultDescription = '这次交流增加了你的见识和人脉';
+          }
+          
           effectResults.value = [{
             type: 'info',
-            description: '选项已执行'
+            description: defaultDescription
           }];
+        } else {
+          // 美化信息类型的效果描述
+          effectResults.value = effectResults.value.map(effect => {
+            // 将JSON对象转换为友好的描述
+            if (effect.type === 'info' && !effect.description) {
+              return {
+                ...effect,
+                description: '选项已成功执行'
+              };
+            }
+            // 处理原始JSON显示
+            if (typeof effect.description === 'object') {
+              return {
+                ...effect,
+                description: '选项效果已应用'
+              };
+            }
+            return effect;
+          });
         }
       } else {
         // 如果没有返回效果，添加一个默认效果
+        const eventTitle = currentEvent.value.title || '';
+        let defaultDescription = '选项已执行，效果将逐渐显现';
+        
+        if (eventTitle.includes('市场') || eventTitle.includes('价格')) {
+          defaultDescription = '你的决策将影响后续市场行情';
+        } else if (eventTitle.includes('投资')) {
+          defaultDescription = '你的投资已完成，回报将在未来显现';
+        }
+        
         effectResults.value = [{
           type: 'info',
-          description: '选项已执行'
+          description: defaultDescription
         }];
       }
     } else {
@@ -407,7 +630,7 @@ const selectOption = (option) => {
       // 添加一个默认效果
       effectResults.value = [{
         type: 'info',
-        description: '选项已执行'
+        description: '选项已执行，但系统无法显示具体效果'
       }];
     }
 
@@ -429,7 +652,7 @@ const selectOption = (option) => {
     // 添加错误效果
     effectResults.value = [{
       type: 'error',
-      description: '处理选项时出错'
+      description: '处理选项时出错: ' + (error.message || '未知错误')
     }];
   }
 };
@@ -708,6 +931,10 @@ defineExpose({
 }
 
 .effect-list {
+  margin-top: 10px;
+  max-height: 250px; /* 增加高度，可以显示更多效果 */
+  overflow-y: auto;
+  padding: 0 5px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -716,97 +943,93 @@ defineExpose({
 .effect-item {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
-  animation: fadeIn 0.3s ease;
-  animation-fill-mode: both;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background-color: #f5f5f5;
+  transition: all 0.3s ease;
+  animation: fadeIn 0.3s ease forwards;
 }
 
-.effect-item:nth-child(1) { animation-delay: 0.1s; }
-.effect-item:nth-child(2) { animation-delay: 0.2s; }
-.effect-item:nth-child(3) { animation-delay: 0.3s; }
-.effect-item:nth-child(4) { animation-delay: 0.4s; }
-.effect-item:nth-child(5) { animation-delay: 0.5s; }
-
-.effect-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+/* 为市场效果添加特殊动画，依次显示 */
+.effect-item.market {
+  animation: fadeIn 0.3s ease forwards;
 }
+
+.effect-item.market:nth-child(1) { animation-delay: 0.05s; }
+.effect-item.market:nth-child(2) { animation-delay: 0.1s; }
+.effect-item.market:nth-child(3) { animation-delay: 0.15s; }
+.effect-item.market:nth-child(4) { animation-delay: 0.2s; }
+.effect-item.market:nth-child(5) { animation-delay: 0.25s; }
+.effect-item.market:nth-child(6) { animation-delay: 0.3s; }
+.effect-item.market:nth-child(7) { animation-delay: 0.35s; }
+.effect-item.market:nth-child(8) { animation-delay: 0.4s; }
+.effect-item.market:nth-child(9) { animation-delay: 0.45s; }
+.effect-item.market:nth-child(10) { animation-delay: 0.5s; }
 
 .effect-icon {
-  font-size: 1.2rem;
-  margin-right: 12px;
+  margin-right: 10px;
+  font-size: 1.2em;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+  min-width: 24px; /* 确保图标有固定宽度 */
 }
 
 .effect-description {
-  font-size: 0.95rem;
-  color: #495057;
-  font-weight: 500;
+  flex: 1;
+  font-size: 0.95em;
+  line-height: 1.4;
 }
 
-/* 不同效果类型样式 */
+/* 效果类型样式，为市场效果添加渐变色 */
+.effect-item.market {
+  background: linear-gradient(to right, #fff8e1, #ffecb3);
+  border-left: 4px solid #ffc107;
+}
+
 .effect-item.money {
   background-color: #e8f5e9;
-}
-.effect-item.money .effect-icon {
-  background-color: #4caf50;
-  color: white;
+  border-left: 4px solid #4caf50;
 }
 
 .effect-item.debt {
   background-color: #ffebee;
-}
-.effect-item.debt .effect-icon {
-  background-color: #f44336;
-  color: white;
+  border-left: 4px solid #f44336;
 }
 
 .effect-item.capacity {
   background-color: #e3f2fd;
-}
-.effect-item.capacity .effect-icon {
-  background-color: #2196f3;
-  color: white;
+  border-left: 4px solid #2196f3;
 }
 
 .effect-item.item_add {
-  background-color: #f3e5f5;
-}
-.effect-item.item_add .effect-icon {
-  background-color: #9c27b0;
-  color: white;
+  background-color: #e8f5e9;
+  border-left: 4px solid #4caf50;
 }
 
 .effect-item.item_remove {
-  background-color: #fff3e0;
-}
-.effect-item.item_remove .effect-icon {
-  background-color: #ff9800;
-  color: white;
+  background-color: #ffebee;
+  border-left: 4px solid #f44336;
 }
 
 .effect-item.market {
   background-color: #fff8e1;
-}
-.effect-item.market .effect-icon {
-  background-color: #ffc107;
-  color: white;
+  border-left: 4px solid #ffc107;
 }
 
 .effect-item.attribute {
   background-color: #ede7f6;
+  border-left: 4px solid #673ab7;
 }
-.effect-item.attribute .effect-icon {
-  background-color: #673ab7;
-  color: white;
+
+.effect-item.info {
+  background-color: #e1f5fe;
+  border-left: 4px solid #03a9f4;
+}
+
+.effect-item.error {
+  background-color: #ffebee;
+  border-left: 4px solid #f44336;
 }
 
 .with-result .event-header {
@@ -819,7 +1042,14 @@ defineExpose({
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
+

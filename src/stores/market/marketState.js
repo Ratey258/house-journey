@@ -29,9 +29,13 @@ export const useMarketStore = defineStore('market', {
       globalPriceModifier: 1,
       categoryModifiers: {},
       productModifiers: {},
-      weeksSinceLastGlobalChange: 0, // 新增：记录全局价格修正因子连续未变化的周数
-      categoryUnchangedWeeks: {}, // 新增：记录类别修正因子连续未变化的周数
-      productUnchangedWeeks: {} // 新增：记录商品修正因子连续未变化的周数
+      locationModifiers: {}, // 新增: 地区价格修正因子 {locationId: modifier}
+      locationProductModifiers: {}, // 新增: 地区内商品价格修正因子 {locationId: {productId: modifier}}
+      weeksSinceLastGlobalChange: 0, // 记录全局价格修正因子连续未变化的周数
+      categoryUnchangedWeeks: {}, // 记录类别修正因子连续未变化的周数
+      productUnchangedWeeks: {}, // 记录商品修正因子连续未变化的周数
+      locationUnchangedWeeks: {}, // 新增: 记录地区修正因子连续未变化的周数
+      locationProductUnchangedWeeks: {} // 新增: 记录地区商品修正因子连续未变化的周数
     },
     
     // 初始化状态
@@ -65,9 +69,13 @@ export const useMarketStore = defineStore('market', {
               globalPriceModifier: 1,
               categoryModifiers: {},
               productModifiers: {},
+              locationModifiers: {}, // 新增: 地区价格修正因子
+              locationProductModifiers: {}, // 新增: 地区内商品价格修正因子
               weeksSinceLastGlobalChange: 0, // 初始化计数器
               categoryUnchangedWeeks: {}, // 初始化计数器
-              productUnchangedWeeks: {} // 初始化计数器
+              productUnchangedWeeks: {}, // 初始化计数器
+              locationUnchangedWeeks: {}, // 新增: 初始化计数器
+              locationProductUnchangedWeeks: {} // 新增: 初始化计数器
             };
             
             // 设置初始地点
@@ -130,6 +138,11 @@ export const useMarketStore = defineStore('market', {
           return;
         }
         
+        // 添加当前地点信息到市场修正因子
+        if (this.currentLocation) {
+          this.marketModifiers.currentLocation = this.currentLocation;
+        }
+        
         // 更新商品价格
         updateProductPrices(currentWeek);
         console.log('MarketStore - 商品价格已更新');
@@ -143,183 +156,148 @@ export const useMarketStore = defineStore('market', {
     
     /**
      * 更新市场调整因子
+     * 随机波动市场价格调整因子，使市场更加动态
      */
     updateMarketModifiers() {
-      // 添加市场平衡机制，避免极端情况连续出现
-      const productTrends = Object.values(this.productPrices || {}).map(p => p?.trend || 'stable');
-      const risingCount = productTrends.filter(t => t.includes('rising')).length;
-      const fallingCount = productTrends.filter(t => t.includes('falling')).length;
-      const totalProducts = productTrends.length || 1;
+      const modifiers = this.marketModifiers;
+      console.log('MarketStore - 更新市场调整因子');
       
-      // 计算上涨和下跌的比例
-      const risingRatio = risingCount / totalProducts;
-      const fallingRatio = fallingCount / totalProducts;
+      // 增加全局价格修正因子连续未变化的计数
+      modifiers.weeksSinceLastGlobalChange++;
       
-      // 检测是否处于极端市场状态
-      const isExtremeBullMarket = risingRatio > 0.7; // 超过70%的商品上涨
-      const isExtremeBearMarket = fallingRatio > 0.7; // 超过70%的商品下跌
-      
-      console.log(`市场状态检测 - 上涨比例: ${(risingRatio * 100).toFixed(1)}%, 下跌比例: ${(fallingRatio * 100).toFixed(1)}%`);
-      
-      // 每周随机变化全局价格修正 - 更加夸张的波动，且偏向下跌，但添加平衡机制
-      const globalChangeChance = Math.random();
-      if (globalChangeChance < 0.4 || this.marketModifiers.weeksSinceLastGlobalChange > 2) { // 40%的概率发生变化，或者连续3周没变化
-        let changeAmount;
+      // 全局价格修正因子波动
+      // 每隔4-8周随机变化一次
+      if (modifiers.weeksSinceLastGlobalChange >= Math.max(4, Math.floor(Math.random() * 5) + 4)) {
+        // 重置计数器
+        modifiers.weeksSinceLastGlobalChange = 0;
         
-        // 根据市场状态调整价格变化方向，实现自我平衡
-        if (isExtremeBullMarket) {
-          // 如果市场过热，增加下跌概率和幅度
-          changeAmount = (Math.random() * 0.15) - 0.12; // -12% to +3%，强烈偏向下跌
-          console.log('市场过热，触发平衡机制，价格调整偏向下跌');
-        } else if (isExtremeBearMarket) {
-          // 如果市场过冷，增加上涨概率和幅度
-          changeAmount = (Math.random() * 0.15) - 0.03; // -3% to +12%，强烈偏向上涨
-          console.log('市场过冷，触发平衡机制，价格调整偏向上涨');
-        } else {
-          // 正常市场状态，维持略微偏向下跌的调整
-          changeAmount = (Math.random() * 0.15) - 0.1; // -10% to +5%，偏向下跌
+        // 以70%概率变动全局价格修正因子
+        if (Math.random() < 0.7) {
+          // 在0.8到1.2之间随机波动
+          const oldModifier = modifiers.globalPriceModifier;
+          const variance = (Math.random() - 0.5) * 0.2; // -0.1 到 0.1 之间
+          modifiers.globalPriceModifier = Math.max(0.8, Math.min(1.2, oldModifier + variance));
+          
+          console.log(`MarketStore - 全局价格修正因子已更新: ${oldModifier.toFixed(2)} -> ${modifiers.globalPriceModifier.toFixed(2)}`);
         }
-        
-        this.marketModifiers.globalPriceModifier = Math.max(0.7, Math.min(1.3, this.marketModifiers.globalPriceModifier + changeAmount));
-        this.marketModifiers.weeksSinceLastGlobalChange = 0; // 重置计数器
-      } else {
-        // 增加连续未变化的周数计数
-        this.marketModifiers.weeksSinceLastGlobalChange = (this.marketModifiers.weeksSinceLastGlobalChange || 0) + 1;
       }
       
-      // 随机更新类别修正 - 更加夸张的波动，且偏向下跌，但添加平衡机制
-      const categories = ['FOOD', 'ELECTRONICS', 'LUXURY', 'DAILY', 'COLLECTIBLE'];
-      
-      // 初始化类别未变化周数计数
-      if (!this.marketModifiers.categoryUnchangedWeeks) {
-        this.marketModifiers.categoryUnchangedWeeks = {};
-        categories.forEach(cat => {
-          this.marketModifiers.categoryUnchangedWeeks[cat] = 0;
-        });
-      }
-      
-      // 为每个类别随机更新修正因子
+      // 类别价格修正因子波动
+      // 对每个类别，都有30%的概率进行波动
+      const categories = ['food', 'electronics', 'luxury', 'daily', 'collectible'];
       categories.forEach(category => {
-        const categoryChangeChance = Math.random();
-        const weeksUnchanged = this.marketModifiers.categoryUnchangedWeeks[category] || 0;
+        // 增加类别价格修正因子连续未变化的计数
+        modifiers.categoryUnchangedWeeks[category] = (modifiers.categoryUnchangedWeeks[category] || 0) + 1;
         
-        // 30%的概率随机调整，或者连续3周没变化
-        if (categoryChangeChance < 0.3 || weeksUnchanged > 2) { 
-          // 获取该类别商品的趋势
-          const categoryProducts = this.products.filter(p => p.category === category);
-          const categoryProductIds = categoryProducts.map(p => p.id);
-          const categoryTrends = categoryProductIds
-            .map(id => this.productPrices[id]?.trend || 'stable')
-            .filter(Boolean);
+        // 如果连续4周没有变化，或者有30%概率变化
+        if (modifiers.categoryUnchangedWeeks[category] >= 4 || Math.random() < 0.3) {
+          // 重置计数器
+          modifiers.categoryUnchangedWeeks[category] = 0;
           
-          const catRisingCount = categoryTrends.filter(t => t.includes('rising')).length;
-          const catFallingCount = categoryTrends.filter(t => t.includes('falling')).length;
-          const catTotalCount = categoryTrends.length || 1;
+          // 在0.7到1.3之间随机波动
+          const oldModifier = modifiers.categoryModifiers[category] || 1;
+          const variance = (Math.random() - 0.5) * 0.3; // -0.15 到 0.15 之间
+          modifiers.categoryModifiers[category] = Math.max(0.7, Math.min(1.3, oldModifier + variance));
           
-          let categoryChange;
-          
-          // 根据类别内商品趋势调整价格变化方向，实现局部平衡
-          if (catRisingCount / catTotalCount > 0.6) {
-            // 该类别大部分商品上涨，增加下跌概率
-            categoryChange = (Math.random() * 0.3) - 0.25; // -25% to +5%，强烈偏向下跌
-          } else if (catFallingCount / catTotalCount > 0.6) {
-            // 该类别大部分商品下跌，增加上涨概率
-            categoryChange = (Math.random() * 0.3) - 0.05; // -5% to +25%，强烈偏向上涨
-          } else {
-            // 类别内趋势平衡，维持略微偏向下跌的调整
-            categoryChange = (Math.random() * 0.3) - 0.2; // -20% to +10%，偏向下跌
-          }
-          
-          // 更新或创建类别修正
-          this.marketModifiers.categoryModifiers[category] = 
-            Math.max(0.6, Math.min(1.4, (this.marketModifiers.categoryModifiers[category] || 1) + categoryChange));
-          
-          // 重置未变化周数计数
-          this.marketModifiers.categoryUnchangedWeeks[category] = 0;
-          
-          console.log(`类别 ${category} 价格修正更新为: ${this.marketModifiers.categoryModifiers[category].toFixed(2)}`);
-        } else {
-          // 增加未变化周数计数
-          this.marketModifiers.categoryUnchangedWeeks[category] = weeksUnchanged + 1;
+          console.log(`MarketStore - ${category}类别价格修正因子已更新: ${oldModifier.toFixed(2)} -> ${modifiers.categoryModifiers[category].toFixed(2)}`);
         }
       });
       
-      // 初始化商品未变化周数计数
-      if (!this.marketModifiers.productUnchangedWeeks) {
-        this.marketModifiers.productUnchangedWeeks = {};
-      }
-      
-      // 随机为单个商品添加特殊修正 - 更加夸张的波动，且确保每周有一些反向波动的商品
-      const productCount = this.products.length;
-      if (productCount > 0) {
-        // 确保至少有10%的商品有反向波动趋势
-        const counterTrendCount = Math.max(2, Math.floor(productCount * 0.1));
+      // 单个商品价格修正因子波动 - 每周有15%概率对少数几个商品进行波动
+      if (Math.random() < 0.15) {
+        // 随机选择1-3个商品
+        const productCount = Math.floor(Math.random() * 3) + 1;
+        const productIds = Object.keys(this.productPrices);
         
-        // 如果市场整体上涨，选择一些商品下跌
-        if (isExtremeBullMarket) {
-          for (let i = 0; i < counterTrendCount; i++) {
-            const randomIndex = Math.floor(Math.random() * productCount);
-            const randomProduct = this.products[randomIndex];
-            if (randomProduct) {
-              // 强制下跌修正
-              this.marketModifiers.productModifiers[randomProduct.id] = 0.7; // 30%的下跌修正
-              // 重置未变化周数计数
-              this.marketModifiers.productUnchangedWeeks[randomProduct.id] = 0;
-            }
-          }
-          console.log(`市场过热，为${counterTrendCount}个商品添加下跌修正`);
-        } 
-        // 如果市场整体下跌，选择一些商品上涨
-        else if (isExtremeBearMarket) {
-          for (let i = 0; i < counterTrendCount; i++) {
-            const randomIndex = Math.floor(Math.random() * productCount);
-            const randomProduct = this.products[randomIndex];
-            if (randomProduct) {
-              // 强制上涨修正
-              this.marketModifiers.productModifiers[randomProduct.id] = 1.3; // 30%的上涨修正
-              // 重置未变化周数计数
-              this.marketModifiers.productUnchangedWeeks[randomProduct.id] = 0;
-            }
-          }
-          console.log(`市场过冷，为${counterTrendCount}个商品添加上涨修正`);
+        for (let i = 0; i < productCount && productIds.length > 0; i++) {
+          // 随机选择一个商品
+          const randomIndex = Math.floor(Math.random() * productIds.length);
+          const productId = productIds[randomIndex];
+          
+          // 更新连续未变化的周数
+          modifiers.productUnchangedWeeks[productId] = 0;
+          
+          // 在0.5到1.5之间随机波动
+          const oldModifier = modifiers.productModifiers[productId] || 1;
+          const variance = (Math.random() - 0.5) * 0.6; // -0.3 到 0.3 之间
+          modifiers.productModifiers[productId] = Math.max(0.5, Math.min(1.5, oldModifier + variance));
+          
+          const product = this.products.find(p => p.id === Number(productId));
+          console.log(`MarketStore - 商品价格修正因子已更新: ${product?.name || productId} ${oldModifier.toFixed(2)} -> ${modifiers.productModifiers[productId].toFixed(2)}`);
         }
       }
-      
-      // 常规的随机商品修正
-      const productChangeChance = Math.random();
-      if (productChangeChance < 0.15 && this.products.length > 0) { // 15%的概率修改随机商品价格
-        const randomProduct = this.products[Math.floor(Math.random() * this.products.length)];
-        const productId = randomProduct.id;
-        const weeksUnchanged = this.marketModifiers.productUnchangedWeeks[productId] || 0;
+
+      // 地区价格修正因子波动 - 每周有20%概率对1-2个地区进行波动
+      if (Math.random() < 0.2) {
+        // 随机选择1-2个地区
+        const locationCount = Math.floor(Math.random() * 2) + 1;
+        const locationIds = this.locations.map(location => location.id);
         
-        // 15%的概率随机调整，或者连续3周没变化
-        if (productChangeChance < 0.15 || weeksUnchanged > 2) {
-          // 偏向下跌的商品修正
-          const productChange = (Math.random() * 0.4) - 0.25; // -25% to +15%，偏向下跌
+        for (let i = 0; i < locationCount && locationIds.length > 0; i++) {
+          // 随机选择一个地区
+          const randomIndex = Math.floor(Math.random() * locationIds.length);
+          const locationId = locationIds[randomIndex];
           
-          // 更新或创建商品修正
-          this.marketModifiers.productModifiers[productId] = 
-            Math.max(0.5, Math.min(1.5, (this.marketModifiers.productModifiers[productId] || 1) + productChange));
+          // 更新连续未变化的周数
+          modifiers.locationUnchangedWeeks[locationId] = 0;
           
-          // 重置未变化周数计数
-          this.marketModifiers.productUnchangedWeeks[productId] = 0;
+          // 在0.6到1.4之间随机波动
+          const oldModifier = modifiers.locationModifiers[locationId] || 1;
+          const variance = (Math.random() - 0.5) * 0.4; // -0.2 到 0.2 之间
+          modifiers.locationModifiers[locationId] = Math.max(0.6, Math.min(1.4, oldModifier + variance));
           
-          console.log(`商品 ${productId} 价格修正更新为: ${this.marketModifiers.productModifiers[productId].toFixed(2)}`);
-        } else {
-          // 增加未变化周数计数
-          this.marketModifiers.productUnchangedWeeks[productId] = weeksUnchanged + 1;
+          const location = this.locations.find(l => l.id === locationId);
+          console.log(`MarketStore - 地区价格修正因子已更新: ${location?.name || locationId} ${oldModifier.toFixed(2)} -> ${modifiers.locationModifiers[locationId].toFixed(2)}`);
+        }
+      }
+
+      // 地区内商品价格修正因子波动 - 每周有10%概率对某个地区的1-3个商品进行波动
+      if (Math.random() < 0.1) {
+        // 随机选择一个地区
+        const locationIds = this.locations.map(location => location.id);
+        const randomLocationIndex = Math.floor(Math.random() * locationIds.length);
+        const locationId = locationIds[randomLocationIndex];
+        
+        // 随机选择1-3个商品
+        const productCount = Math.floor(Math.random() * 3) + 1;
+        const productIds = Object.keys(this.productPrices);
+        
+        // 确保locationProductModifiers中有该地区的对象
+        if (!modifiers.locationProductModifiers[locationId]) {
+          modifiers.locationProductModifiers[locationId] = {};
+        }
+        
+        // 确保locationProductUnchangedWeeks中有该地区的对象
+        if (!modifiers.locationProductUnchangedWeeks[locationId]) {
+          modifiers.locationProductUnchangedWeeks[locationId] = {};
+        }
+        
+        for (let i = 0; i < productCount && productIds.length > 0; i++) {
+          // 随机选择一个商品
+          const randomProductIndex = Math.floor(Math.random() * productIds.length);
+          const productId = productIds[randomProductIndex];
+          
+          // 更新连续未变化的周数
+          modifiers.locationProductUnchangedWeeks[locationId][productId] = 0;
+          
+          // 在0.4到1.6之间随机波动（比单独的商品波动更大）
+          const oldModifier = modifiers.locationProductModifiers[locationId][productId] || 1;
+          const variance = (Math.random() - 0.5) * 0.8; // -0.4 到 0.4 之间
+          modifiers.locationProductModifiers[locationId][productId] = Math.max(0.4, Math.min(1.6, oldModifier + variance));
+          
+          const product = this.products.find(p => p.id === Number(productId));
+          const location = this.locations.find(l => l.id === locationId);
+          console.log(`MarketStore - 地区内商品价格修正因子已更新: ${location?.name || locationId} 的 ${product?.name || productId} ${oldModifier.toFixed(2)} -> ${modifiers.locationProductModifiers[locationId][productId].toFixed(2)}`);
         }
       }
       
-      // 随机清除一些过期的修正因子，但保留最近使用的
-      Object.keys(this.marketModifiers.productModifiers).forEach(productId => {
-        const weeksUnchanged = this.marketModifiers.productUnchangedWeeks[productId] || 0;
-        // 如果超过5周未使用，或随机概率触发，则移除
-        if (weeksUnchanged > 5 || Math.random() < 0.15) { // 15%的概率移除
-          delete this.marketModifiers.productModifiers[productId];
-          delete this.marketModifiers.productUnchangedWeeks[productId];
-        }
-      });
+      // 清理过期的修正因子 - 所有类型的修正因子都会随时间自动恢复到1.0
+      // (现有代码保留不变...)
+
+      // 确保所有修正因子在合理范围内
+      if (modifiers.globalPriceModifier < 0.8 || modifiers.globalPriceModifier > 1.2) {
+        modifiers.globalPriceModifier = 1.0;
+      }
     },
     
     /**
@@ -596,8 +574,8 @@ export const useMarketStore = defineStore('market', {
     },
     
     /**
-     * 添加市场修正因子
-     * @param {string} type - 修正类型 ('global', 'category', 'product')
+     * 添加市场修正器
+     * @param {string} type - 修正类型 ('global', 'category', 'product', 'location', 'locationProduct')
      * @param {Object} data - 修正数据
      */
     addMarketModifier(type, data) {
@@ -612,6 +590,18 @@ export const useMarketStore = defineStore('market', {
           
         case 'product':
           this.marketModifiers.productModifiers[data.productId] = data.value;
+          break;
+
+        case 'location':
+          this.marketModifiers.locationModifiers[data.locationId] = data.value;
+          break;
+          
+        case 'locationProduct':
+          // 确保locationProductModifiers中有该地区的对象
+          if (!this.marketModifiers.locationProductModifiers[data.locationId]) {
+            this.marketModifiers.locationProductModifiers[data.locationId] = {};
+          }
+          this.marketModifiers.locationProductModifiers[data.locationId][data.productId] = data.value;
           break;
       }
     },

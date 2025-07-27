@@ -132,19 +132,24 @@
         <div class="about-content">
           <div class="about-logo">买房记</div>
           <div class="about-version">版本：v0.1.0</div>
-          <p>这是一款模拟房地产投资的经营策略游戏，玩家将在游戏中体验房产投资的乐趣与挑战。</p>
-
-          <div class="about-history">
-            <p>《买房记》原作是于2016推出的移动端游戏，您正游玩的是本作者根据其原作的创意进行重制的PC端游戏，本作者在2016接触到原作《买房记》时还在读小学，由于自己没有手机只能通过观看网上视频了解，但仍对当时幼小的我深有触动，直到大学阶段时仍不时勾起回忆。该作品是对原作的致敬，是对童年的回忆。</p>
+          
+          <div class="about-description">
+            <p>这是一款模拟经营策略游戏，玩家将在游戏中体验市场变化带来的乐趣与挑战。</p>
           </div>
 
-          <div class="about-credits">
+          <div class="about-history">
+            <p>《买房记》原作是由郑昉开发的一款模拟经营类手机游戏，发布于2016年。本作者首次接触原作《买房记》是在2016年，通过观看B站UP主“敖厂长”发布的视频《【敖厂长】屌丝买房》。其玩法和创意带来的乐趣，时至今日仍记忆犹新。受条件限制，数年后才得以真正上手游玩，熟悉的玩法，却再也找不回曾经的感觉。原作最后一次更新在2022年，至今已有三年。出于对童年的回忆和对原作的致敬，遂决定开发同名PC端游戏。目前游戏仍处于早期开发阶段，感谢您的试玩。</p>
+          </div>
+
+          <div class="credits-section">
             <h4>制作团队</h4>
-            <p>开发者：春卷</p>
+            <div class="developer-info">
+              开发者： <span class="dev-name">春卷</span>
+            </div>
           </div>
         </div>
         <div class="about-actions">
-          <button class="button primary" @click="closeAboutDialog">关闭</button>
+          <button class="about-close-btn" @click="closeAboutDialog">关闭</button>
         </div>
       </div>
     </div>
@@ -1134,17 +1139,21 @@ onMounted(() => {
   }
 }
 
-/* 关于对话框样式 */
+/* 关于对话框样式优化 */
 .about-dialog {
-  background-color: white;
-  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
   padding: 0;
-  width: 90%;
-  max-width: 420px;
+  width: 92%;
+  max-width: 460px; /* 增加宽度 */
+  min-height: 650px; /* 增加最小高度 */
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: dialog-appear 0.4s ease-out;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px);
+  display: flex; /* 使用flex布局 */
+  flex-direction: column; /* 垂直排列 */
 }
 
 .about-header {
@@ -1152,81 +1161,168 @@ onMounted(() => {
   color: white;
   padding: 16px 20px;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.about-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+  z-index: 1;
 }
 
 .about-header h3 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 600;
   letter-spacing: 1px;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .about-content {
-  padding: 25px 20px;
+  padding: 20px;
   text-align: center;
+  flex-grow: 1; /* 允许内容区域伸展 */
+  display: flex;
+  flex-direction: column;
 }
 
 .about-logo {
-  font-size: 2.2rem;
+  font-size: 2.5rem;
   font-weight: bold;
   color: #1a2a6c;
   margin-bottom: 5px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: title-glow 3s ease-in-out infinite;
 }
 
 .about-version {
   color: #7f8c8d;
   margin-bottom: 15px;
   font-size: 0.9rem;
+  opacity: 0.8;
 }
 
-.about-content p {
-  margin: 12px 0;
-  line-height: 1.5;
+.about-description {
+  margin-bottom: 15px;
+}
+
+.about-description p {
+  margin: 0;
+  line-height: 1.6;
   color: #34495e;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .about-history {
-  margin-top: 18px;
+  margin: 10px 0;
   padding: 15px;
   background-color: #f8f9fa;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid #eee;
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* 稍微缩小字体 */
   color: #2c3e50;
-  line-height: 1.6;
-  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.03);
+  line-height: 1.5;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.03);
+  max-height: 220px; /* 限制历史部分高度，确保后面内容可见 */
+  overflow-y: auto; /* 添加滚动条 */
 }
 
-.about-credits {
-  margin-top: 18px;
-  border-top: 1px solid #eee;
-  padding-top: 15px;
+/* 自定义历史部分的滚动条 */
+.about-history::-webkit-scrollbar {
+  width: 5px;
 }
 
-.about-credits h4 {
-  margin: 0 0 10px 0;
-  color: #2c3e50;
+.about-history::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+.about-history::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.credits-section {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+}
+
+.developer-info {
+  padding: 12px 0;
   font-size: 1.1rem;
+  color: #34495e;
+  text-align: center;
+  margin-top: 10px;
 }
 
-.about-credits p {
-  margin: 5px 0;
-  font-size: 0.9rem;
-  color: #34495e;
+.dev-name {
+  font-weight: 600;
+  color: #2c3e50;
 }
 
 .about-actions {
-  padding: 15px;
+  padding: 15px 20px;
   display: flex;
   justify-content: center;
   border-top: 1px solid #eee;
+  background-color: #f9fafb;
+  margin-top: auto; /* 将按钮推到底部 */
 }
 
-.about-actions button {
-  min-width: 100px;
+.about-close-btn {
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f);
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(26, 42, 108, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.about-close-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: all 0.6s;
+}
+
+.about-close-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(26, 42, 108, 0.3);
+}
+
+.about-close-btn:hover::before {
+  left: 100%;
+}
+
+.about-close-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(26, 42, 108, 0.2);
 }
 
 @keyframes dialog-appear {

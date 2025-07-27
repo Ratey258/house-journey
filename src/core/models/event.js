@@ -211,13 +211,29 @@ export class EventEffects {
   /**
    * 创建事件效果实例
    * @param {Object} options 效果初始化配置
+   * @param {number} options.money 金钱变化（正数增加，负数减少，小于1的小数表示百分比）
+   * @param {number} options.debt 债务变化（正数增加，负数减少，小于1的小数表示百分比）
+   * @param {Array} options.inventory 物品变化 [{productId, quantity, priceModifier}]
+   * @param {Object} options.attributes 属性变化 {businessSkill, creditRating, etc.}
+   * @param {Object} options.market 市场影响
+   * @param {number} options.market.globalPriceModifier 全局价格修正因子
+   * @param {Object} options.market.categoryModifiers 类别价格修正因子 {category: modifier}
+   * @param {Object} options.market.productModifiers 商品价格修正因子 {productId: modifier}
+   * @param {Object} options.market.locationModifiers 地区价格修正因子 {locationId: modifier}
+   * @param {Object} options.market.locationProductModifiers 特定地区特定商品价格修正因子 {locationId: {productId: modifier}}
+   * @param {number} options.market.duration 效果持续时间（周数）
+   * @param {boolean} options.forceLocationChange 强制切换地点
+   * @param {string} options.targetLocation 目标地点ID
+   * @param {number} options.capacity 背包容量变化
+   * @param {string} options.nextEvent 连锁事件ID
+   * @param {Object} options.gameState 游戏状态变化 {gamePaused, forceGameOver, etc.}
    */
   constructor({
     money = 0,          // 金钱变化（正数增加，负数减少，小于1的小数表示百分比）
     debt = 0,           // 债务变化（正数增加，负数减少，小于1的小数表示百分比）
     inventory = [],     // 物品变化 [{productId, quantity, priceModifier}]
     attributes = {},    // 属性变化 {businessSkill, creditRating, etc.}
-    market = null,      // 市场影响 {globalPriceModifier, categoryModifier, productModifiers, duration(单位:周)}
+    market = null,      // 市场影响 {globalPriceModifier, categoryModifiers, productModifiers, locationModifiers, locationProductModifiers, duration}
     forceLocationChange = false, // 强制切换地点
     targetLocation = null, // 目标地点ID
     capacity = 0,       // 背包容量变化
@@ -323,14 +339,20 @@ const predefinedEvents = [
   // --- 市场事件 ---
   createEvent(
     'market_boom',
-    '市场繁荣',
-    '最近经济形势大好，商品价格普遍上涨！这可能是出售物品的好时机，也可能是调整购买策略的时候。',
+    '局部市场繁荣',
+    '最新经济报道：高端商城和电子科技城迎来消费热潮，商品价格普遍上涨！这可能是调整购买策略的好时机。',
     [
       createEventOption(
-        '抓住机会多买入一些商品',
-        '你决定投入更多资金购买商品，希望价格继续上涨带来更多收益。',
+        '抓住机会在热门地区采购',
+        '你决定前往这些繁荣地区采购更多商品，希望能从价格波动中获益。',
         createEventEffects({
-          market: { globalPriceModifier: 1.2, duration: 2 } // 全局价格提升20%，持续2周
+          market: {
+            locationModifiers: {
+              'premium_mall': 1.25, // 高端商城价格上涨25%
+              'electronics_hub': 1.15 // 电子科技城价格上涨15%
+            },
+            duration: 2 // 持续2周
+          }
         })
       ),
       createEventOption(
@@ -339,10 +361,16 @@ const predefinedEvents = [
         createEventEffects({})
       ),
       createEventOption(
-        '趁高价出售库存商品',
-        '你决定利用价格上涨的机会出售一些库存商品。',
+        '趁高价出售相关库存商品',
+        '你决定利用这些地区价格上涨的机会出售一些库存商品。',
         createEventEffects({
-          market: { globalPriceModifier: 1.15, duration: 1 } // 价格提升15%，但只持续1周
+          market: { 
+            locationModifiers: {
+              'premium_mall': 1.2, // 高端商城价格上涨20%
+              'electronics_hub': 1.1 // 电子科技城价格上涨10%
+            }, 
+            duration: 1 // 持续1周
+          }
         }),
         (gameState) => gameState.player.inventoryUsed > 0 // 只有当背包中有物品时才显示此选项
       )
@@ -359,14 +387,20 @@ const predefinedEvents = [
   
   createEvent(
     'market_crash',
-    '市场崩盘',
-    '突发经济危机，市场一片恐慌，商品价格大幅下跌！你需要决定是否利用这次低价机会。',
+    '局部市场崩盘',
+    '突发消息：二手市场和地下黑市爆发安全事件，导致这些地区交易萎缩，商品价格大幅下跌！你需要决定是否利用这次低价机会。',
     [
       createEventOption(
         '抄底购买',
-        '你决定趁低价大量购入商品，希望能在价格回升时获利。',
+        '你决定趁低价前往受影响地区大量购入商品，希望能在价格回升时获利。',
         createEventEffects({
-          market: { globalPriceModifier: 0.7, duration: 3 } // 全局价格降低30%，持续3周
+          market: {
+            locationModifiers: {
+              'second_hand_market': 0.65, // 二手市场价格下跌35%
+              'black_market': 0.7 // 地下黑市价格下跌30%
+            },
+            duration: 3 // 持续3周
+          }
         })
       ),
       createEventOption(
@@ -376,9 +410,15 @@ const predefinedEvents = [
       ),
       createEventOption(
         '提前卖出持有商品',
-        '你担心价格会进一步下跌，决定立即出售部分商品减少损失。',
+        '你担心其他地区也会受影响，决定立即出售部分商品减少可能的损失。',
         createEventEffects({
-          market: { globalPriceModifier: 0.8, duration: 1 } // 价格降低20%，但只持续1周
+          market: {
+            locationModifiers: {
+              'second_hand_market': 0.75, // 二手市场价格下跌25%
+              'black_market': 0.8 // 地下黑市价格下跌20%
+            },
+            duration: 1 // 持续1周
+          }
         }),
         (gameState) => gameState.player.inventoryUsed > 0
       )
@@ -1047,8 +1087,14 @@ const predefinedEvents = [
         '你预计价格会进一步上涨，决定趁现在大量购入食品类商品。',
         createEventEffects({
           market: {
-            categoryModifier: 'FOOD',
-            modifier: 1.4,
+            categoryModifiers: {
+              'FOOD': 1.4  // 修正格式，categoryModifier改为categoryModifiers对象
+            },
+            productModifiers: {
+              '201': 1.6,  // 鸡蛋价格上涨60%
+              '202': 1.5,  // 大米价格上涨50%
+              '204': 1.7   // 新鲜蔬菜价格上涨70%
+            },
             duration: 4
           }
         })
@@ -1058,8 +1104,13 @@ const predefinedEvents = [
         '你开始寻找替代的食品来源，避免受到价格波动的影响。',
         createEventEffects({
           market: {
-            categoryModifier: 'FOOD',
-            modifier: 1.2,
+            categoryModifiers: {
+              'FOOD': 1.2  // 修正格式，categoryModifier改为categoryModifiers对象
+            },
+            productModifiers: {
+              '201': 1.3,  // 鸡蛋价格上涨30%
+              '202': 1.25  // 大米价格上涨25%
+            },
             duration: 2
           }
         })
@@ -1086,8 +1137,17 @@ const predefinedEvents = [
         '你决定购入一批最新的科技产品，希望能够获得高额利润。',
         createEventEffects({
           market: {
-            categoryModifier: 'ELECTRONICS',
-            modifier: 1.25,
+            categoryModifiers: {
+              'ELECTRONICS': 1.25 // 修正格式，categoryModifier改为categoryModifiers对象
+            },
+            productModifiers: {
+              '301': 1.4,   // 手机价格上涨40%
+              '303': 1.35,  // 笔记本电脑价格上涨35%
+              '305': 1.45   // 智能手表价格上涨45%
+            },
+            locationModifiers: {
+              'electronics_hub': 1.15 // 电子科技城整体价格上涨15%
+            },
             duration: 3
           }
         })
@@ -1095,7 +1155,16 @@ const predefinedEvents = [
       createEventOption(
         '继续关注传统产品',
         '你认为科技创新只是短期效应，决定继续专注于传统产品。',
-        createEventEffects({})
+        createEventEffects({
+          market: {
+            // 即使不选择投资，市场也会受到一些影响
+            productModifiers: {
+              '301': 1.2,  // 手机价格仍然上涨20%
+              '305': 1.25  // 智能手表价格上涨25%
+            },
+            duration: 2
+          }
+        })
       )
     ],
     createEventConditions({
@@ -1119,7 +1188,7 @@ const predefinedEvents = [
         createEventEffects({
           market: {
             globalPriceModifier: 1.15,
-            duration: 5
+            duration: 5 // 更新为周数格式，5周
           }
         })
       ),
@@ -1129,7 +1198,7 @@ const predefinedEvents = [
         createEventEffects({
           market: {
             globalPriceModifier: 1.1,
-            duration: 3
+            duration: 3 // 更新为周数格式，3周
           }
         })
       ),
@@ -1153,27 +1222,59 @@ const predefinedEvents = [
   
   createEvent(
     'supply_chain_recovery',
-    '供应链恢复',
-    '经过一段时间的调整，全球供应链开始恢复正常，商品价格趋于稳定。',
+    '全球供应链逐步恢复',
+    '经过一段时间的调整，全球供应链开始逐步恢复，但不同地区和商品的恢复速度存在显著差异。',
     [
       createEventOption(
-        '恢复正常采购',
-        '你开始恢复正常的采购活动，利用价格回落的机会补充库存。',
+        '把握恢复机会',
+        '你分析了市场恢复趋势，决定有选择地投资于价格开始恢复正常的商品。',
         createEventEffects({
           market: {
-            globalPriceModifier: 0.9,
-            duration: 2
+            // 全球市场逐渐回归正常
+            globalPriceModifier: 0.95, // 全局价格轻微下调，回归正常
+            // 不同地区恢复情况不同
+            locationModifiers: {
+              'commodity_market': 0.9, // 大宗商品市场恢复较快
+              'electronics_hub': 1.1,  // 电子市场恢复较慢
+              'black_market': 0.85     // 黑市价格大幅回落
+            },
+            // 特定商品恢复情况
+            locationProductModifiers: {
+              'commodity_market': {
+                '202': 0.85, // 大米价格回落
+                '203': 0.9   // 食用油价格轻微回落
+              },
+              'electronics_hub': {
+                '301': 1.2,  // 手机价格回升
+                '305': 1.15  // 智能手表价格小幅回升
+              },
+              'black_market': {
+                '502': 0.7,  // 邮票价格大幅回落
+                '503': 0.75  // 古画价格大幅回落
+              }
+            },
+            duration: 3 // 持续3周
           }
         })
       ),
       createEventOption(
-        '继续观望',
-        '你决定再观察一段时间，确保供应链真正稳定后再行动。',
-        createEventEffects({})
+        '稳健策略',
+        '你决定采取稳健策略，平衡调整你的库存和交易计划。',
+        createEventEffects({
+          market: {
+            globalPriceModifier: 0.98,
+            locationModifiers: {
+              'commodity_market': 0.95,
+              'premium_mall': 0.95,
+              'second_hand_market': 0.95
+            },
+            duration: 2 // 持续2周
+          }
+        })
       )
     ],
     createEventConditions({
-      requiredEvents: ['supply_chain_disruption']
+      requiredEvents: ['supply_chain_disruption', 'old_supply_chain_disruption'] // 支持新旧两个版本的事件触发
     }),
     false,
     EventType.MARKET,
@@ -1234,9 +1335,22 @@ const predefinedEvents = [
         '你决定利用这个机会大量采购各类商品，为未来的销售做准备。',
         createEventEffects({
           market: {
-            globalPriceModifier: 0.7,
+            locationModifiers: {
+              'commodity_market': 0.8 // 大宗商品交易所整体降价20%
+            },
+            categoryModifiers: {
+              'FOOD': 0.75, // 食品类降价25%
+              'DAILY': 0.7  // 日用品降价30%
+            },
+            productModifiers: {
+              '201': 0.6,  // 鸡蛋降价40%
+              '202': 0.65, // 大米降价35%
+              '101': 0.6   // 卫生纸降价40%
+            },
             duration: 1
-          }
+          },
+          forceLocationChange: true,
+          targetLocation: 'commodity_market'
         })
       ),
       createEventOption(
@@ -1244,7 +1358,28 @@ const predefinedEvents = [
         '你仔细挑选，只购买那些真正划算的商品。',
         createEventEffects({
           market: {
-            globalPriceModifier: 0.8,
+            locationModifiers: {
+              'commodity_market': 0.9 // 大宗商品交易所整体降价10%
+            },
+            productModifiers: {
+              '202': 0.7, // 大米降价30%
+              '203': 0.75 // 食用油降价25%
+            },
+            duration: 1
+          },
+          forceLocationChange: true,
+          targetLocation: 'commodity_market'
+        })
+      ),
+      createEventOption(
+        '放弃此次机会',
+        '你觉得价格优惠幅度不够大，决定不参与此次优惠活动。',
+        createEventEffects({
+          market: {
+            // 即使不参与，市场价格也会有轻微变动
+            locationModifiers: {
+              'commodity_market': 0.95 // 大宗商品交易所整体轻微降价5%
+            },
             duration: 1
           }
         })
@@ -1295,37 +1430,45 @@ const predefinedEvents = [
   ),
   
   createEvent(
-    'electronic_expo',
-    '电子产品展销会',
-    '电子科技城举办了一场大型展销会，各种最新科技产品亮相，吸引了众多科技爱好者。',
+    'electronics_expo',
+    '电子科技城展销会',
+    '电子科技城举办大型数码产品展销会，最新款手机和智能手表都有特别优惠！这是采购电子产品的绝佳时机。',
     [
       createEventOption(
-        '参观展销会',
+        '参观展会',
         '你花费一些时间参观展销会，了解最新的科技趋势。',
         createEventEffects({
           money: -100,
           market: {
-            globalPriceModifier: 0.9,
-            duration: 1
+            // 展会期间电子科技城整体小幅降价
+            locationModifiers: {
+              'electronics_hub': 0.95
+            },
+            duration: 1 // 持续1周
           }
         })
       ),
       createEventOption(
-        '采购最新产品',
-        '你决定投资购买一些最新的电子产品，期望能在价格上涨前转售获利。',
+        '采购特价电子产品',
+        '你决定投资购买展会上的特价手机和智能手表，期望能在价格上涨前转售获利。',
         createEventEffects({
           money: -2000,
           market: {
-            categoryModifiers: {
-              'ELECTRONICS': 0.8
-            }
+            // 针对电子科技城的特定产品大幅优惠
+            locationProductModifiers: {
+              'electronics_hub': {
+                '301': 0.7, // 手机降价30%
+                '305': 0.75 // 智能手表降价25%
+              }
+            },
+            duration: 2 // 持续2周
           }
         }),
         (gameState) => gameState.player.money >= 2000
       )
     ],
     createEventConditions({
-      locations: ['electronics_hub'],
+      locations: ['electronics_hub'], // 只在电子科技城触发
       probability: 0.3
     }),
     true,
@@ -2391,7 +2534,7 @@ const predefinedEvents = [
     ],
     createEventConditions({
       probability: 0.8,
-      playerMoney: { min: 2000 } // 玩家至少有2000元才会触发
+      playerMoney: { min: 3000 } // 玩家至少有2000元才会触发
     }),
     false, // 不可重复触发
     EventType.RANDOM,
@@ -2401,29 +2544,58 @@ const predefinedEvents = [
 
   createEvent(
     'market_price_surge',
-    '市场价格飙升',
-    '由于最近的市场变动，某些商品的价格出现了大幅上涨。',
+    '奢侈品与收藏品价格飙升',
+    '最新财经报道：随着富裕阶层消费回暖，高端商城的奢侈品和地下黑市的稀有收藏品价格大幅上涨，其中尤以名表和古董涨幅最大。',
     [
       createEventOption(
-        '密切关注',
-        '你决定密切关注这一波价格变动，以寻找获利机会。',
+        '调整投资策略',
+        '你仔细分析了价格波动趋势，决定调整你的交易策略，重点关注高端商品。',
         createEventEffects({
           market: {
-            // 全局价格上涨10%
-            globalPriceModifier: 1.1,
-            // 某些类别价格上涨更多
-            categoryModifiers: {
-              'luxury': 1.25, // 奢侈品上涨25%
-              'tech': 1.2    // 科技产品上涨20%
+            // 全局价格小幅上涨
+            globalPriceModifier: 1.05,
+            // 特定地区价格上涨更明显
+            locationModifiers: {
+              'premium_mall': 1.15, // 高端商城整体上涨15%
+              'black_market': 1.2   // 地下黑市整体上涨20%
+            },
+            // 特定地区特定商品上涨最明显
+            locationProductModifiers: {
+              'premium_mall': {
+                '401': 1.5   // 高端商城的名表上涨50%
+              },
+              'black_market': {
+                '503': 1.6   // 地下黑市的古画上涨60%
+              }
             },
             // 持续两周
-            duration: 1209600 // 秒数：14天
+            duration: 2 // 持续2周
+          }
+        })
+      ),
+      createEventOption(
+        '前往高端市场',
+        '你决定立即前往高端商城和地下黑市，希望能在价格进一步上涨前采购一些潜力商品。',
+        createEventEffects({
+          forceLocationChange: true,
+          targetLocation: 'premium_mall',
+          market: {
+            locationProductModifiers: {
+              'premium_mall': {
+                '401': 1.3   // 高端商城的名表上涨30%
+              },
+              'black_market': {
+                '503': 1.4   // 地下黑市的古画上涨40%
+              }
+            },
+            duration: 1 // 持续1周
           }
         })
       )
     ],
     createEventConditions({
-      probability: 0.7
+      probability: 0.3,
+      minWeek: 8
     }),
     true, // 可重复触发
     EventType.MARKET,
@@ -2444,7 +2616,7 @@ const predefinedEvents = [
             // 全局价格下跌15%
             globalPriceModifier: 0.85,
             // 持续一周
-            duration: 604800 // 秒数：7天
+            duration: 1 // 持续1周
           }
         })
       )
@@ -2563,15 +2735,160 @@ const predefinedEvents = [
     EventType.STORY,
     1,
     '/assets/images/events/investment_result.jpg'
-  )
+  ),
+  
+  // 供应链中断事件
+  createEvent({
+    id: 'supply_chain_disruption',
+    title: '全球供应链中断危机',
+    description: '突发新闻：全球贸易遭遇严重供应链中断！各地区不同商品价格出现剧烈波动，部分商品短缺涨价，部分商品积压降价。此次危机预计将对市场产生深远影响。',
+    type: EventType.MARKET,
+    options: [
+      createEventOption(
+        '在大宗市场囤积基本物资', 
+        '你预判到基本生活物资将会短缺，决定前往大宗商品交易所囤积必需品。',
+        {
+          market: {
+            // 全局市场轻微波动
+            globalPriceModifier: 1.05,
+            // 大宗商品交易所的物资价格变化
+            locationProductModifiers: {
+              'commodity_market': {
+                '202': 1.6, // 大米价格上涨60%
+                '203': 1.5, // 食用油价格上涨50%
+                '101': 1.4  // 卫生纸价格上涨40%
+              },
+              'electronics_hub': {
+                '301': 0.7, // 手机降价30%（电子产品积压）
+                '305': 0.75 // 智能手表降价25%
+              },
+              'premium_mall': {
+                '404': 0.8 // 高级香水降价20%（奢侈品销售下滑）
+              }
+            },
+            duration: 4 // 持续4周
+          },
+          forceLocationChange: true,
+          targetLocation: 'commodity_market'
+        }
+      ),
+      createEventOption(
+        '投资受影响商品', 
+        '你认为这是投资低价电子产品的好机会，决定前往电子科技城大量购入。',
+        {
+          market: {
+            locationModifiers: {
+              'electronics_hub': 0.85 // 电子科技城整体降价15%
+            },
+            locationProductModifiers: {
+              'electronics_hub': {
+                '301': 0.6, // 手机降价40%
+                '305': 0.65 // 智能手表降价35%
+              },
+              'commodity_market': {
+                '202': 1.45, // 大米价格上涨45%
+                '203': 1.4  // 食用油价格上涨40%
+              }
+            },
+            duration: 3 // 持续3周
+          },
+          forceLocationChange: true,
+          targetLocation: 'electronics_hub'
+        }
+      ),
+      createEventOption(
+        '寻找黑市稀缺资源', 
+        '你猜测某些特殊商品可能在黑市变得更加稀缺且价值上升，决定前往地下黑市探索机会。',
+        {
+          market: {
+            locationModifiers: {
+              'black_market': 1.2 // 黑市整体涨价20%
+            },
+            locationProductModifiers: {
+              'black_market': {
+                '502': 1.8, // 邮票价格上涨80%（收藏品价值飙升）
+                '503': 1.9  // 古画价格上涨90%
+              },
+              'second_hand_market': {
+                '107': 0.7, // 二手物品降价30%（需求下降）
+                '106': 0.75 // 二手物品降价25%
+              }
+            },
+            duration: 3 // 持续3周
+          },
+          forceLocationChange: true,
+          targetLocation: 'black_market'
+        }
+      ),
+      createEventOption(
+        '保持观望', 
+        '你决定暂时不介入这次混乱的市场波动，等待形势更加明朗。',
+        {
+          // 仅记录市场变化，但不采取行动
+          market: {
+            globalPriceModifier: 1.02,
+            duration: 2 // 持续2周
+          }
+        }
+      )
+    ],
+    conditions: {
+      probability: 0.15, // 较低概率触发，因为是重大事件
+      minWeek: 15        // 游戏进行到中后期才会触发
+    },
+    repeatable: false,   // 重大事件，不可重复触发
+    weight: 3           // 较高权重，优先触发
+  }),
+  
+  // 对比事件：地区繁荣与萧条
+  createEvent({
+    id: 'market_contrast_event',
+    title: '城市区域发展不均',
+    description: '最新城市规划调整导致电子科技城获得大量投资和客流，而地下黑市却因管控加强而客流锐减。这种发展不均衡引发了明显的市场差异。',
+    type: EventType.MARKET,
+    options: [
+      createEventOption(
+        '分析市场机会', 
+        '你仔细分析了城市不同区域的发展变化，寻找其中的交易机会。',
+        {
+          market: {
+            // 对比效应：一个地区繁荣（降价），另一个萧条（涨价）
+            locationModifiers: {
+              'electronics_hub': 0.8, // 电子科技城繁荣，整体降价20%
+              'black_market': 1.4 // 地下黑市萧条，整体涨价40%
+            },
+            duration: 5 // 持续5周
+          }
+        }
+      )
+    ],
+    conditions: {
+      probability: 0.2,
+      minWeek: 12
+    },
+    repeatable: true,
+    weight: 2
+  })
 ];
 
-/**
- * 获取所有事件列表
- * @returns {Array<Event>} 事件列表
- */
-export function getAllEvents() {
-  return predefinedEvents.map(eventData => {
+// 事件缓存，避免重复创建事件实例
+let eventsCache = [];
+
+// 按类型划分的事件列表
+const tutorialEvents = []; // 教程事件
+const randomEvents = [];   // 随机事件
+const locationEvents = []; // 地点特定事件
+const marketEvents = [];   // 市场事件
+const personalEvents = []; // 个人事件
+const storyEvents = [];    // 故事/剧情事件
+
+// 从预定义事件数据中填充事件列表
+function initializeEventLists() {
+  // 如果事件列表已经初始化，则跳过
+  if (tutorialEvents.length > 0) return;
+  
+  // 遍历预定义事件数据，按类型分类
+  predefinedEvents.forEach(eventData => {
     // 确保事件选项是EventOption实例
     const options = eventData.options.map(option => {
       if (!(option instanceof EventOption)) {
@@ -2580,13 +2897,307 @@ export function getAllEvents() {
       return option;
     });
     
-    // 创建Event实例，确保imageUrl属性被正确传递
-    return new Event({
+    // 创建Event实例
+    const event = new Event({
       ...eventData,
       options,
-      imageUrl: eventData.imageUrl || (typeof eventData[8] === 'string' ? eventData[8] : null) // 确保第9个参数被作为imageUrl传递
+      imageUrl: eventData.imageUrl || (typeof eventData[8] === 'string' ? eventData[8] : null)
     });
+    
+    // 根据事件类型添加到对应列表
+    switch (event.type) {
+      case EventType.TUTORIAL:
+        tutorialEvents.push(event);
+        break;
+      case EventType.RANDOM:
+        randomEvents.push(event);
+        break;
+      case EventType.LOCATION:
+        locationEvents.push(event);
+        break;
+      case EventType.MARKET:
+        marketEvents.push(event);
+        break;
+      case EventType.PERSONAL:
+        personalEvents.push(event);
+        break;
+      case EventType.STORY:
+        storyEvents.push(event);
+        break;
+      default:
+        randomEvents.push(event); // 默认添加到随机事件列表
+    }
   });
+}
+
+/**
+ * 获取所有游戏事件
+ * @returns {Array<Event>} 事件列表
+ */
+export function getAllEvents() {
+  // 初始化事件列表
+  initializeEventLists();
+  
+  // 从缓存中获取事件，避免重新创建
+  if (eventsCache.length > 0) {
+    return eventsCache;
+  }
+  
+  // 初始化事件列表
+  const events = [];
+  
+  // 添加教程事件
+  events.push(...tutorialEvents);
+  
+  // 添加随机事件
+  events.push(...randomEvents);
+  
+  // 添加地点特定事件
+  events.push(...locationEvents);
+  
+  // 添加市场事件
+  events.push(...marketEvents);
+  
+  // 添加个人事件
+  events.push(...personalEvents);
+  
+  // 添加故事事件
+  events.push(...storyEvents);
+  
+  // 添加新的地区特定价格事件
+  events.push(
+    // 地区整体通胀事件
+    createEvent({
+      id: 'location_inflation_electronics_hub',
+      title: '电子科技城芯片短缺',
+      description: '最新消息：电子科技城的主要芯片供应商工厂停产，导致该地区电子产品整体涨价。分析师预计这种情况将持续数周。',
+      type: EventType.MARKET,
+      options: [
+        createEventOption(
+          '了解情况', 
+          '你记下了这个信息，这可能影响你在电子科技城的交易策略。',
+          {
+            market: {
+              // 对电子科技城整体价格上调30%
+              locationModifiers: {
+                'electronics_hub': 1.3
+              },
+              duration: 4 // 持续4周
+            }
+          }
+        )
+      ],
+      conditions: {
+        probability: 0.3,
+        minWeek: 5
+      },
+      repeatable: true,
+      weight: 2
+    }),
+    
+    // 地区特定商品价格变化事件
+    createEvent({
+      id: 'premium_mall_luxury_watch_discount',
+      title: '高端商城名表促销',
+      description: '高端商城的名表专柜开始大规模促销活动，所有品牌手表都有特别折扣。这是购买奢侈手表的好机会！',
+      type: EventType.MARKET,
+      options: [
+        createEventOption(
+          '记下信息', 
+          '你记下了这个促销信息，可以考虑去高端商城购买手表。',
+          {
+            market: {
+              // 对高端商城的特定商品(ID:401手表)降价40%
+              locationProductModifiers: {
+                'premium_mall': {
+                  '401': 0.6 // 降价40%
+                }
+              },
+              duration: 2 // 持续2周
+            }
+          }
+        )
+      ],
+      conditions: {
+        probability: 0.3,
+        minWeek: 3
+      },
+      repeatable: true,
+      weight: 1
+    }),
+    
+    // 多地区多商品价格变化事件
+    createEvent({
+      id: 'nationwide_paper_shortage',
+      title: '全国性纸张短缺',
+      description: '由于环保政策收紧和原料价格上涨，全国范围内出现纸张短缺现象。大宗商品交易所和二手市场的卫生纸价格飙升，而其他地区受影响较小。',
+      type: EventType.MARKET,
+      options: [
+        createEventOption(
+          '分析影响', 
+          '你分析了这次纸张短缺对各个市场的影响，并调整了你的交易策略。',
+          {
+            market: {
+              // 对特定地区的特定商品(ID:101卫生纸)涨价
+              locationProductModifiers: {
+                'commodity_market': {
+                  '101': 1.7 // 大宗商品交易所的卫生纸涨价70%
+                },
+                'second_hand_market': {
+                  '101': 1.5 // 二手市场的卫生纸涨价50%
+                }
+              },
+              duration: 3 // 持续3周
+            }
+          }
+        )
+      ],
+      conditions: {
+        probability: 0.25,
+        minWeek: 8
+      },
+      repeatable: true,
+      weight: 2
+    }),
+    
+    // 对比事件：地区繁荣与萧条
+    createEvent({
+      id: 'market_contrast_event',
+      title: '城市区域发展不均',
+      description: '最新城市规划调整导致电子科技城获得大量投资和客流，而地下黑市却因管控加强而客流锐减。这种发展不均衡引发了明显的市场差异。',
+      type: EventType.MARKET,
+      options: [
+        createEventOption(
+          '分析市场机会', 
+          '你仔细分析了城市不同区域的发展变化，寻找其中的交易机会。',
+          {
+            market: {
+              // 对比效应：一个地区繁荣（降价），另一个萧条（涨价）
+              locationModifiers: {
+                'electronics_hub': 0.8, // 电子科技城繁荣，整体降价20%
+                'black_market': 1.4 // 地下黑市萧条，整体涨价40%
+              },
+              duration: 5 // 持续5周
+            }
+          }
+        )
+      ],
+      conditions: {
+        probability: 0.2,
+        minWeek: 12
+      },
+      repeatable: true,
+      weight: 2
+    }),
+    
+    // 供应链中断事件
+    createEvent({
+      id: 'supply_chain_disruption',
+      title: '全球供应链中断危机',
+      description: '突发新闻：全球贸易遭遇严重供应链中断！各地区不同商品价格出现剧烈波动，部分商品短缺涨价，部分商品积压降价。此次危机预计将对市场产生深远影响。',
+      type: EventType.MARKET,
+      options: [
+        createEventOption(
+          '在大宗市场囤积基本物资', 
+          '你预判到基本生活物资将会短缺，决定前往大宗商品交易所囤积必需品。',
+          {
+            market: {
+              // 全局市场轻微波动
+              globalPriceModifier: 1.05,
+              // 大宗商品交易所的物资价格变化
+              locationProductModifiers: {
+                'commodity_market': {
+                  '202': 1.6, // 大米价格上涨60%
+                  '203': 1.5, // 食用油价格上涨50%
+                  '101': 1.4  // 卫生纸价格上涨40%
+                },
+                'electronics_hub': {
+                  '301': 0.7, // 手机降价30%（电子产品积压）
+                  '305': 0.75 // 智能手表降价25%
+                },
+                'premium_mall': {
+                  '404': 0.8 // 高级香水降价20%（奢侈品销售下滑）
+                }
+              },
+              duration: 4 // 持续4周
+            },
+            forceLocationChange: true,
+            targetLocation: 'commodity_market'
+          }
+        ),
+        createEventOption(
+          '投资受影响商品', 
+          '你认为这是投资低价电子产品的好机会，决定前往电子科技城大量购入。',
+          {
+            market: {
+              locationModifiers: {
+                'electronics_hub': 0.85 // 电子科技城整体降价15%
+              },
+              locationProductModifiers: {
+                'electronics_hub': {
+                  '301': 0.6, // 手机降价40%
+                  '305': 0.65 // 智能手表降价35%
+                },
+                'commodity_market': {
+                  '202': 1.45, // 大米价格上涨45%
+                  '203': 1.4  // 食用油价格上涨40%
+                }
+              },
+              duration: 3 // 持续3周
+            },
+            forceLocationChange: true,
+            targetLocation: 'electronics_hub'
+          }
+        ),
+        createEventOption(
+          '寻找黑市稀缺资源', 
+          '你猜测某些特殊商品可能在黑市变得更加稀缺且价值上升，决定前往地下黑市探索机会。',
+          {
+            market: {
+              locationModifiers: {
+                'black_market': 1.2 // 黑市整体涨价20%
+              },
+              locationProductModifiers: {
+                'black_market': {
+                  '502': 1.8, // 邮票价格上涨80%（收藏品价值飙升）
+                  '503': 1.9  // 古画价格上涨90%
+                },
+                'second_hand_market': {
+                  '107': 0.7, // 二手物品降价30%（需求下降）
+                  '106': 0.75 // 二手物品降价25%
+                }
+              },
+              duration: 3 // 持续3周
+            },
+            forceLocationChange: true,
+            targetLocation: 'black_market'
+          }
+        ),
+        createEventOption(
+          '保持观望', 
+          '你决定暂时不介入这次混乱的市场波动，等待形势更加明朗。',
+          {
+            // 仅记录市场变化，但不采取行动
+            market: {
+              globalPriceModifier: 1.02,
+              duration: 2 // 持续2周
+            }
+          }
+        )
+      ],
+      conditions: {
+        probability: 0.15, // 较低概率触发，因为是重大事件
+        minWeek: 15        // 游戏进行到中后期才会触发
+      },
+      repeatable: false,   // 重大事件，不可重复触发
+      weight: 3           // 较高权重，优先触发
+    })
+  );
+  
+  // 缓存创建的事件
+  eventsCache = events;
+  
+  return events;
 }
 
 /**

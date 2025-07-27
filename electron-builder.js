@@ -20,7 +20,7 @@ module.exports = {
 
   // Windows 配置
   win: {
-    icon: 'ico.ico',
+    icon: 'release/icon.ico',
     target: [
       {
         target: 'portable',

@@ -573,11 +573,6 @@ const confirmSave = async () => {
 
     if (result.success) {
       showSaveDialog.value = false;
-      uiStore.showToast({
-        type: 'success',
-        message: '游戏已成功保存',
-        duration: 2000
-      });
     } else {
       uiStore.showToast({
         type: 'error',
@@ -799,8 +794,8 @@ const handleTransactionToast = (data) => {
   height: 100vh;
   background-color: #f0f2f5;
   color: #333;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
-  padding: 0 4px; /* 添加水平内边距 */
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  padding: 0; /* 移除水平内边距 */
 }
 
 /* 顶部信息栏 */
@@ -810,13 +805,15 @@ const handleTransactionToast = (data) => {
   align-items: center;
   padding: 12px 24px;
   background: linear-gradient(135deg, #2980b9, #3498db);
-    color: white;
+  color: white;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-    z-index: 10;
+  z-index: 10;
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
-  }
+  width: 100%; /* 确保宽度为100% */
+  margin: 0; /* 移除外边距 */
+}
 
 /* 添加一个背景装饰效果 */
 .game-header::before {
@@ -930,9 +927,10 @@ const handleTransactionToast = (data) => {
 
 /* 通知区域 */
 .notifications-container {
-    padding: 10px 20px;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
+  padding: 10px 24px; /* 与顶部导航栏的左右内边距保持一致 */
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  width: 100%; /* 确保宽度为100% */
 }
 
 .notification {
@@ -996,15 +994,16 @@ const handleTransactionToast = (data) => {
 /* 主游戏区域 */
 .game-content {
   display: flex;
-    flex: 1;
+  flex: 1;
   overflow: hidden;
-    padding: 16px;
-    gap: 16px;
+  padding: 16px;
+  gap: 16px;
   align-items: stretch; /* 拉伸对齐，确保左右两侧高度一致 */
   height: calc(100vh - 120px); /* 设置合适的高度，减去头部和其他元素的高度 */
   background-color: #f0f2f5; /* 设置背景色 */
   border-radius: 16px; /* 设置整体圆角 */
-  margin: 0 8px; /* 添加水平边距 */
+  margin: 0; /* 移除左右边距 */
+  width: 100%; /* 确保宽度为100% */
 }
 
 /* 左侧面板 */

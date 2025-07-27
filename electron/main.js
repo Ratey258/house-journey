@@ -93,7 +93,9 @@ function createMainWindow() {
       sandbox: true,
       allowRunningInsecureContent: false
     },
-    icon: path.join(getAppPath(), 'icon.ico')
+    icon: app.isPackaged 
+      ? path.join(path.dirname(app.getPath('exe')), 'icon.ico') 
+      : path.join(__dirname, '../release/icon.ico')
   });
 
   // 设置Content-Security-Policy头
