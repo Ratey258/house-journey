@@ -770,14 +770,14 @@ const handleTransactionToast = (data) => {
   transactionToastMessage.value = data.message;
   transactionToastClass.value = data.class;
   transactionToastIcon.value = data.icon;
-  
+
   // 重置之前的提示（如果存在）
   showTransactionToast.value = false;
-  
+
   // 延迟一帧后显示，确保动画正确播放
   requestAnimationFrame(() => {
     showTransactionToast.value = true;
-    
+
     // 弹窗将通过CSS动画自动淡出
     setTimeout(() => {
       showTransactionToast.value = false;
@@ -823,7 +823,8 @@ const handleTransactionToast = (data) => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: url('../.././../resources/assets/images/placeholder.txt') no-repeat;
+  /* 移除无效的背景图像 */
+  background: rgba(0, 0, 0, 0.02);
   background-size: cover;
   opacity: 0.05;
   z-index: -1;

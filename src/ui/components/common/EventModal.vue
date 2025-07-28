@@ -34,7 +34,7 @@
               <h3>效果变化</h3>
               <div class="effect-list">
                 <!-- 普通效果项 -->
-                <div v-for="(effect, index) in effectResults.filter(e => e.type !== 'market')" 
+                <div v-for="(effect, index) in effectResults.filter(e => e.type !== 'market')"
                      :key="`normal-${index}`"
                      :class="['effect-item', effect.type]">
                   <span v-if="effect.type === 'money'" class="effect-icon">
@@ -79,7 +79,7 @@
 
                 <!-- 市场效果项，单独处理，每条描述一行 -->
                 <template v-for="(effect, effectIndex) in effectResults.filter(e => e.type === 'market')" :key="`market-${effectIndex}`">
-                  <div v-for="(description, descIndex) in getMarketEffectDescription(effect)" 
+                  <div v-for="(description, descIndex) in getMarketEffectDescription(effect)"
                        :key="`market-${effectIndex}-${descIndex}`"
                        class="effect-item market">
                     <span class="effect-icon">📊</span>
@@ -130,24 +130,8 @@ const gameCore = useGameCoreStore();
 // 事件操作
 const eventActions = useEventActions();
 
-// 音效
-let eventSound = null;
-
 // 组件挂载时
 onMounted(() => {
-  // 初始化音效
-  try {
-    // 使用相对路径加载音效，避免404错误
-    eventSound = new Audio('./resources/assets/sounds/event.mp3');
-    console.log('EventModal - 音效初始化成功');
-  } catch (error) {
-    console.warn('EventModal - 初始化音效失败:', error);
-    // 创建一个空的音频对象，避免后续使用时出错
-    eventSound = {
-      play: () => console.log('EventModal - 使用空音效')
-    };
-  }
-
   // 强制检查模态框状态
   nextTick(() => {
     console.log('EventModal - 组件挂载完成，模态框状态:', showModal.value);
@@ -227,7 +211,7 @@ const getAttributeDisplayName = (attribute) => {
     intelligence: "智力",
     stamina: "体力"
   };
-  
+
   return attributeNames[attribute] || attribute;
 };
 
@@ -241,7 +225,7 @@ const getMarketEffectDescription = (effect) => {
 
   const marketEffect = effect.effect;
   const descriptions = [];
-  
+
   // 确定持续时间文本
   let durationText = '';
   if (marketEffect.duration) {
@@ -305,7 +289,7 @@ const getMarketEffectDescription = (effect) => {
   // 显示具体影响的产品
   if (marketEffect.productModifiers) {
     const productModifiers = Object.entries(marketEffect.productModifiers);
-    
+
     // 不管产品数量多少，都单独显示每个产品
     for (const [productId, modifier] of productModifiers) {
       const percentage = Math.round((modifier - 1) * 100);
@@ -342,7 +326,7 @@ const getLocationName = (locationId) => {
 const getProductName = (productId) => {
   // 将productId转为字符串，以便统一处理数字和字符串ID
   const id = String(productId);
-  
+
   // 处理特殊格式的ID，比如house_a, land_a这类
   if (id.startsWith('house_')) {
     const houseType = id.split('_')[1]?.toUpperCase() || '';
@@ -351,7 +335,7 @@ const getProductName = (productId) => {
     const landType = id.split('_')[1]?.toUpperCase() || '';
     return `${landType}类土地`;
   }
-  
+
   // 这里添加所有商品的中文名称映射
   const productMap = {
     // 字符串ID商品
@@ -381,7 +365,7 @@ const getProductName = (productId) => {
     'cotton': '棉花',
     'rice': '大米',
     'antique_painting': '古画',
-    
+
     // 数字ID商品 - 日常用品 (101-199)
     '101': '卫生纸',
     '102': '洗发水',
@@ -390,21 +374,21 @@ const getProductName = (productId) => {
     '105': '毛巾',
     '106': '二手衣物',
     '107': '二手家具',
-    
+
     // 食品 (201-299)
     '201': '鸡蛋',
     '202': '大米',
     '203': '食用油',
     '204': '新鲜蔬菜',
     '205': '水果',
-    
+
     // 电子产品 (301-399)
     '301': '手机',
     '302': '电视',
     '303': '笔记本电脑',
     '304': '平板电脑',
     '305': '智能手表',
-    
+
     // 奢侈品 (401-499)
     '401': '名牌手表',
     '402': '钻石项链',
@@ -412,7 +396,7 @@ const getProductName = (productId) => {
     '404': '高级香水',
     '405': '名牌服装',
     '406': '高级红酒',
-    
+
     // 收藏品 (501-599)
     '501': '古董钟表',
     '502': '邮票',
@@ -420,7 +404,7 @@ const getProductName = (productId) => {
     '504': '老式相机',
     '505': '纪念币'
   };
-  
+
   return productMap[id] || `商品(${id})`;
 };
 
@@ -488,11 +472,6 @@ const showEvent = (event) => {
       eventHistory.value.push(event.id);
     }
 
-    // 播放音效
-    if (eventSound && eventSound.play && typeof eventSound.play === 'function') {
-      eventSound.play();
-    }
-
     // 发送显示事件的消息
     eventEmitter.emit('event:shown', { eventId: event.id });
 
@@ -512,14 +491,14 @@ const showEvent = (event) => {
 // 选择选项
 const selectOption = (option) => {
   console.log('EventModal - 选择选项:', option);
-  
+
   // 防止重复点击
   if (applyingEffects.value) {
     return;
   }
-  
+
   applyingEffects.value = true;
-  
+
   try {
     // 设置选中的选项
     selectedOption.value = option;
@@ -535,7 +514,7 @@ const selectOption = (option) => {
       console.log('EventModal - 调用事件操作模块处理选项');
       const result = eventActions.handleEventOption(option);
       console.log('EventModal - 选项处理结果:', result);
-      
+
       // 处理效果结果
       if (result && result.appliedEffects) {
         // 过滤掉不需要显示的效果类型
@@ -549,7 +528,7 @@ const selectOption = (option) => {
         // 去重：确保相同类型的效果不重复显示
         const uniqueEffects = [];
         const effectTypes = new Set();
-        
+
         effectResults.value.forEach(effect => {
           // 对于市场效果，检查effect.effect的内容是否相同
           if (effect.type === 'market') {
@@ -566,17 +545,17 @@ const selectOption = (option) => {
             }
           }
         });
-        
+
         effectResults.value = uniqueEffects;
 
         // 确保至少显示1秒的结果，即使没有效果
         if (effectResults.value.length === 0) {
           // 根据事件标题和类型，提供更具体的默认效果描述
           let defaultDescription = '选项已生效';
-          
+
           // 根据事件标题进行简单分析
           const eventTitle = currentEvent.value.title || '';
-          
+
           if (eventTitle.includes('市场') || eventTitle.includes('价格') || eventTitle.includes('商品')) {
             defaultDescription = '你将在市场中看到价格变化';
           } else if (eventTitle.includes('投资') || eventTitle.includes('理财')) {
@@ -584,7 +563,7 @@ const selectOption = (option) => {
           } else if (eventTitle.includes('对话') || eventTitle.includes('交流') || eventTitle.includes('顾问')) {
             defaultDescription = '这次交流增加了你的见识和人脉';
           }
-          
+
           effectResults.value = [{
             type: 'info',
             description: defaultDescription
@@ -613,13 +592,13 @@ const selectOption = (option) => {
         // 如果没有返回效果，添加一个默认效果
         const eventTitle = currentEvent.value.title || '';
         let defaultDescription = '选项已执行，效果将逐渐显现';
-        
+
         if (eventTitle.includes('市场') || eventTitle.includes('价格')) {
           defaultDescription = '你的决策将影响后续市场行情';
         } else if (eventTitle.includes('投资')) {
           defaultDescription = '你的投资已完成，回报将在未来显现';
         }
-        
+
         effectResults.value = [{
           type: 'info',
           description: defaultDescription

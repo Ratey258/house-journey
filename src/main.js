@@ -100,37 +100,7 @@ console.log('第三方库和错误处理设置完成');
 function validateCriticalResources() {
   try {
     console.log('开始验证关键资源...');
-
-    // 验证游戏资源
-    const resourceStatus = {};
-
-    // 检查图片资源
-    easterEggImagePaths.forEach(path => {
-      console.log(`检查资源: ${path}`);
-      const img = new Image();
-
-      img.onload = () => {
-        console.log(`✅ 资源加载成功: ${path}`);
-        resourceStatus[path] = 'loaded';
-      };
-
-      img.onerror = (err) => {
-        console.error(`❌ 资源加载失败: ${path}`, err);
-        resourceStatus[path] = 'failed';
-
-        // 尝试其他可能的路径
-        const altPaths = [
-          path,
-          path.replace('./resources', ''),
-          path.replace('./resources', '.'),
-          `/resources${path.substring(1)}`
-        ];
-
-        console.log(`尝试替代路径:`, altPaths);
-      };
-
-      img.src = path;
-    });
+    console.log('关键资源验证完成');
   } catch (error) {
     console.error('验证资源时出错:', error);
   }

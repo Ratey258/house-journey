@@ -28,9 +28,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, inject, onBeforeUnmount, computed } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useUiStore } from '@/stores/uiStore';
 
+// 获取UI存储
 const uiStore = useUiStore();
 // 直接从 uiStore 获取 toasts 数据
 const toasts = computed(() => uiStore.toasts);
@@ -40,36 +41,10 @@ const removeToast = (id) => {
   uiStore.removeToast(id);
 };
 
-// 尝试获取音频管理器
-const audio = inject('audio', null);
-
-// 播放通知音效
+// 播放提示音
 const playToastSound = (type) => {
-  if (!audio) return;
-
-  // 根据类型选择音效
-  const soundId = `toast_${type}`;
-
-  // 如果音效已加载，直接播放
-  if (audio.sounds && audio.sounds[soundId]) {
-    audio.play(soundId);
-    return;
-  }
-
-  // 否则加载并播放音效
-  const soundUrls = {
-    success: '/sounds/success.mp3',
-    info: '/sounds/info.mp3',
-    warning: '/sounds/warning.mp3',
-    error: '/sounds/error.mp3'
-  };
-
-  if (soundUrls[type] && audio.load) {
-    audio.load(soundId, soundUrls[type], {
-      volume: 0.5,
-      onload: () => audio.play(soundId)
-    });
-  }
+  // 项目不需要音频功能，此方法只保留空壳
+  console.log(`模拟播放Toast音效: ${type}（音频功能已禁用）`);
 };
 
 // 监听 toasts 变化，播放相应音效

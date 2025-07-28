@@ -133,6 +133,7 @@
 <script>
 import { formatNumber } from '@/infrastructure/utils';
 import { useGameCoreStore } from '@/stores/gameCore';
+import { useUiStore } from '@/stores/uiStore';
 
 export default {
   name: 'GameOverView',
@@ -187,22 +188,22 @@ export default {
     },
     getGameOverTitle() {
       const endReason = this.gameStats.endReason;
-      
+
       switch (endReason) {
         case 'houseVictory':
         case 'victory':
           const houseName = this.gameStats.purchasedHouse?.name || this.player.purchasedHouses?.[0]?.name || '房产';
           return `🎉 恭喜购得${houseName}！`;
-          
+
         case 'victoryTimeLimit':
           return '🏆 完美通关！事业有成！';
-          
+
         case 'timeLimit':
           return '⌛ 时间已到，未能实现购房梦';
-          
+
         case 'bankruptcy':
           return '💸 破产清算，游戏结束';
-          
+
         case 'playerChoice':
           return '你选择了结束游戏';
         default:
@@ -262,8 +263,7 @@ export default {
       return formatNumber(num);
     },
     getHouseImage(house) {
-      // 简单返回一个固定字符串，避免require可能导致的问题
-      return house.image || '/placeholder_house.jpg';
+      return house.image || './resources/assets/images/house_1.jpeg';
     },
     returnToMainMenu() {
       this.$emit('return-to-main');
@@ -275,6 +275,21 @@ export default {
       // 调用游戏核心存储的继续游戏方法
       const gameStore = useGameCoreStore();
       gameStore.continueGame();
+
+      // 使用UI Store显示提示，而不是依赖通知系统
+      try {
+        const uiStore = useUiStore();
+        if (uiStore && uiStore.showToast) {
+          uiStore.showToast({
+            type: 'success',
+            message: '您选择继续游戏！您可以继续赚钱并购买更多房产，直到第52周游戏结束。',
+            duration: 5000
+          });
+        }
+      } catch (err) {
+        console.warn('显示继续游戏提示失败', err);
+      }
+
       // 发送事件给父组件
       this.$emit('continue-game');
     },

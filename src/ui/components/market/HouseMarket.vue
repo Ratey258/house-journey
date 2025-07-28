@@ -72,15 +72,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
-import { formatNumber } from '@/infrastructure/utils';
+import { formatNumber, getHouseImagePath } from '@/infrastructure/utils';
 import { handleError, ErrorType, ErrorSeverity } from '../../../infrastructure/utils/errorHandler';
 import { useGameCoreStore } from '@/stores/gameCore';
 import { useUiStore } from '@/stores/uiStore';
 import { useSaveStore } from '@/stores/persistence';
+import { getAllHouses } from '@/core/models/house';
 
 const { t } = useI18n();
 const gameStore = useGameCoreStore();
@@ -90,49 +91,34 @@ const uiStore = useUiStore();
 // 从playerStore获取玩家金钱
 const { money: playerMoney } = storeToRefs(playerStore);
 
-// 示例房屋数据
-const houses = [
-  {
-    id: 'house1',
-    name: t('houses.small.name'),
-    description: t('houses.small.description'),
-    price: 50000,
-    level: 1,
-    image: 'small_house.jpg'
-  },
-  {
-    id: 'house2',
-    name: t('houses.medium.name'),
-    description: t('houses.medium.description'),
-    price: 120000,
-    level: 2,
-    image: 'medium_house.jpg'
-  },
-  {
-    id: 'house3',
-    name: t('houses.large.name'),
-    description: t('houses.large.description'),
-    price: 250000,
-    level: 3,
-    image: 'large_house.jpg'
-  },
-  {
-    id: 'house4',
-    name: t('houses.luxury.name'),
-    description: t('houses.luxury.description'),
-    price: 500000,
-    level: 4,
-    image: 'luxury_house.jpg'
-  },
-  {
-    id: 'house5',
-    name: t('houses.mansion.name'),
-    description: t('houses.mansion.description'),
-    price: 1000000,
-    level: 5,
-    image: 'mansion.jpg'
-  }
-];
+// 从房屋模型获取房屋数据
+const houses = ref([]);
+
+onMounted(() => {
+  // 获取预定义的房屋列表
+  const predefinedHouses = getAllHouses();
+  houses.value = predefinedHouses.map(house => {
+    // 创建ID到i18n键的映射
+    const idToKey = {
+      'apartment': 'small',
+      'second_hand': 'medium',
+      'highend': 'large',
+      'villa': 'luxury',
+      'mansion': 'mansion'
+    };
+
+    const i18nKey = idToKey[house.id] || house.id;
+
+    return {
+      id: house.id,
+      name: t(`houses.${i18nKey}.name`),
+      description: t(`houses.${i18nKey}.description`),
+      price: house.price,
+      level: house.level,
+      image: house.image
+    };
+  });
+});
 
 // 模态框状态
 const showBuyModal = ref(false);
@@ -140,8 +126,12 @@ const selectedHouse = ref(null);
 
 // 获取房屋图片
 const getHouseImage = (house) => {
-  // 实际项目中应该返回实际图片路径
-  return `placeholder_house_${house.level}.jpg`;
+  // 优先使用house对象自带的image属性
+  if (house && house.image) {
+    return house.image;
+  }
+  // 如果没有image属性或为空，则使用getHouseImagePath获取
+  return house && house.id ? getHouseImagePath(house.id) : './resources/assets/images/house_1.jpeg';
 };
 
 // 判断玩家是否能买得起
@@ -259,30 +249,50 @@ const purchaseHouse = () => {
 
 .houses-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  padding: 5px;
 }
 
 .house-card {
   background-color: white;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  border: 1px solid rgba(0,0,0,0.03);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .house-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  transform: translateY(-7px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
 .house-card.affordable {
+  border: none;
+  box-shadow: 0 3px 12px rgba(46, 204, 113, 0.2);
+}
+
+.house-card.affordable::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   border: 2px solid #2ecc71;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .house-image {
   position: relative;
-  height: 160px;
+  height: 220px; /* 固定图片高度 */
   overflow: hidden;
 }
 
@@ -290,6 +300,11 @@ const purchaseHouse = () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.house-card:hover .house-image img {
+  transform: scale(1.05); /* 鼠标悬停时放大图片效果 */
 }
 
 .affordable-badge {
@@ -305,44 +320,78 @@ const purchaseHouse = () => {
 }
 
 .house-info {
-  padding: 15px;
+  padding: 12px;
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(to bottom, #ffffff, #f9f9f9);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* 确保从顶部开始对齐 */
 }
 
+/* 添加一个flex-grow元素来自动占据剩余空间 */
 .house-info h3 {
   margin-top: 0;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   color: #2c3e50;
+  font-size: 1.1rem;
 }
+
 
 .house-description {
   color: #7f8c8d;
-  margin-bottom: 15px;
-  font-size: 0.9em;
+  margin-bottom: 10px;
+  font-size: 0.85em;
+  height: 2.6em; /* 改为固定高度而非最大高度 */
+  min-height: 2.6em; /* 确保最小高度也保持一致 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
-
+/* 添加弹性间隔元素 */
+.house-info::after {
+  content: '';
+  flex: 1;
+  min-height: 5px; /* 最小间隔 */
+}
 .house-details {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
+  background-color: rgba(248, 249, 250, 0.7);
+  padding: 6px 8px;
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  row-gap: 3px;
+  column-gap: 10px;
+  margin-top: auto; /* 推到flex容器底部 */
 }
 
 .detail-item {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 5px;
+  display: contents;
 }
 
 .detail-label {
   color: #7f8c8d;
   font-weight: 500;
+  text-align: left;
+  padding-left: 5px;
 }
 
 .detail-value {
   font-weight: bold;
   color: #2c3e50;
+  text-align: right; /* 右对齐数值 */
+  padding-right: 5px;
 }
 
 .house-actions {
   display: flex;
   justify-content: center;
+  margin-top: auto;
+  padding-top: 10px;
 }
 
 .buy-btn {
@@ -393,6 +442,19 @@ const purchaseHouse = () => {
   padding: 10px;
   background-color: #f5f5f5;
   border-radius: 4px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  row-gap: 3px;
+  column-gap: 10px;
+}
+
+/* 模态框中的标签和值需要更多间距 */
+.house-purchase-info .detail-label {
+  padding-left: 8px;
+}
+
+.house-purchase-info .detail-value {
+  padding-right: 8px;
 }
 
 .purchase-warning {

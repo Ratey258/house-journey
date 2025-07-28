@@ -10,6 +10,8 @@ export * from './errorTypes';
 // 导出格式化工具函数
 export * from './formatUtils';
 
+// 导出图片路径工具
+export * from './imagePathUtils';
+
 // 其他工具函数
 // ... 可能的其他工具函数导出
-
