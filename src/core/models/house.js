@@ -3,6 +3,8 @@
  * 管理游戏中的房屋及其属性
  */
 
+import { getHouseImagePath } from '@/infrastructure/utils/imagePathUtils';
+
 /**
  * 房屋类
  * 封装房屋的属性和行为
@@ -23,6 +25,7 @@ export class House {
     id,
     name,
     price,
+    level = 1,
     description = '',
     specialFeature = '',
     purchaseCondition = '',
@@ -31,12 +34,13 @@ export class House {
     this.id = id;
     this.name = name;
     this.price = price;
+    this.level = level;
     this.description = description;
     this.specialFeature = specialFeature;
     this.purchaseCondition = purchaseCondition || `需要${price}元现金`;
     this.image = image || getHouseImage(id);
   }
-  
+
   /**
    * 检查玩家是否能够购买此房屋
    * @param {number} money 玩家拥有的资金
@@ -45,7 +49,7 @@ export class House {
   canBePurchasedWith(money) {
     return money >= this.price;
   }
-  
+
   /**
    * 获取房屋的值/价比
    * @returns {number} 值/价比（1-10）
@@ -96,16 +100,21 @@ export function createHouseLegacy(id, name, price, description, specialFeature) 
  * @returns {string} 图片路径
  */
 function getHouseImage(houseId) {
-  // 实际实现时会返回真实的图片路径
-  const imageMap = {
-    'apartment': 'apartment.jpg',
-    'second_hand': 'second-hand-house.jpg',
-    'highend': 'highend.jpg',
-    'villa': 'villa.jpg',
-    'mansion': 'mansion.jpg'
-  };
-  
-  return imageMap[houseId] || 'default-house.jpg';
+  try {
+    // 使用导入的图片路径工具
+    return getHouseImagePath(houseId);
+  } catch (err) {
+    // 如果出现异常，使用内置映射
+    const imageMap = {
+      'apartment': './resources/assets/images/house_1.jpeg',
+      'second_hand': './resources/assets/images/house_2.jpeg',
+      'highend': './resources/assets/images/house_3.jpeg',
+      'villa': './resources/assets/images/house_4.jpeg',
+      'mansion': './resources/assets/images/house_5.jpeg'
+    };
+
+    return imageMap[houseId] || './resources/assets/images/house_1.jpeg';
+  }
 }
 
 // 预定义房屋列表
@@ -114,41 +123,46 @@ const predefinedHouses = [
     id: 'apartment',
     name: '单身公寓',
     price: 350000,
+    level: 1,
     description: '适合单身人士居住的小型公寓，位置便利但空间有限。这是迈向房产阶梯的第一步！',
     specialFeature: '交通便利，月供较低，首次置业的理想选择',
-    image: 'apartment.jpg'
+    image: './resources/assets/images/house_1.jpeg'
   },
   {
     id: 'second_hand',
     name: '二手旧房',
     price: 580000,
+    level: 2,
     description: '年代较久的二手住宅，价格适中但可能需要装修。空间较大，非常适合改造成理想的家。',
     specialFeature: '空间较大，周边配套完善，性价比较高',
-    image: 'second-hand-house.jpg'
+    image: './resources/assets/images/house_2.jpeg'
   },
   {
     id: 'highend',
     name: '高档小区',
     price: 800000,
+    level: 3,
     description: '现代化高档住宅小区，环境优美，配套设施齐全。社区环境安全，是家庭居住的绝佳选择。',
     specialFeature: '环境优美，物业管理完善，社区活动丰富',
-    image: 'highend.jpg'
+    image: './resources/assets/images/house_3.jpeg'
   },
   {
     id: 'villa',
     name: '现代别墅',
     price: 1500000,
+    level: 4,
     description: '独栋现代别墅，拥有私家花园和车库。宽敞的空间和精致的设计，彰显主人的品味与地位。',
     specialFeature: '独立空间，居住品质高，是成功人士的标志',
-    image: 'villa.jpg'
+    image: './resources/assets/images/house_4.jpeg'
   },
   {
     id: 'mansion',
     name: '私人庄园',
     price: 3000000,
+    level: 5,
     description: '大型私人庄园，带有大片绿地和多功能区域。拥有这样的房产，代表你已达到人生巅峰！',
     specialFeature: '终极豪宅，私密性极佳，社会地位的象征',
-    image: 'mansion.jpg'
+    image: './resources/assets/images/house_5.jpeg'
   }
 ];
 
@@ -168,4 +182,4 @@ export function getAllHouses() {
 export function getHouseById(id) {
   const houseData = predefinedHouses.find(h => h.id === id);
   return houseData ? createHouse(houseData) : null;
-} 
+}
