@@ -1,6 +1,19 @@
 <template>
   <div v-if="show" class="modal-backdrop" @click.self="closeModal">
+    <!-- 操作结果提示-->
+    <transition name="bank-notification">
+      <div v-if="notification.show" :class="['bank-notification', `notification-${notification.type}`]">
+        <div class="notification-icon">
+          <span v-if="notification.type === 'success'">✓</span>
+          <span v-else-if="notification.type === 'error'">✖</span>
+        </div>
+        <div class="notification-message">{{ notification.message }}</div>
+      </div>
+    </transition>
+
     <div class="modal-content">
+      <!-- 移除这里的通知组件 -->
+      
       <div class="modal-header bank-header">
         <div class="modal-title-container">
           <span class="bank-icon">🏦</span>
@@ -96,7 +109,7 @@
                   min="0"
                   :max="playerStore.money"
                   v-model="depositAmount"
-                  step="100"
+                  step="1"
                   class="styled-slider deposit-slider"
                 />
                 <div class="amount-actions">
@@ -141,7 +154,7 @@
                   min="0"
                   :max="Math.max(playerStore.bankDeposit, 1)"
                   v-model="withdrawAmount"
-                  step="100"
+                  step="1"
                   class="styled-slider withdraw-slider"
                   :disabled="playerStore.bankDeposit <= 0"
                 />
@@ -187,7 +200,7 @@
                   min="0"
                   :max="Math.max(playerStore.availableLoanAmount, 1)"
                   v-model="loanAmount"
-                  step="100"
+                  step="1"
                   class="styled-slider loan-slider"
                   :disabled="playerStore.availableLoanAmount <= 0"
                 />
@@ -233,7 +246,7 @@
                   min="0"
                   :max="Math.min(playerStore.money, playerStore.debt)"
                   v-model="repayAmount"
-                  step="100"
+                  step="1"
                   class="styled-slider repay-slider"
                 />
                 <div class="amount-actions">
@@ -273,7 +286,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { usePlayerStore } from '@/stores/player';
 import { useUiStore } from '@/stores/uiStore';
 import { useI18n } from 'vue-i18n';
@@ -301,14 +314,58 @@ const withdrawAmount = ref(0);
 const loanAmount = ref(0);
 const repayAmount = ref(0); // 新增还款金额
 
-// 关闭模态框
+// 通知状态
+const notification = ref({
+  show: false,
+  type: 'success',
+  message: '',
+  timeout: null
+});
+
+// 显示通知
+const showNotification = (type, message, duration = 2500) => {
+  console.log('显示通知:', type, message); // 调试日志
+  
+  // 立即显示通知
+  notification.value = {
+    show: true,
+    type,
+    message,
+    timeout: null
+  };
+  
+  // 清除任何现有的超时
+  if (notification.value.timeout) {
+    clearTimeout(notification.value.timeout);
+  }
+  
+  // 设置新的超时来隐藏通知
+  notification.value.timeout = setTimeout(() => {
+    hideNotification();
+  }, duration);
+};
+
+// 隐藏通知
+const hideNotification = () => {
+  console.log('隐藏通知'); // 调试日志
+  notification.value.show = false;
+  
+  // 清除超时
+  if (notification.value.timeout) {
+    clearTimeout(notification.value.timeout);
+    notification.value.timeout = null;
+  }
+};
+
+// 关闭模态框前确保隐藏任何通知
 const closeModal = () => {
+  hideNotification(); // 先隐藏通知
   emit('update:show', false);
   // 重置所有金额
   depositAmount.value = 0;
   withdrawAmount.value = 0;
   loanAmount.value = 0;
-  repayAmount.value = 0; // 重置还款金额
+  repayAmount.value = 0;
 };
 
 // 格式化百分比
@@ -359,18 +416,16 @@ const makeDeposit = () => {
       depositValueEl.classList.remove('value-change-success');
     }, 1000);
     
-    uiStore.showToast({
-      type: 'success',
-      message: t('bank.depositSuccess'),
-      duration: 3000
-    });
+    // 显示成功通知
+    console.log('存款操作成功，调用showNotification');
+    showNotification('success', t('bank.depositSuccess'));
+    
+    // 重置存款金额
     depositAmount.value = 0;
   } else {
-    uiStore.showToast({
-      type: 'error',
-      message: t('bank.notEnoughMoney'),
-      duration: 3000
-    });
+    // 显示错误通知
+    console.log('存款操作失败，调用showNotification');
+    showNotification('error', t('bank.notEnoughMoney'));
   }
 };
 
@@ -396,18 +451,16 @@ const makeWithdrawal = () => {
       moneyValueEl.classList.remove('value-change-success');
     }, 1000);
     
-    uiStore.showToast({
-      type: 'success',
-      message: t('bank.withdrawSuccess'),
-      duration: 3000
-    });
+    // 显示成功通知
+    console.log('取款操作成功，调用showNotification');
+    showNotification('success', t('bank.withdrawSuccess'));
+    
+    // 重置取款金额
     withdrawAmount.value = 0;
   } else {
-    uiStore.showToast({
-      type: 'error',
-      message: t('bank.notEnoughMoney'),
-      duration: 3000
-    });
+    // 显示错误通知
+    console.log('取款操作失败，调用showNotification');
+    showNotification('error', t('bank.notEnoughMoney'));
   }
 };
 
@@ -433,18 +486,16 @@ const takeLoan = () => {
       moneyValueEl.classList.remove('value-change-success');
     }, 1000);
     
-    uiStore.showToast({
-      type: 'success',
-      message: t('bank.loanSuccess'),
-      duration: 3000
-    });
+    // 显示成功通知
+    console.log('贷款操作成功，调用showNotification');
+    showNotification('success', t('bank.loanSuccess'));
+    
+    // 重置贷款金额
     loanAmount.value = 0;
   } else {
-    uiStore.showToast({
-      type: 'error',
-      message: t('common.error'),
-      duration: 3000
-    });
+    // 显示错误通知
+    console.log('贷款操作失败，调用showNotification');
+    showNotification('error', t('common.error'));
   }
 };
 
@@ -470,23 +521,20 @@ const repayLoan = () => {
       debtValueEl.classList.remove('value-change-success');
     }, 1000);
     
-    uiStore.showToast({
-      type: 'success',
-      message: t('bank.repaySuccess'),
-      duration: 3000
-    });
+    // 显示成功通知
+    console.log('还款操作成功，调用showNotification');
+    showNotification('success', t('bank.repaySuccess'));
+    
+    // 重置还款金额
     repayAmount.value = 0;
   } else {
-    uiStore.showToast({
-      type: 'error',
-      message: t('bank.notEnoughMoney'),
-      duration: 3000
-    });
+    // 显示错误通知
+    console.log('还款操作失败，调用showNotification');
+    showNotification('error', t('bank.notEnoughMoney'));
   }
 };
 
 // 监听滑块值变化，更新滑块背景
-import { watch, onMounted, nextTick } from 'vue';
 
 // 更新滑块背景进度，根据不同操作类型应用不同颜色
 const updateSliderBackground = (slider, value, max, type = 'default') => {
@@ -529,7 +577,9 @@ const updateSliderBackground = (slider, value, max, type = 'default') => {
 watch(() => depositAmount.value, (newValue) => {
   nextTick(() => {
     const slider = document.querySelector('.deposit-slider');
-    updateSliderBackground(slider, Number(newValue), playerStore.money, 'deposit');
+    if (slider) {
+      updateSliderBackground(slider, Number(newValue), playerStore.money, 'deposit');
+    }
   });
 });
 
@@ -537,7 +587,9 @@ watch(() => depositAmount.value, (newValue) => {
 watch(() => withdrawAmount.value, (newValue) => {
   nextTick(() => {
     const slider = document.querySelector('.withdraw-slider');
-    updateSliderBackground(slider, Number(newValue), playerStore.bankDeposit, 'withdraw');
+    if (slider) {
+      updateSliderBackground(slider, Number(newValue), playerStore.bankDeposit, 'withdraw');
+    }
   });
 });
 
@@ -545,7 +597,9 @@ watch(() => withdrawAmount.value, (newValue) => {
 watch(() => loanAmount.value, (newValue) => {
   nextTick(() => {
     const slider = document.querySelector('.loan-slider');
-    updateSliderBackground(slider, Number(newValue), playerStore.availableLoanAmount, 'loan');
+    if (slider) {
+      updateSliderBackground(slider, Number(newValue), playerStore.availableLoanAmount, 'loan');
+    }
   });
 });
 
@@ -553,8 +607,10 @@ watch(() => loanAmount.value, (newValue) => {
 watch(() => repayAmount.value, (newValue) => {
   nextTick(() => {
     const slider = document.querySelector('.repay-slider');
-    const maxAmount = Math.min(playerStore.money, playerStore.debt);
-    updateSliderBackground(slider, Number(newValue), maxAmount, 'repay');
+    if (slider) {
+      const maxAmount = Math.min(playerStore.money, playerStore.debt);
+      updateSliderBackground(slider, Number(newValue), maxAmount, 'repay');
+    }
   });
 });
 
@@ -572,16 +628,37 @@ watch(() => activeTab.value, () => {
     const current = sliders[activeTab.value];
     if (current) {
       const slider = document.querySelector(current.slider);
-      updateSliderBackground(slider, Number(current.value), current.max, current.type);
+      if (slider) {
+        updateSliderBackground(slider, Number(current.value), current.max, current.type);
+      }
     }
   });
 });
 
-// 组件挂载后初始化滑块样式
+// 组件挂载时初始化
 onMounted(() => {
   nextTick(() => {
-    const slider = document.querySelector('.deposit-slider');
-    updateSliderBackground(slider, Number(depositAmount.value), playerStore.money, 'deposit');
+    // 初始化当前标签页的滑块
+    const sliders = {
+      deposit: { slider: '.deposit-slider', value: depositAmount.value, max: playerStore.money, type: 'deposit' },
+      withdraw: { slider: '.withdraw-slider', value: withdrawAmount.value, max: playerStore.bankDeposit, type: 'withdraw' },
+      loan: { slider: '.loan-slider', value: loanAmount.value, max: playerStore.availableLoanAmount, type: 'loan' },
+      repay: { slider: '.repay-slider', value: repayAmount.value, max: Math.min(playerStore.money, playerStore.debt), type: 'repay' }
+    };
+    
+    const current = sliders[activeTab.value];
+    if (current) {
+      const slider = document.querySelector(current.slider);
+      if (slider) {
+        updateSliderBackground(slider, Number(current.value), current.max, current.type);
+      }
+    }
+    
+    // 测试弹窗显示 - 取消注释以测试
+    setTimeout(() => {
+      console.log('测试通知显示');
+      showNotification('success', '欢迎使用银行服务');
+    }, 1000);
   });
 });
 </script>
@@ -1600,6 +1677,91 @@ onMounted(() => {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* 操作结果提示样式 */
+.bank-notification {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  z-index: 10000; /* 确保在最顶层 */
+  width: 50%;    /* 从80%减小到50% */
+  max-width: 240px; /* 从320px减小到240px */
+  pointer-events: none; /* 防止弹窗阻挡点击事件 */
+}
+
+.notification-success {
+  background-color: #f0fff4;
+  border-left: 4px solid #2ecc71;
+}
+
+.notification-error {
+  background-color: #fff5f5;
+  border-left: 4px solid #e74c3c;
+}
+
+.notification-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  width: 24px;
+  height: 24px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.notification-success .notification-icon {
+  color: #2ecc71;
+}
+
+.notification-error .notification-icon {
+  color: #e74c3c;
+}
+
+.notification-message {
+  font-size: 14px;
+  color: #333;
+  flex-grow: 1;
+  font-weight: 500;
+}
+
+/* 操作结果提示动画 */
+.bank-notification-enter-active {
+  animation: notificationIn 0.5s ease-out forwards;
+}
+
+.bank-notification-leave-active {
+  animation: notificationOut 0.3s ease-in forwards;
+}
+
+@keyframes notificationIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes notificationOut {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
 }
 
 </style>

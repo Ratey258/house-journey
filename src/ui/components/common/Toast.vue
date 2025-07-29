@@ -3,7 +3,7 @@
   提供全局消息通知功能
 -->
 <template>
-  <div class="toast-container">
+  <div class="toast-container" :class="{ 'modal-open': hasModalBackdrop }">
     <TransitionGroup name="toast">
       <div
         v-for="toast in toasts"
@@ -36,6 +36,14 @@ const uiStore = useUiStore();
 // 直接从 uiStore 获取 toasts 数据
 const toasts = computed(() => uiStore.toasts);
 
+// 检查页面中是否存在模态框
+const hasModalBackdrop = ref(false);
+
+// 检测模态框存在
+const checkModalBackdrop = () => {
+  hasModalBackdrop.value = !!document.querySelector('.modal-backdrop');
+};
+
 // 移除通知
 const removeToast = (id) => {
   uiStore.removeToast(id);
@@ -56,6 +64,8 @@ const watchToasts = () => {
     if (newToast) {
       playToastSound(newToast.type);
     }
+    // 检查模态框状态
+    checkModalBackdrop();
   }
   prevToastsLength.value = toasts.value.length;
 };
@@ -64,9 +74,15 @@ const watchToasts = () => {
 onMounted(() => {
   // 初始化 prevToastsLength
   prevToastsLength.value = toasts.value.length;
+  
+  // 初始检测模态框
+  checkModalBackdrop();
 
   // 设置观察定时器
-  const interval = setInterval(watchToasts, 100);
+  const interval = setInterval(() => {
+    watchToasts();
+    checkModalBackdrop();
+  }, 100);
 
   onBeforeUnmount(() => {
     clearInterval(interval);
@@ -89,6 +105,32 @@ onMounted(() => {
   pointer-events: none;
 }
 
+/* 模态框打开时Toast的样式 - 将Toast移至右下角，避免遮挡模态框内容 */
+.toast-container.modal-open {
+  top: auto;
+  bottom: 20px;
+  left: auto;
+  right: 20px;
+  transform: none;
+  max-width: 300px;
+  align-items: flex-end;
+}
+
+/* 媒体查询：小屏幕设备上的位置调整 */
+@media (max-width: 768px) {
+  .toast-container {
+    top: 12px;
+    max-width: 90%;
+  }
+  
+  .toast-container.modal-open {
+    bottom: 10px;
+    right: 10px;
+    max-width: 80%;
+  }
+}
+
+/* 设置Toast的展示位置相对于其他UI元素 */
 .toast {
   background-color: white;
   border-radius: 8px;
@@ -100,6 +142,8 @@ onMounted(() => {
   pointer-events: auto;
   transition: all 0.3s ease;
   animation: fadeInOut 3s ease-in-out;
+  position: relative;
+  z-index: 10000; /* 确保Toast总是显示在最顶层 */
 }
 
 .toast-success {
@@ -134,6 +178,30 @@ onMounted(() => {
   100% {
     opacity: 0;
     transform: translateY(-20px);
+  }
+}
+
+/* 模态框打开时Toast的动画效果 */
+.modal-open .toast {
+  animation: fadeInOutCorner 3s ease-in-out;
+}
+
+@keyframes fadeInOutCorner {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(20px);
   }
 }
 
@@ -210,6 +278,17 @@ onMounted(() => {
 }
 
 .toast-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+/* 模态框打开时Toast的进入和离开动画 */
+.modal-open .toast-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.modal-open .toast-leave-to {
   opacity: 0;
   transform: translateX(100%);
 }
