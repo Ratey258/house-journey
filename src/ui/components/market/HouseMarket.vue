@@ -137,7 +137,7 @@ onMounted(() => {
     const idToKey = {
       'apartment': 'small',
       'second_hand': 'medium',
-      'high_end': 'large',
+      'highend': 'large',
       'villa': 'luxury',
       'mansion': 'mansion'
     };
