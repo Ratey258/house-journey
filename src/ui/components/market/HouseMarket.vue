@@ -1,6 +1,8 @@
 <template>
   <div class="house-market">
-    <h2 class="title">{{ $t('market.houseMarket.title') }}</h2>
+    <h2 class="title">
+      {{ $t('market.houseMarket.title') }}
+    </h2>
 
     <div class="houses-container">
       <div
@@ -10,12 +12,24 @@
         :class="{ 'affordable': canPlayerAfford(house) }"
       >
         <div class="house-image">
-          <img :src="getHouseImage(house)" alt="房屋图片">
-          <span v-if="canPlayerAfford(house)" class="affordable-badge">{{ $t('market.houseMarket.affordable') }}</span>
+          <img
+            :src="getHouseImage(house)"
+            alt="房屋图片"
+          >
+          <span
+            v-if="canPlayerAfford(house)"
+            class="affordable-badge"
+          >
+            {{ $t('market.houseMarket.affordable') }}
+          </span>
         </div>
         <div class="house-info">
-          <h3>{{ house.name }}</h3>
-          <p class="house-description">{{ house.description }}</p>
+          <h3>
+            {{ house.name }}
+          </h3>
+          <p class="house-description">
+            {{ house.description }}
+          </p>
           <div class="house-details">
             <div class="detail-item">
               <span class="detail-label">{{ $t('market.houseMarket.price') }}</span>
@@ -28,9 +42,9 @@
           </div>
           <div class="house-actions">
             <button
+              :disabled="!canPlayerAfford(house)"
               class="buy-btn"
               @click="openBuyModal(house)"
-              :disabled="!canPlayerAfford(house)"
             >
               {{ $t('market.houseMarket.buyButton') }}
             </button>
@@ -43,7 +57,9 @@
     <div v-if="showBuyModal" class="modal-backdrop" @click.self="closeBuyModal">
       <div class="modal-content">
         <h3>{{ $t('market.houseMarket.confirmTitle') }}</h3>
-        <p>{{ $t('market.houseMarket.confirmMessage', { house: selectedHouse?.name }) }}</p>
+        <p>
+          {{ $t('market.houseMarket.confirmMessage', { house: selectedHouse?.name }) }}
+        </p>
 
         <div class="house-purchase-info">
           <div class="detail-item">
@@ -60,11 +76,26 @@
           </div>
         </div>
 
-        <p class="purchase-warning" v-if="isSignificantPurchase">{{ $t('market.houseMarket.significantWarning') }}</p>
+        <p
+          v-if="isSignificantPurchase"
+          class="purchase-warning"
+        >
+          {{ $t('market.houseMarket.significantWarning') }}
+        </p>
 
         <div class="modal-actions">
-          <button class="btn cancel-btn" @click="closeBuyModal">{{ $t('common.cancel') }}</button>
-          <button class="btn confirm-btn" @click="purchaseHouse">{{ $t('common.confirm') }}</button>
+          <button
+            class="btn cancel-btn"
+            @click="closeBuyModal"
+          >
+            {{ $t('common.cancel') }}
+          </button>
+          <button
+            class="btn confirm-btn"
+            @click="purchaseHouse"
+          >
+            {{ $t('common.confirm') }}
+          </button>
         </div>
       </div>
     </div>
@@ -77,7 +108,11 @@ import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { formatNumber, getHouseImagePath } from '@/infrastructure/utils';
-import { handleError, ErrorType, ErrorSeverity } from '../../../infrastructure/utils/errorHandler';
+import {
+  handleError,
+  ErrorType,
+  ErrorSeverity
+} from '../../../infrastructure/utils/errorHandler';
 import { useGameCoreStore } from '@/stores/gameCore';
 import { useUiStore } from '@/stores/uiStore';
 import { useSaveStore } from '@/stores/persistence';
@@ -102,7 +137,7 @@ onMounted(() => {
     const idToKey = {
       'apartment': 'small',
       'second_hand': 'medium',
-      'highend': 'large',
+      'high_end': 'large',
       'villa': 'luxury',
       'mansion': 'mansion'
     };
@@ -131,7 +166,9 @@ const getHouseImage = (house) => {
     return house.image;
   }
   // 如果没有image属性或为空，则使用getHouseImagePath获取
-  return house && house.id ? getHouseImagePath(house.id) : './resources/assets/images/house_1.jpeg';
+  // 处理图片路径
+  const defaultImage = './resources/assets/images/house_1.jpeg';
+  return house && house.id ? getHouseImagePath(house.id) : defaultImage;
 };
 
 // 判断玩家是否能买得起
@@ -338,7 +375,6 @@ const purchaseHouse = () => {
   font-size: 1.1rem;
 }
 
-
 .house-description {
   color: #7f8c8d;
   margin-bottom: 10px;
@@ -350,6 +386,7 @@ const purchaseHouse = () => {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2; /* 标准属性 */
 }
 /* 添加弹性间隔元素 */
 .house-info::after {
