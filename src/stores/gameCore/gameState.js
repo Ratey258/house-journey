@@ -21,8 +21,7 @@ export const useGameCoreStore = defineStore('gameCore', {
     initialized: false, // 新增：标记游戏是否已初始化
     gameGoals: {
       requiredNetWorth: 400000,
-      targetWeeks: 30,
-      debtRatio: 0.4
+      targetWeeks: 30
     }
   }),
 
@@ -239,12 +238,14 @@ export const useGameCoreStore = defineStore('gameCore', {
 
     /**
      * 检查是否有可购买的商品
+     * @param {boolean} [includeBankDeposit=true] - 是否考虑银行存款作为可用资金
      * @returns {boolean} 是否有可购买的商品
      */
-    hasAffordableProducts() {
+    hasAffordableProducts(includeBankDeposit = true) {
       const playerStore = usePlayerStore();
       const marketStore = useMarketStore();
-      const playerMoney = playerStore.money;
+      // 考虑银行存款作为可用资金
+      const playerMoney = includeBankDeposit ? playerStore.money + playerStore.bankDeposit : playerStore.money;
 
       // 如果玩家背包中有物品，则认为仍然有能力参与市场，不算破产
       if (playerStore.inventoryUsed > 0) {
@@ -282,6 +283,7 @@ export const useGameCoreStore = defineStore('gameCore', {
       const playerStore = usePlayerStore();
       const netWorth = playerStore.netWorth;
       const money = playerStore.money;
+      const bankDeposit = playerStore.bankDeposit;
       const debt = playerStore.debt;
 
       // 周数限制检查 - 仅对经典模式适用
@@ -302,12 +304,10 @@ export const useGameCoreStore = defineStore('gameCore', {
 
       // 破产条件 - 只有在第一周之后才检查破产条件
       // 这样可以避免游戏一开始就因为初始资金小于债务而直接判定破产
-      // 新的破产条件：
       // 1. 第一周之后
-      // 2. 净资产为负
-      // 3. 债务大于资金的一定倍数
-      // 4. 玩家无法购买任何商品（新增条件）
-      if (this.currentWeek > 1 && netWorth < 0 && debt > money * this.gameGoals.debtRatio && !this.hasAffordableProducts()) {
+      // 2. 净资产为负（考虑银行存款和贷款）
+      // 3. 玩家无法购买任何商品（考虑银行存款）
+      if (this.currentWeek > 1 && netWorth < 0 && !this.hasAffordableProducts(true)) {
         this.endGame('bankruptcy');
         return;
       }

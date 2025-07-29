@@ -393,7 +393,14 @@ export const usePlayerStore = defineStore('player', {
      * @returns {number} 可贷款金额
      */
     availableLoanAmount: (state) => {
-      return Math.max(0, state.maxLoanAmount - state.debt);
+      // 新的计算方法：考虑玩家的净资产作为贷款额度参考
+      // 基础贷款额度 + 净资产的一定比例(但不小于0)
+      const baseMaxLoan = state.maxLoanAmount; 
+      const assetBasedBonus = Math.max(0, state.money + state.bankDeposit) * 0.5;
+      const dynamicMaxLoan = baseMaxLoan + assetBasedBonus;
+      
+      // 可贷款金额 = 最大贷款额度 - 当前债务
+      return Math.max(0, Math.floor(dynamicMaxLoan - state.debt));
     },
 
     /**
