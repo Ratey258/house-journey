@@ -1,5 +1,6 @@
 <template>
   <div class="player-info">
+    <!-- 顶部玩家信息 -->
     <div class="player-header">
       <div class="avatar-container">
         <div class="avatar">{{ getPlayerInitials() }}</div>
@@ -11,165 +12,100 @@
         </div>
       </div>
     </div>
-    
-    <div class="info-container">
-      <div class="info-row">
-        <div class="info-item money-item">
-          <div class="info-icon">💰</div>
-          <div class="info-content">
-            <div class="label">{{ $t('playerInfo.money') }}</div>
-            <div class="value money">¥{{ formatNumber(player.money) }}</div>
-          </div>
-        </div>
-        
-        <div class="info-item debt-item">
-          <div class="info-icon">💸</div>
-          <div class="info-content">
-            <div class="label">{{ $t('playerInfo.debt') }}</div>
-            <div class="value debt">¥{{ formatNumber(player.debt) }}</div>
-          </div>
-        </div>
+
+    <!-- 主要财务信息：每个卡片单独一行 -->
+    <div class="finance-list">
+      <!-- 资金项 -->
+      <div class="finance-item money-item">
+        <span class="finance-icon">💰</span>
+        <div class="finance-value money">¥{{ formatNumber(player.money) }}</div>
+        <div class="finance-label">{{ $t('playerInfo.money') }}</div>
       </div>
-      
-      <div class="capacity-container">
-        <div class="capacity-label">
-          <span class="label">{{ $t('playerInfo.capacity') }}</span>
-          <span class="capacity-value">{{ player.inventoryUsed }} / {{ player.capacity }}</span>
-        </div>
-        <div class="capacity-bar">
-          <div 
-            class="capacity-fill" 
-            :style="{ width: `${(player.inventoryUsed / player.capacity) * 100}%` }"
-            :class="{ 'nearly-full': player.inventoryUsed / player.capacity > 0.8 }"
-          ></div>
-        </div>
+
+      <!-- 债务项 -->
+      <div class="finance-item debt-item">
+        <span class="finance-icon">💸</span>
+        <div class="finance-value debt">¥{{ formatNumber(player.debt) }}</div>
+        <div class="finance-label">{{ $t('playerInfo.debt') }}</div>
+      </div>
+
+      <!-- 存款项 -->
+      <div class="finance-item deposit-item">
+        <span class="finance-icon">🏦</span>
+        <div class="finance-value deposit">¥{{ formatNumber(player.bankDeposit) }}</div>
+        <div class="finance-label">{{ $t('bank.currentDeposit') }}</div>
+      </div>
+
+      <!-- 可贷款额度项 -->
+      <div class="finance-item loan-item">
+        <span class="finance-icon">📊</span>
+        <div class="finance-value loan">¥{{ formatNumber(Math.max(0, player.maxLoanAmount - player.debt)) }}</div>
+        <div class="finance-label">{{ $t('bank.availableLoan') }}</div>
       </div>
     </div>
-    
+
+    <!-- 背包容量 -->
+    <div class="capacity-container">
+      <div class="capacity-label">
+        <span class="label">{{ $t('playerInfo.capacity') }}</span>
+        <span class="capacity-value">{{ player.inventoryUsed }} / {{ player.capacity }}</span>
+      </div>
+      <div class="capacity-bar">
+        <div
+          class="capacity-fill"
+          :style="{ width: `${(player.inventoryUsed / player.capacity) * 100}%` }"
+          :class="{ 'nearly-full': player.inventoryUsed / player.capacity > 0.8 }"
+        ></div>
+      </div>
+    </div>
+
+    <!-- 只保留银行按钮 -->
     <div class="action-buttons">
-      <button 
-        class="btn repay-btn" 
-        :disabled="player.money <= 0 || player.debt <= 0"
-        @click="showRepayModal = true"
+      <button
+        class="btn bank-btn"
+        @click="showBankModal = true"
       >
-        <span class="btn-icon">💳</span>
-        {{ $t('playerInfo.repayDebt') }}
+        <span class="btn-icon">🏦</span>
+        {{ $t('playerInfo.bank') }}
       </button>
     </div>
 
-    <!-- 还款模态框 -->
-    <div v-if="showRepayModal" class="modal-backdrop" @click.self="closeRepayModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">{{ $t('repayModal.title') }}</h3>
-          <button class="modal-close" @click="closeRepayModal">×</button>
-        </div>
+    <!-- 移除独立还款模态框 -->
 
-        <div class="modal-body">
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">{{ $t('repayModal.currentDebt') }}:</span>
-              <span class="info-value debt-value">¥{{ formatNumber(player.debt) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">{{ $t('repayModal.availableMoney') }}:</span>
-              <span class="info-value money-value">¥{{ formatNumber(player.money) }}</span>
-            </div>
-          </div>
-          
-          <div class="slider-container">
-            <div class="slider-header">
-              <span class="slider-label">{{ $t('repayModal.repayAmount') }}:</span>
-              <span class="slider-value">¥{{ formatNumber(Number(repayAmount)) }}</span>
-            </div>
-            <input 
-              type="range" 
-              min="0" 
-              :max="Math.min(player.money, player.debt)" 
-              v-model="repayAmount" 
-              step="100"
-              class="styled-slider"
-            />
-            <div class="slider-actions">
-              <button class="slider-btn" @click="repayAmount = 0">0</button>
-              <button class="slider-btn" @click="repayAmount = Math.floor(Math.min(player.money, player.debt) / 2)">50%</button>
-              <button class="slider-btn" @click="repayAmount = Math.min(player.money, player.debt)">{{ $t('repayModal.fullRepay') }}</button>
-            </div>
-          </div>
-
-          <div class="repayment-summary">
-            <div class="summary-row">
-              <span class="summary-label">{{ $t('repayModal.remainingDebt') }}:</span>
-              <span class="summary-value">¥{{ formatNumber(Math.max(0, player.debt - Number(repayAmount))) }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-label">{{ $t('repayModal.remainingMoney') }}:</span>
-              <span class="summary-value">¥{{ formatNumber(Math.max(0, player.money - Number(repayAmount))) }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="modal-actions">
-          <button @click="closeRepayModal" class="btn cancel-btn">{{ $t('common.cancel') }}</button>
-          <button 
-            @click="repayDebt" 
-            class="btn confirm-btn"
-            :disabled="Number(repayAmount) <= 0"
-          >
-            {{ $t('repayModal.confirm') }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- 银行模态框 -->
+    <BankModal
+      v-model:show="showBankModal"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
 import { useGameStore } from '@/stores';
-import { useI18n } from 'vue-i18n';
-import { formatNumber, formatCurrency } from '@/infrastructure/utils';
+import { formatNumber } from '@/infrastructure/utils';
+import BankModal from './BankModal.vue';
 
 const gameStore = useGameStore();
-const { t } = useI18n();
 
 const player = computed(() => gameStore.player);
 const currentWeek = computed(() => gameStore.currentWeek);
-// 确保这里正确获取无尽模式状态
 const isEndlessMode = computed(() => gameStore.isEndlessMode);
 
-console.log('PlayerInfo - 当前模式:', isEndlessMode.value ? '无尽模式' : '经典模式');
-console.log('PlayerInfo - 当前周数:', currentWeek.value, '总周数:', isEndlessMode.value ? '∞' : '52');
-
-// 还款相关
-const showRepayModal = ref(false);
-const repayAmount = ref(0);
-
-const repayDebt = () => {
-  if (repayAmount.value > 0) {
-    gameStore.repayDebt(Number(repayAmount.value));
-    showRepayModal.value = false;
-    repayAmount.value = 0;
-  }
-};
-
-const closeRepayModal = () => {
-  showRepayModal.value = false;
-  repayAmount.value = 0;
-};
+// 银行相关
+const showBankModal = ref(false);
 
 // 获取玩家名称首字母作为头像
 const getPlayerInitials = () => {
   if (!player.value || !player.value.name) return '玩';
-  
+
   const name = player.value.name.trim();
   if (!name) return '玩';
-  
+
   // 如果是中文名，返回第一个字
   if (/[\u4e00-\u9fa5]/.test(name[0])) {
     return name[0];
   }
-  
+
   // 如果是英文名，返回首字母大写
   return name[0].toUpperCase();
 };
@@ -178,8 +114,8 @@ const getPlayerInitials = () => {
 <style scoped>
 .player-info {
   background-color: #f0f8ff;
-  border-radius: 12px; /* 增加圆角 */
-  padding: 16px;
+  border-radius: 12px;
+  padding: 12px; /* 减少内边距 */
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
   transition: box-shadow 0.3s ease;
 }
@@ -188,28 +124,29 @@ const getPlayerInitials = () => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
 }
 
+/* 玩家头部信息样式 */
 .player-header {
   display: flex;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
+  margin-bottom: 10px; /* 减少下边距 */
+  padding-bottom: 8px; /* 减少下内边距 */
   border-bottom: 1px solid #e0e6ed;
 }
 
 .avatar-container {
-  margin-right: 12px;
+  margin-right: 10px;
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px; /* 减小头像大小 */
+  height: 36px; /* 减小头像大小 */
   border-radius: 50%;
   background-color: #3498db;
   color: white;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 18px;
+  font-size: 16px; /* 减小字体大小 */
   font-weight: bold;
 }
 
@@ -218,7 +155,7 @@ const getPlayerInitials = () => {
 }
 
 .player-name {
-  font-size: 1.2rem;
+  font-size: 1.1rem; /* 减小字体大小 */
   margin: 0;
   color: #2c3e50;
   line-height: 1.2;
@@ -226,63 +163,55 @@ const getPlayerInitials = () => {
 }
 
 .player-week {
-  font-size: 0.85rem;
+  font-size: 0.8rem; /* 减小字体大小 */
   color: #7f8c8d;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
-.info-container {
-  margin-bottom: 16px;
-}
-
-.info-row {
+/* 财务信息列表布局 */
+.finance-list {
   display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-  flex-wrap: wrap; /* 允许卡片在空间不够时换行 */
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.info-item {
-  flex: 1;
-  min-width: 110px; /* 设置最小宽度以保证内容不挤压 */
-  display: flex;
-  align-items: center;
+.finance-item {
+  position: relative;
   background-color: #fff;
-  border-radius: 10px; /* 增加圆角 */
-  padding: 12px; /* 增加内边距 */
+  border-radius: 8px;
+  padding: 10px 16px 10px 40px; /* 增加左侧内边距给图标 */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
 }
 
-.info-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+.finance-icon {
+  font-size: 18px;
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
-.info-icon {
-  font-size: 20px;
-  margin-right: 10px;
-}
-
-.info-content {
-  flex: 1;
-  min-width: 0; /* 允许内容在空间不够时缩小 */
-}
-
-.label {
-  font-size: 0.85rem;
-  color: #7f8c8d;
-  margin-bottom: 2px;
-}
-
-.value {
+.finance-value {
   font-weight: bold;
-  font-size: 1.1rem;
-  white-space: nowrap; /* 防止数字换行 */
-  overflow: hidden; /* 防止溢出 */
-  text-overflow: ellipsis; /* 数字过长时显示省略号 */
+  font-size: 1.2rem;
+  margin-right: auto; /* 让金额靠左，标签靠右 */
+  margin-left: 5px;
 }
 
+.finance-label {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  margin-left: 10px;
+  flex-shrink: 0; /* 防止标签被挤压 */
+}
+
+/* 货币颜色 */
 .money {
   color: #2c9f2c;
 }
@@ -291,33 +220,43 @@ const getPlayerInitials = () => {
   color: #e74c3c;
 }
 
-.capacity-container {
-  background-color: #fff;
-  border-radius: 10px; /* 增加圆角 */
-  padding: 12px; /* 增加内边距 */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.deposit {
+  color: #2ecc71;
 }
 
-.capacity-container:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+.loan {
+  color: #f39c12;
+}
+
+/* 背包容量条 */
+.capacity-container {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
 }
 
 .capacity-label {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+}
+
+.label {
+  color: #7f8c8d;
 }
 
 .capacity-value {
   font-weight: bold;
+  color: #2c3e50;
 }
 
 .capacity-bar {
-  height: 8px; /* 增加高度 */
+  height: 6px; /* 减小高度 */
   background-color: #ecf0f1;
-  border-radius: 4px; /* 增加圆角 */
+  border-radius: 3px;
   overflow: hidden;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
 }
@@ -325,7 +264,7 @@ const getPlayerInitials = () => {
 .capacity-fill {
   height: 100%;
   background-color: #3498db;
-  border-radius: 4px; /* 增加圆角 */
+  border-radius: 3px;
   transition: width 0.3s ease;
   box-shadow: 0 0 4px rgba(52, 152, 219, 0.3);
 }
@@ -334,46 +273,45 @@ const getPlayerInitials = () => {
   background-color: #e74c3c;
 }
 
+/* 按钮样式 */
 .action-buttons {
   display: flex;
   justify-content: center;
 }
 
 .btn {
-  padding: 10px 18px;
-  border-radius: 10px; /* 增加圆角 */
+  flex: 1;
+  max-width: 80%;
+  padding: 10px 0;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
   font-weight: 500;
+  font-size: 1rem;
   transition: all 0.2s;
   display: flex;
   align-items: center;
+  justify-content: center;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.btn-icon {
-  margin-right: 6px;
-}
-
-.repay-btn {
-  background-color: #3498db;
+.bank-btn {
+  background-color: #2ecc71;
   color: white;
-  border-radius: 10px; /* 增加圆角 */
-  transition: all 0.2s ease;
 }
 
-.repay-btn:hover:not(:disabled) {
-  background-color: #2980b9;
+.bank-btn:hover {
+  background-color: #27ae60;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-.repay-btn:disabled {
-  background-color: #95a5a6;
-  cursor: not-allowed;
+.btn-icon {
+  margin-right: 8px;
+  font-size: 1.1rem;
 }
 
-/* 模态框样式 */
+/* 保持模态框样式不变 */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -636,4 +574,4 @@ const getPlayerInitials = () => {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
-</style> 
+</style>

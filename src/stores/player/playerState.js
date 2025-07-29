@@ -16,6 +16,9 @@ export const usePlayerStore = defineStore('player', {
     inventory: [],
     purchasedHouses: [],
     initialized: false, // 添加初始化标志
+    // 添加银行相关状态
+    bankDeposit: 0,
+    maxLoanAmount: 20000,
     statistics: {
       weekCount: 1,
       transactionCount: 0,
@@ -28,7 +31,7 @@ export const usePlayerStore = defineStore('player', {
       highestLevelHouse: null // 新增：记录最高等级的已购房屋
     }
   }),
-  
+
   actions: {
     /**
      * 初始化玩家
@@ -37,7 +40,7 @@ export const usePlayerStore = defineStore('player', {
      */
     initializePlayer(playerName) {
       console.log('PlayerStore - 初始化玩家:', playerName);
-      
+
       return new Promise((resolve) => {
         // 模拟加载过程
         setTimeout(() => {
@@ -49,6 +52,9 @@ export const usePlayerStore = defineStore('player', {
           this.inventory = [];
           this.purchasedHouses = [];
           this.initialized = true; // 设置初始化标志
+          // 初始化银行状态
+          this.bankDeposit = 0;
+          this.maxLoanAmount = 20000;
           this.statistics = {
             weekCount: 1,
             transactionCount: 0,
@@ -60,32 +66,38 @@ export const usePlayerStore = defineStore('player', {
             mostExpensiveHouse: null,
             highestLevelHouse: null
           };
-          
+
           console.log('PlayerStore - 玩家初始化完成');
           resolve();
         }, 400);
       });
     },
-    
+
     /**
      * 更新每周玩家状态
      * @param {number} currentWeek - 当前周数
      */
     updateWeeklyPlayerState(currentWeek) {
       this.statistics.weekCount = currentWeek;
-      
+
       // 更新债务（每周增加0.5%的利息）
       if (this.debt > 0) {
         const interest = Math.floor(this.debt * 0.005);
         this.debt += interest;
       }
-      
+
+      // 更新银行存款利息（每周增加0.3%的利息 - 低于贷款利率）
+      if (this.bankDeposit > 0) {
+        const depositInterest = Math.floor(this.bankDeposit * 0.003);
+        this.bankDeposit += depositInterest;
+      }
+
       // 更新统计信息
       if (this.money > this.statistics.maxMoney) {
         this.statistics.maxMoney = this.money;
       }
     },
-    
+
     /**
      * 添加资金
      * @param {number} amount - 金额
@@ -93,17 +105,17 @@ export const usePlayerStore = defineStore('player', {
      */
     addMoney(amount) {
       if (amount <= 0) return false;
-      
+
       this.money += amount;
-      
+
       // 更新最大资金记录
       if (this.money > this.statistics.maxMoney) {
         this.statistics.maxMoney = this.money;
       }
-      
+
       return true;
     },
-    
+
     /**
      * 消费资金
      * @param {number} amount - 金额
@@ -111,11 +123,11 @@ export const usePlayerStore = defineStore('player', {
      */
     spendMoney(amount) {
       if (amount <= 0 || amount > this.money) return false;
-      
+
       this.money -= amount;
       return true;
     },
-    
+
     /**
      * 偿还债务
      * @param {number} amount - 偿还金额
@@ -126,18 +138,18 @@ export const usePlayerStore = defineStore('player', {
       if (amount <= 0 || amount > this.money) {
         return false;
       }
-      
+
       // 如果金额大于债务，只还清债务
       if (amount > this.debt) {
         amount = this.debt;
       }
-      
+
       this.money -= amount;
       this.debt -= amount;
-      
+
       return true;
     },
-    
+
     /**
      * 添加已访问地点
      * @param {string} locationId - 地点ID
@@ -150,7 +162,7 @@ export const usePlayerStore = defineStore('player', {
       }
       return false;
     },
-    
+
     /**
      * 购买房产
      * @param {Object} house - 房屋对象
@@ -162,7 +174,7 @@ export const usePlayerStore = defineStore('player', {
         console.error('无效的房屋对象传递给purchaseHouse');
         return false;
       }
-      
+
       // 必需属性检查
       const requiredProps = ['id', 'name', 'level', 'price'];
       for (const prop of requiredProps) {
@@ -177,20 +189,20 @@ export const usePlayerStore = defineStore('player', {
         console.warn(`购买失败：资金不足 (拥有: ${this.money}, 需要: ${house.price}, 差额: ${house.price - this.money})`);
         return false;
       }
-      
+
       // 检查是否已拥有该房屋
       if (this.purchasedHouses.some(h => h.houseId === house.id)) {
         console.warn(`购买失败：已拥有ID为 ${house.id} 的房屋`);
         return false;
       }
-      
+
       // 扣除资金
       this.money -= house.price;
-      
+
       // 记录购买时间（游戏周数）
       const gameStore = useGameCoreStore();
       const purchaseWeek = gameStore.currentWeek;
-      
+
       // 添加到已购房屋列表，包含更完整的信息
       const purchaseRecord = {
         houseId: house.id,
@@ -201,14 +213,14 @@ export const usePlayerStore = defineStore('player', {
         description: house.description || `${house.level}级房产`,
         purchaseDate: new Date().toISOString()
       };
-      
+
       this.purchasedHouses.push(purchaseRecord);
-      
+
       // 更新统计信息
       if (!this.statistics.housePurchases) {
         this.statistics.housePurchases = [];
       }
-      
+
       this.statistics.housePurchases.push({
         houseId: house.id,
         name: house.name,
@@ -216,14 +228,14 @@ export const usePlayerStore = defineStore('player', {
         price: house.price,
         week: purchaseWeek
       });
-      
+
       // 如果这是第一套房产，记录首次购房时间
       if (this.statistics.firstHousePurchaseWeek === null) {
         this.statistics.firstHousePurchaseWeek = purchaseWeek;
       }
-      
+
       // 记录最昂贵的房产购买
-      if (!this.statistics.mostExpensiveHouse || 
+      if (!this.statistics.mostExpensiveHouse ||
           house.price > this.statistics.mostExpensiveHouse.price) {
         this.statistics.mostExpensiveHouse = {
           id: house.id,
@@ -233,9 +245,9 @@ export const usePlayerStore = defineStore('player', {
           week: purchaseWeek
         };
       }
-      
+
       // 记录最高等级的房产购买
-      if (!this.statistics.highestLevelHouse || 
+      if (!this.statistics.highestLevelHouse ||
           house.level > this.statistics.highestLevelHouse.level) {
         this.statistics.highestLevelHouse = {
           id: house.id,
@@ -245,30 +257,95 @@ export const usePlayerStore = defineStore('player', {
           week: purchaseWeek
         };
       }
-      
+
       console.log(`成功购买房产: ${house.name} - ¥${house.price} (第${purchaseWeek}周)`);
+      return true;
+    },
+
+    /**
+     * 存款到银行
+     * @param {number} amount - 存款金额
+     * @returns {boolean} 是否成功
+     */
+    depositToBank(amount) {
+      // 检查金额有效性
+      if (amount <= 0 || amount > this.money) {
+        return false;
+      }
+
+      this.money -= amount;
+      this.bankDeposit += amount;
+      return true;
+    },
+
+    /**
+     * 从银行取款
+     * @param {number} amount - 取款金额
+     * @returns {boolean} 是否成功
+     */
+    withdrawFromBank(amount) {
+      // 检查金额有效性
+      if (amount <= 0 || amount > this.bankDeposit) {
+        return false;
+      }
+
+      this.bankDeposit -= amount;
+      this.money += amount;
+      return true;
+    },
+
+    /**
+     * 从银行贷款
+     * @param {number} amount - 贷款金额
+     * @returns {boolean} 是否成功
+     */
+    takeLoan(amount) {
+      // 检查金额有效性和贷款上限
+      const availableLoanAmount = this.maxLoanAmount - this.debt;
+      if (amount <= 0 || amount > availableLoanAmount) {
+        return false;
+      }
+
+      this.debt += amount;
+      this.money += amount;
+      return true;
+    },
+
+    /**
+     * 偿还银行贷款
+     * @param {number} amount - 还款金额
+     * @returns {boolean} 是否成功
+     */
+    repayBankLoan(amount) {
+      // 检查金额有效性
+      if (amount <= 0 || amount > this.money || amount > this.debt) {
+        return false;
+      }
+
+      this.money -= amount;
+      this.debt -= amount;
       return true;
     }
   },
-  
+
   getters: {
     /**
      * 计算玩家净资产
      * @returns {number} 净资产
      */
     netWorth: (state) => {
-      // 资金 + 背包价值 + 房产价值 - 债务
+      // 资金 + 银行存款 + 背包价值 + 房产价值 - 债务
       const inventoryValue = state.inventory.reduce(
         (total, item) => total + (item.quantity * item.purchasePrice), 0
       );
-      
+
       const houseValue = state.purchasedHouses.reduce(
         (total, house) => total + house.purchasePrice, 0
       );
-      
-      return state.money + inventoryValue + houseValue - state.debt;
+
+      return state.money + state.bankDeposit + inventoryValue + houseValue - state.debt;
     },
-    
+
     /**
      * 计算玩家总资金（现金+背包商品价值）
      * @returns {number} 总资金
@@ -278,10 +355,10 @@ export const usePlayerStore = defineStore('player', {
       const inventoryValue = state.inventory.reduce(
         (total, item) => total + (item.quantity * item.purchasePrice), 0
       );
-      
+
       return state.money + inventoryValue;
     },
-    
+
     /**
      * 判断是否拥有最高级别房屋
      * @returns {boolean} 是否拥有最高级别房屋
@@ -289,26 +366,50 @@ export const usePlayerStore = defineStore('player', {
     hasHighestHouse: (state) => {
       return state.purchasedHouses.some(house => house.level >= 5);
     },
-    
+
     /**
      * 获取最贵的已购房屋
      * @returns {Object|null} 最贵的已购房屋
      */
     mostExpensiveHouse: (state) => {
       if (state.purchasedHouses.length === 0) return null;
-      
+
       return state.purchasedHouses.reduce(
         (most, house) => house.purchasePrice > most.purchasePrice ? house : most,
         state.purchasedHouses[0]
       );
     },
-    
+
     /**
      * 获取背包可用空间
      * @returns {number} 可用空间
      */
     availableCapacity: (state) => {
       return state.capacity - state.inventoryUsed;
+    },
+
+    /**
+     * 获取可贷款金额
+     * @returns {number} 可贷款金额
+     */
+    availableLoanAmount: (state) => {
+      return Math.max(0, state.maxLoanAmount - state.debt);
+    },
+
+    /**
+     * 获取银行存款利率（周利率）
+     * @returns {number} 银行存款利率
+     */
+    depositInterestRate: () => {
+      return 0.003; // 0.3%/周
+    },
+
+    /**
+     * 获取银行贷款利率（周利率）
+     * @returns {number} 银行贷款利率
+     */
+    loanInterestRate: () => {
+      return 0.005; // 0.5%/周
     }
   }
-}); 
+});

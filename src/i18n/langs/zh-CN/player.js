@@ -7,6 +7,7 @@ export default {
     capacity: '背包容量',
     week: '周数',
     repayDebt: '还款',
+    bank: '银行',
     stats: {
       title: '玩家统计',
       totalProfit: '总利润',
@@ -18,7 +19,7 @@ export default {
       mostVisitedLocation: '最常去地点'
     }
   },
-  
+
   inventory: {
     title: '背包',
     capacityUsed: '容量: {used}/{total}',
@@ -55,7 +56,7 @@ export default {
       profitPercentage: '利润率'
     }
   },
-  
+
   repayModal: {
     title: '偿还债务',
     currentDebt: '当前债务',
@@ -67,7 +68,7 @@ export default {
     confirm: '确认还款',
     cancel: '取消'
   },
-  
+
   debtSystem: {
     title: '债务系统',
     currentDebt: '当前债务',
@@ -81,7 +82,41 @@ export default {
     },
     interestApplied: '已收取{amount}元利息'
   },
-  
+
+  bank: {
+    title: '银行服务',
+    deposit: '存款',
+    withdraw: '取款',
+    loan: '贷款',
+    repay: '还款',
+    currentDeposit: '当前存款',
+    currentLoan: '当前贷款',
+    interestRate: '利率',
+    depositInterest: '存款利率',
+    loanInterest: '贷款利率',
+    maxLoan: '最大贷款额度',
+    availableLoan: '可贷款额度',
+    amountToDeposit: '存款金额',
+    amountToWithdraw: '取款金额',
+    amountToLoan: '贷款金额',
+    amountToRepay: '还款金额',
+    confirmDeposit: '确认存款',
+    confirmWithdraw: '确认取款',
+    confirmLoan: '确认贷款',
+    confirmRepay: '确认还款',
+    interestInfo: '每周结算一次利息',
+    notEnoughMoney: '资金不足',
+    depositSuccess: '存款成功',
+    withdrawSuccess: '取款成功',
+    loanSuccess: '贷款成功',
+    repaySuccess: '还款成功',
+    weeklyInterest: '每周利息',
+    remainingMoney: '剩余资金',
+    remainingDeposit: '剩余存款',
+    remainingLoan: '剩余贷款',
+    remainingDebt: '剩余债务'
+  },
+
   tutorial: {
     tips: {
       welcome: {
@@ -140,4 +175,4 @@ export default {
       }
     }
   }
-}; 
+};
