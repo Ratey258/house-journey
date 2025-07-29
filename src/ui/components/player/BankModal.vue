@@ -1,7 +1,7 @@
 <template>
   <div v-if="show" class="modal-backdrop" @click.self="closeModal">
     <div class="modal-content">
-      <div class="modal-header">
+      <div class="modal-header bank-header">
         <div class="modal-title-container">
           <span class="bank-icon">🏦</span>
           <h3 class="modal-title">{{ $t('bank.title') }}</h3>
@@ -16,7 +16,7 @@
           <div class="overview-cards">
             <div class="overview-card deposit-card">
               <div class="card-header">
-                <span class="card-icon">💹</span>
+                <span class="card-icon sparkle">💹</span>
                 <span class="card-title">{{ $t('bank.currentDeposit') }}</span>
               </div>
               <div class="card-amount deposit-value">¥{{ formatNumber(playerStore.bankDeposit) }}</div>
@@ -25,7 +25,7 @@
 
             <div class="overview-card debt-card">
               <div class="card-header">
-                <span class="card-icon">💸</span>
+                <span class="card-icon sparkle">💸</span>
                 <span class="card-title">{{ $t('playerInfo.debt') }}</span>
               </div>
               <div class="card-amount debt-value">¥{{ formatNumber(playerStore.debt) }}</div>
@@ -35,12 +35,12 @@
 
           <!-- 次要信息展示 -->
           <div class="info-grid">
-            <div class="info-item">
+            <div class="info-item pulse-hover">
               <span class="info-icon">💰</span>
               <span class="info-label">{{ $t('playerInfo.money') }}:</span>
               <span class="info-value money-value">¥{{ formatNumber(playerStore.money) }}</span>
             </div>
-            <div class="info-item">
+            <div class="info-item pulse-hover">
               <span class="info-icon">📊</span>
               <span class="info-label">{{ $t('bank.availableLoan') }}:</span>
               <span class="info-value available-loan-value">¥{{ formatNumber(playerStore.availableLoanAmount) }}</span>
@@ -64,14 +64,14 @@
               :class="['tab-button', { active: activeTab === 'withdraw' }]"
               @click="activeTab = 'withdraw'"
             >
-              <span class="tab-icon">💸</span>
+              <span class="tab-icon">💰</span>
               {{ $t('bank.withdraw') }}
             </button>
             <button
               :class="['tab-button', { active: activeTab === 'loan' }]"
               @click="activeTab = 'loan'"
             >
-              <span class="tab-icon">💰</span>
+              <span class="tab-icon">💸</span>
               {{ $t('bank.loan') }}
             </button>
             <button
@@ -97,7 +97,7 @@
                   :max="playerStore.money"
                   v-model="depositAmount"
                   step="100"
-                  class="styled-slider"
+                  class="styled-slider deposit-slider"
                 />
                 <div class="amount-actions">
                   <button class="amount-btn" @click="depositAmount = 0">0</button>
@@ -117,13 +117,16 @@
                 </div>
               </div>
 
-              <button
-                @click="makeDeposit"
-                class="confirm-btn"
-                :disabled="Number(depositAmount) <= 0"
-              >
-                {{ $t('bank.confirmDeposit') }}
-              </button>
+              <div class="button-row">
+                <button @click="closeModal" class="cancel-btn">{{ $t('common.cancel') }}</button>
+                <button
+                  @click="makeDeposit"
+                  class="confirm-btn"
+                  :disabled="Number(depositAmount) <= 0"
+                >
+                  {{ $t('bank.confirmDeposit') }}
+                </button>
+              </div>
             </div>
 
             <!-- 取款标签内容 -->
@@ -136,10 +139,11 @@
                 <input
                   type="range"
                   min="0"
-                  :max="playerStore.bankDeposit"
+                  :max="Math.max(playerStore.bankDeposit, 1)"
                   v-model="withdrawAmount"
                   step="100"
-                  class="styled-slider"
+                  class="styled-slider withdraw-slider"
+                  :disabled="playerStore.bankDeposit <= 0"
                 />
                 <div class="amount-actions">
                   <button class="amount-btn" @click="withdrawAmount = 0">0</button>
@@ -159,13 +163,16 @@
                 </div>
               </div>
 
-              <button
-                @click="makeWithdrawal"
-                class="confirm-btn"
-                :disabled="Number(withdrawAmount) <= 0"
-              >
-                {{ $t('bank.confirmWithdraw') }}
-              </button>
+              <div class="button-row">
+                <button @click="closeModal" class="cancel-btn">{{ $t('common.cancel') }}</button>
+                <button
+                  @click="makeWithdrawal"
+                  class="confirm-btn"
+                  :disabled="Number(withdrawAmount) <= 0"
+                >
+                  {{ $t('bank.confirmWithdraw') }}
+                </button>
+              </div>
             </div>
 
             <!-- 贷款标签内容 -->
@@ -178,10 +185,11 @@
                 <input
                   type="range"
                   min="0"
-                  :max="playerStore.availableLoanAmount"
+                  :max="Math.max(playerStore.availableLoanAmount, 1)"
                   v-model="loanAmount"
                   step="100"
-                  class="styled-slider"
+                  class="styled-slider loan-slider"
+                  :disabled="playerStore.availableLoanAmount <= 0"
                 />
                 <div class="amount-actions">
                   <button class="amount-btn" @click="loanAmount = 0">0</button>
@@ -201,13 +209,16 @@
                 </div>
               </div>
 
-              <button
-                @click="takeLoan"
-                class="confirm-btn"
-                :disabled="Number(loanAmount) <= 0"
-              >
-                {{ $t('bank.confirmLoan') }}
-              </button>
+              <div class="button-row">
+                <button @click="closeModal" class="cancel-btn">{{ $t('common.cancel') }}</button>
+                <button
+                  @click="takeLoan"
+                  class="confirm-btn"
+                  :disabled="Number(loanAmount) <= 0"
+                >
+                  {{ $t('bank.confirmLoan') }}
+                </button>
+              </div>
             </div>
 
             <!-- 还款标签内容 -->
@@ -223,7 +234,7 @@
                   :max="Math.min(playerStore.money, playerStore.debt)"
                   v-model="repayAmount"
                   step="100"
-                  class="styled-slider"
+                  class="styled-slider repay-slider"
                 />
                 <div class="amount-actions">
                   <button class="amount-btn" @click="repayAmount = 0">0</button>
@@ -243,21 +254,19 @@
                 </div>
               </div>
 
-              <button
-                @click="repayLoan"
-                class="confirm-btn"
-                :disabled="Number(repayAmount) <= 0"
-              >
-                {{ $t('bank.confirmRepay') }}
-              </button>
+              <div class="button-row">
+                <button @click="closeModal" class="cancel-btn">{{ $t('common.cancel') }}</button>
+                <button
+                  @click="repayLoan"
+                  class="confirm-btn"
+                  :disabled="Number(repayAmount) <= 0"
+                >
+                  {{ $t('bank.confirmRepay') }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 优化取消按钮位置和大小 -->
-      <div class="modal-footer">
-        <button @click="closeModal" class="cancel-btn">取消</button>
       </div>
     </div>
   </div>
@@ -307,12 +316,49 @@ const formatPercent = (value) => {
   return `${(value * 100).toFixed(1)}%`;
 };
 
-// 存款操作
+// 添加数字变化动画效果
+const animateNumberChange = (element, startValue, endValue, duration = 500) => {
+  if (!element) return;
+  
+  const startTime = performance.now();
+  const animateFrame = (currentTime) => {
+    const elapsedTime = currentTime - startTime;
+    if (elapsedTime >= duration) {
+      element.textContent = formatNumber(endValue);
+      return;
+    }
+    
+    const progress = elapsedTime / duration;
+    const currentValue = startValue + (endValue - startValue) * progress;
+    element.textContent = formatNumber(Math.floor(currentValue));
+    requestAnimationFrame(animateFrame);
+  };
+  
+  requestAnimationFrame(animateFrame);
+};
+
+// 增强存款操作，添加动画反馈
 const makeDeposit = () => {
   const amount = Number(depositAmount.value);
   if (amount <= 0) return;
+  
+  // 获取相关元素
+  const depositValueEl = document.querySelector('.deposit-value');
+  const moneyValueEl = document.querySelector('.money-value');
+  const oldDepositValue = playerStore.bankDeposit;
+  const oldMoneyValue = playerStore.money;
 
   if (playerStore.depositToBank(amount)) {
+    // 动画过渡数值变化
+    animateNumberChange(depositValueEl, oldDepositValue, playerStore.bankDeposit);
+    animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
+    
+    // 添加成功反馈动画
+    depositValueEl.classList.add('value-change-success');
+    setTimeout(() => {
+      depositValueEl.classList.remove('value-change-success');
+    }, 1000);
+    
     uiStore.showToast({
       type: 'success',
       message: t('bank.depositSuccess'),
@@ -328,12 +374,28 @@ const makeDeposit = () => {
   }
 };
 
-// 取款操作
+// 增强取款操作，添加动画反馈
 const makeWithdrawal = () => {
   const amount = Number(withdrawAmount.value);
   if (amount <= 0) return;
+  
+  // 获取相关元素
+  const depositValueEl = document.querySelector('.deposit-value');
+  const moneyValueEl = document.querySelector('.money-value');
+  const oldDepositValue = playerStore.bankDeposit;
+  const oldMoneyValue = playerStore.money;
 
   if (playerStore.withdrawFromBank(amount)) {
+    // 动画过渡数值变化
+    animateNumberChange(depositValueEl, oldDepositValue, playerStore.bankDeposit);
+    animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
+    
+    // 添加成功反馈动画
+    moneyValueEl.classList.add('value-change-success');
+    setTimeout(() => {
+      moneyValueEl.classList.remove('value-change-success');
+    }, 1000);
+    
     uiStore.showToast({
       type: 'success',
       message: t('bank.withdrawSuccess'),
@@ -349,12 +411,28 @@ const makeWithdrawal = () => {
   }
 };
 
-// 贷款操作
+// 增强贷款操作，添加动画反馈
 const takeLoan = () => {
   const amount = Number(loanAmount.value);
   if (amount <= 0) return;
+  
+  // 获取相关元素
+  const debtValueEl = document.querySelector('.debt-value');
+  const moneyValueEl = document.querySelector('.money-value');
+  const oldDebtValue = playerStore.debt;
+  const oldMoneyValue = playerStore.money;
 
   if (playerStore.takeLoan(amount)) {
+    // 动画过渡数值变化
+    animateNumberChange(debtValueEl, oldDebtValue, playerStore.debt);
+    animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
+    
+    // 添加成功反馈动画
+    moneyValueEl.classList.add('value-change-success');
+    setTimeout(() => {
+      moneyValueEl.classList.remove('value-change-success');
+    }, 1000);
+    
     uiStore.showToast({
       type: 'success',
       message: t('bank.loanSuccess'),
@@ -370,12 +448,28 @@ const takeLoan = () => {
   }
 };
 
-// 还款操作
+// 增强还款操作，添加动画反馈
 const repayLoan = () => {
   const amount = Number(repayAmount.value);
   if (amount <= 0) return;
+  
+  // 获取相关元素
+  const debtValueEl = document.querySelector('.debt-value');
+  const moneyValueEl = document.querySelector('.money-value');
+  const oldDebtValue = playerStore.debt;
+  const oldMoneyValue = playerStore.money;
 
   if (playerStore.repayDebt(amount)) {
+    // 动画过渡数值变化
+    animateNumberChange(debtValueEl, oldDebtValue, playerStore.debt);
+    animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
+    
+    // 添加成功反馈动画
+    debtValueEl.classList.add('value-change-success');
+    setTimeout(() => {
+      debtValueEl.classList.remove('value-change-success');
+    }, 1000);
+    
     uiStore.showToast({
       type: 'success',
       message: t('bank.repaySuccess'),
@@ -390,6 +484,106 @@ const repayLoan = () => {
     });
   }
 };
+
+// 监听滑块值变化，更新滑块背景
+import { watch, onMounted, nextTick } from 'vue';
+
+// 更新滑块背景进度，根据不同操作类型应用不同颜色
+const updateSliderBackground = (slider, value, max, type = 'default') => {
+  if (!slider) return;
+  
+  // 根据操作类型选择颜色
+  let color;
+  switch (type) {
+    case 'deposit':
+      color = '#2ecc71'; // 绿色 - 存款
+      break;
+    case 'withdraw':
+      color = '#3498db'; // 蓝色 - 取款
+      break;
+    case 'loan':
+      color = '#f39c12'; // 橙色 - 贷款
+      break;
+    case 'repay':
+      color = '#e74c3c'; // 红色 - 还款
+      break;
+    default:
+      color = '#3498db'; // 默认蓝色
+  }
+  
+  // 处理禁用状态
+  if (max <= 0) {
+    // 使用浅色表示禁用状态
+    const disabledColor = type === 'withdraw' ? '#a0c8e7' : 
+                        type === 'loan' ? '#f8d29b' :
+                        type === 'repay' ? '#f5b7b1' : '#a0c8e7';
+    slider.style.background = disabledColor;
+    return;
+  }
+  
+  const percentage = Math.min((value / max) * 100, 100);
+  slider.style.background = `linear-gradient(to right, ${color} ${percentage}%, #e9ecef ${percentage}%)`;
+};
+
+// 为存款滑块添加监听
+watch(() => depositAmount.value, (newValue) => {
+  nextTick(() => {
+    const slider = document.querySelector('.deposit-slider');
+    updateSliderBackground(slider, Number(newValue), playerStore.money, 'deposit');
+  });
+});
+
+// 为取款滑块添加监听
+watch(() => withdrawAmount.value, (newValue) => {
+  nextTick(() => {
+    const slider = document.querySelector('.withdraw-slider');
+    updateSliderBackground(slider, Number(newValue), playerStore.bankDeposit, 'withdraw');
+  });
+});
+
+// 为贷款滑块添加监听
+watch(() => loanAmount.value, (newValue) => {
+  nextTick(() => {
+    const slider = document.querySelector('.loan-slider');
+    updateSliderBackground(slider, Number(newValue), playerStore.availableLoanAmount, 'loan');
+  });
+});
+
+// 为还款滑块添加监听
+watch(() => repayAmount.value, (newValue) => {
+  nextTick(() => {
+    const slider = document.querySelector('.repay-slider');
+    const maxAmount = Math.min(playerStore.money, playerStore.debt);
+    updateSliderBackground(slider, Number(newValue), maxAmount, 'repay');
+  });
+});
+
+// 监听标签切换，触发动画效果
+watch(() => activeTab.value, () => {
+  nextTick(() => {
+    // 初始化当前标签页的滑块
+    const sliders = {
+      deposit: { slider: '.deposit-slider', value: depositAmount.value, max: playerStore.money, type: 'deposit' },
+      withdraw: { slider: '.withdraw-slider', value: withdrawAmount.value, max: playerStore.bankDeposit, type: 'withdraw' },
+      loan: { slider: '.loan-slider', value: loanAmount.value, max: playerStore.availableLoanAmount, type: 'loan' },
+      repay: { slider: '.repay-slider', value: repayAmount.value, max: Math.min(playerStore.money, playerStore.debt), type: 'repay' }
+    };
+    
+    const current = sliders[activeTab.value];
+    if (current) {
+      const slider = document.querySelector(current.slider);
+      updateSliderBackground(slider, Number(current.value), current.max, current.type);
+    }
+  });
+});
+
+// 组件挂载后初始化滑块样式
+onMounted(() => {
+  nextTick(() => {
+    const slider = document.querySelector('.deposit-slider');
+    updateSliderBackground(slider, Number(depositAmount.value), playerStore.money, 'deposit');
+  });
+});
 </script>
 
 <style scoped>
@@ -611,7 +805,6 @@ const repayLoan = () => {
   padding: 8px 10px; /* 减小内边距 */
   background: none;
   border: none;
-  border-bottom: 3px solid transparent;
   font-weight: 500;
   color: #6c757d;
   cursor: pointer;
@@ -631,7 +824,6 @@ const repayLoan = () => {
 
 .tab-button.active {
   color: #2ecc71;
-  border-bottom-color: #2ecc71;
   background-color: rgba(46, 204, 113, 0.05);
 }
 
@@ -935,4 +1127,479 @@ const repayLoan = () => {
 .no-border {
   border-left: none;
 }
+
+/* 按钮行样式 */
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.cancel-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.cancel-btn:hover {
+  background-color: #c0392b;
+}
+
+.confirm-btn {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 2;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+
+.confirm-btn:disabled {
+  background-color: #a0c8e7;
+  cursor: not-allowed;
+}
+
+/* 增强的按钮和滑块动画 */
+.confirm-btn, .cancel-btn, .amount-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.confirm-btn::after, .cancel-btn::after, .amount-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
+}
+
+.confirm-btn:active::after, .cancel-btn:active::after, .amount-btn:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+.confirm-btn:active, .cancel-btn:active, .amount-btn:active {
+  transform: scale(0.95);
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0) translate(-50%, -50%);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(20, 20) translate(-50%, -50%);
+    opacity: 0;
+  }
+}
+
+/* 滑块增强动画 */
+.styled-slider::-webkit-slider-thumb {
+  transform: scale(1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.styled-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.styled-slider::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+/* 滑块轨道动画效果 */
+.styled-slider {
+  position: relative;
+  background: #e9ecef;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+  height: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 15px 0;
+  cursor: pointer;
+  --slider-thumb-color: #3498db;
+  width: 100%;
+}
+
+.styled-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--slider-thumb-color, #3498db);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  transform: scale(1);
+}
+
+.styled-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.styled-slider::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.deposit-slider {
+  --slider-thumb-color: #2ecc71;
+}
+
+.withdraw-slider {
+  --slider-thumb-color: #3498db;
+}
+
+.loan-slider {
+  --slider-thumb-color: #f39c12;
+}
+
+.repay-slider {
+  --slider-thumb-color: #e74c3c;
+}
+
+/* 添加tab切换动画 */
+.tab-content {
+  position: relative;
+}
+
+.operation-tab {
+  animation: fadeSlideIn 0.3s ease-out;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 数值变化动画 */
+.amount-value {
+  transition: all 0.3s ease;
+}
+
+.amount-value:hover {
+  transform: scale(1.05);
+}
+
+/* 增强卡片动画 */
+.overview-card {
+  transition: all 0.3s ease;
+  transform: translateY(0);
+}
+
+.overview-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* 卡片图标动画 */
+.card-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.overview-card:hover .card-icon {
+  transform: scale(1.2) rotate(5deg);
+}
+
+/* 按钮行激活状态 */
+.button-row {
+  transform-style: preserve-3d;
+  perspective: 800px;
+}
+
+/* 模态框入场动画增强 */
+@keyframes slideUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(30px) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+/* 数值变化动画效果 */
+@keyframes valueChange {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+    color: #2ecc71;
+    text-shadow: 0 0 8px rgba(46, 204, 113, 0.4);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.value-change-success {
+  animation: valueChange 1s ease-out;
+}
+
+/* 按钮点击波纹效果增强 */
+.confirm-btn, .cancel-btn, .amount-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.confirm-btn::after, .cancel-btn::after, .amount-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.7);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
+}
+
+.confirm-btn:active::after, .cancel-btn:active::after, .amount-btn:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+/* Tab切换增强动画 */
+.tab-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-button::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background-color: #2ecc71;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.tab-button:hover::before {
+  width: 40%;
+}
+
+.tab-button.active::before {
+  width: 100%;
+}
+
+/* 选项卡图标悬浮动画 */
+.tab-icon {
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.tab-button:hover .tab-icon {
+  transform: translateY(-2px);
+}
+
+.tab-button.active .tab-icon {
+  animation: bounceIcon 0.5s ease-out;
+}
+
+@keyframes bounceIcon {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* 银行图标动画 */
+.bank-icon {
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.modal-title-container:hover .bank-icon {
+  transform: rotate(10deg);
+}
+
+/* 银行标题栏渐变效果 */
+.bank-header {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  position: relative;
+  overflow: hidden;
+}
+
+.bank-header::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 70%);
+  transform: rotate(45deg);
+  animation: shineEffect 6s infinite linear;
+}
+
+@keyframes shineEffect {
+  0% {
+    left: -100%;
+    top: -100%;
+  }
+  100% {
+    left: 100%;
+    top: 100%;
+  }
+}
+
+/* 闪烁图标效果 */
+.sparkle {
+  position: relative;
+}
+
+.sparkle::after {
+  content: '✨';
+  position: absolute;
+  font-size: 0.7em;
+  top: -5px;
+  right: -5px;
+  opacity: 0;
+  transform: scale(0);
+  animation: twinkle 5s infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1) rotate(15deg);
+  }
+  60% {
+    opacity: 0;
+    transform: scale(0) rotate(30deg);
+  }
+}
+
+/* 脉冲悬停效果 */
+.pulse-hover {
+  transition: all 0.3s ease;
+}
+
+.pulse-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(52, 152, 219, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+  }
+}
+
+/* 按钮动画增强 */
+.amount-btn:hover {
+  background-color: #d4d4d4;
+  transform: translateY(-1px);
+}
+
+.tab-button {
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.tab-button:hover {
+  transform: translateY(-2px);
+}
+
+.tab-button.active {
+  transform: translateY(0);
+}
+
+/* 模态框整体动画增强 */
+.modal-content {
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+  transform-origin: center top;
+}
+
+/* 禁用滑块的样式 */
+.styled-slider:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.styled-slider:disabled::-webkit-slider-thumb {
+  background-color: #b0b0b0;
+  cursor: not-allowed;
+  transform: scale(0.8);
+}
+
+/* 禁用状态下禁止悬停效果 */
+.styled-slider:disabled::-webkit-slider-thumb:hover {
+  transform: scale(0.8);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* 添加禁用状态的提示信息 */
+.amount-control {
+  position: relative;
+}
+
+.disabled-notice {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 0.8rem;
+  color: #e74c3c;
+  animation: fadeIn 0.5s forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 </style>
