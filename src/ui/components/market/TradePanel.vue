@@ -4,40 +4,40 @@
       <h3 class="panel-title">{{ product.name }}</h3>
       <button class="close-btn" @click="close">×</button>
     </div>
-    
+
     <div class="product-details">
       <div class="product-image-container">
         <img :src="getProductImage()" alt="商品图片" class="product-image">
         <div class="product-badge" v-if="product.isSpecial">特色商品</div>
       </div>
-      
+
       <div class="product-info">
         <div class="price-info">
           <div class="current-price">
             <span class="label">当前价格</span>
             <span class="value">¥{{ formatNumber(product.currentPrice) }}</span>
           </div>
-          
+
           <div class="price-trend">
             <div class="trend-indicator" :class="getTrendClass(product.trend)">
               <span class="trend-icon">{{ getTrendIcon(product.trend) }}</span>
               <span class="trend-text">{{ getTrendText(product.trend) }}</span>
             </div>
-            
+
             <div class="price-change" :class="getChangeClass(product.changePercent)">
               {{ formatChange(product.changePercent) }}%
             </div>
           </div>
         </div>
-        
+
         <div class="price-history">
           <h4>价格历史</h4>
           <div class="price-chart">
-            <div 
-              v-for="(price, index) in priceHistory" 
-              :key="index" 
+            <div
+              v-for="(price, index) in priceHistory"
+              :key="index"
               class="price-bar"
-              :style="{ 
+              :style="{
                 height: `${getBarHeight(price)}%`,
                 backgroundColor: getBarColor(price, product.currentPrice)
               }"
@@ -47,26 +47,26 @@
         </div>
       </div>
     </div>
-    
+
     <div class="trade-actions">
       <div class="tabs">
-        <button 
-          class="tab-btn" 
-          :class="{ active: activeTab === 'buy' }" 
+        <button
+          class="tab-btn"
+          :class="{ active: activeTab === 'buy' }"
           @click="activeTab = 'buy'"
         >
           买入
         </button>
-        <button 
-          class="tab-btn" 
-          :class="{ active: activeTab === 'sell' }" 
+        <button
+          class="tab-btn"
+          :class="{ active: activeTab === 'sell' }"
           @click="activeTab = 'sell'"
           :disabled="!canSell"
         >
           卖出
         </button>
       </div>
-      
+
       <div class="tab-content">
         <!-- 买入面板 -->
         <div v-if="activeTab === 'buy'" class="buy-panel">
@@ -80,14 +80,14 @@
               <span class="value">{{ player.capacity - player.inventoryUsed }}</span>
             </div>
           </div>
-          
+
           <div class="quantity-control">
             <div class="quantity-slider-container">
-              <input 
-                type="range" 
-                v-model="buyQuantity" 
-                :min="1" 
-                :max="maxBuyQuantity" 
+              <input
+                type="range"
+                v-model="buyQuantity"
+                :min="1"
+                :max="maxBuyQuantity"
                 :disabled="maxBuyQuantity <= 0"
                 class="quantity-slider"
               >
@@ -97,19 +97,19 @@
                 <span>{{ maxBuyQuantity }}</span>
               </div>
             </div>
-            
+
             <div class="quantity-input">
               <button @click="decrementBuyQuantity" :disabled="buyQuantity <= 1 || maxBuyQuantity <= 0">-</button>
-              <input 
-                type="number" 
-                v-model="buyQuantity" 
-                :min="1" 
+              <input
+                type="number"
+                v-model="buyQuantity"
+                :min="1"
                 :max="maxBuyQuantity"
                 :disabled="maxBuyQuantity <= 0"
               />
               <button @click="incrementBuyQuantity" :disabled="buyQuantity >= maxBuyQuantity || maxBuyQuantity <= 0">+</button>
             </div>
-            
+
             <div class="quantity-presets">
               <button @click="setBuyQuantity(1)" :disabled="maxBuyQuantity < 1">1</button>
               <button @click="setBuyQuantity(5)" :disabled="maxBuyQuantity < 5">5</button>
@@ -117,7 +117,7 @@
               <button @click="setBuyQuantity(maxBuyQuantity)" :disabled="maxBuyQuantity <= 0">最大</button>
             </div>
           </div>
-          
+
           <div class="transaction-summary">
             <div class="summary-item">
               <span class="label">数量</span>
@@ -132,18 +132,18 @@
               <span class="value">¥{{ formatNumber(buyTotalCost) }}</span>
             </div>
           </div>
-          
+
           <div class="action-buttons">
-            <button 
-              class="action-btn buy-btn" 
-              @click="executeBuy" 
+            <button
+              class="action-btn buy-btn"
+              @click="executeBuy"
               :disabled="!canBuy || buyQuantity <= 0"
             >
               确认买入
             </button>
           </div>
         </div>
-        
+
         <!-- 卖出面板 -->
         <div v-if="activeTab === 'sell'" class="sell-panel">
           <div class="player-resources">
@@ -156,19 +156,19 @@
               <span class="value">¥{{ formatNumber(ownedItem ? ownedItem.purchasePrice : 0) }}</span>
             </div>
           </div>
-          
+
           <div class="profit-preview" :class="getProfitClass()">
             <span class="label">预计盈亏</span>
             <span class="value">{{ getProfitText() }}</span>
           </div>
-          
+
           <div class="quantity-control">
             <div class="quantity-slider-container">
-              <input 
-                type="range" 
-                v-model="sellQuantity" 
-                :min="1" 
-                :max="ownedQuantity" 
+              <input
+                type="range"
+                v-model="sellQuantity"
+                :min="1"
+                :max="ownedQuantity"
                 :disabled="!canSell"
                 class="quantity-slider"
               >
@@ -178,19 +178,19 @@
                 <span>{{ ownedQuantity }}</span>
               </div>
             </div>
-            
+
             <div class="quantity-input">
               <button @click="decrementSellQuantity" :disabled="sellQuantity <= 1 || !canSell">-</button>
-              <input 
-                type="number" 
-                v-model="sellQuantity" 
-                :min="1" 
+              <input
+                type="number"
+                v-model="sellQuantity"
+                :min="1"
                 :max="ownedQuantity"
                 :disabled="!canSell"
               />
               <button @click="incrementSellQuantity" :disabled="sellQuantity >= ownedQuantity || !canSell">+</button>
             </div>
-            
+
             <div class="quantity-presets">
               <button @click="setSellQuantity(1)" :disabled="!canSell">1</button>
               <button @click="setSellQuantity(5)" :disabled="ownedQuantity < 5">5</button>
@@ -198,7 +198,7 @@
               <button @click="setSellQuantity(ownedQuantity)" :disabled="!canSell">全部</button>
             </div>
           </div>
-          
+
           <div class="transaction-summary">
             <div class="summary-item">
               <span class="label">数量</span>
@@ -213,11 +213,11 @@
               <span class="value">¥{{ formatNumber(sellTotalIncome) }}</span>
             </div>
           </div>
-          
+
           <div class="action-buttons">
-            <button 
-              class="action-btn sell-btn" 
-              @click="executeSell" 
+            <button
+              class="action-btn sell-btn"
+              @click="executeSell"
               :disabled="!canSell || sellQuantity <= 0"
             >
               确认卖出
@@ -245,83 +245,83 @@ export default {
   },
   setup(props, { emit }) {
     const gameStore = useGameStore();
-    
+
     // 响应式状态
     const activeTab = ref('buy');
     const buyQuantity = ref(1);
     const sellQuantity = ref(1);
-    
+
     // 计算属性
     const player = computed(() => gameStore.player);
     const priceHistory = computed(() => gameStore.getProductPriceHistory(props.product.id) || []);
-    
+
     const maxBuyQuantity = computed(() => {
       const maxByMoney = Math.floor(player.value.money / props.product.currentPrice);
       const maxByCapacity = player.value.capacity - player.value.inventoryUsed;
       return Math.max(0, Math.min(maxByMoney, maxByCapacity));
     });
-    
+
     const buyTotalCost = computed(() => {
       return props.product.currentPrice * buyQuantity.value;
     });
-    
+
     const ownedItem = computed(() => {
       return player.value.inventory.find(item => item.productId === props.product.id);
     });
-    
+
     const ownedQuantity = computed(() => {
       return ownedItem.value ? ownedItem.value.quantity : 0;
     });
-    
+
     const canSell = computed(() => {
       return ownedQuantity.value > 0;
     });
-    
+
     const canBuy = computed(() => {
       return maxBuyQuantity.value > 0;
     });
-    
+
     const sellTotalIncome = computed(() => {
       return props.product.currentPrice * sellQuantity.value;
     });
-    
+
     // 方法
     const formatChange = (percent) => {
       return formatPercentChange(percent);
     };
-    
+
     const getTrendText = (trend) => {
       return getTrendDescription(trend);
     };
-    
+
     const getTrendIcon = (trend) => {
       switch (trend) {
-        case PriceTrend.RISING_STRONG: return '↑↑';
-        case PriceTrend.RISING: return '↑';
-        case PriceTrend.STABLE_HIGH: return '▲';
-        case PriceTrend.STABLE: return '→';
-        case PriceTrend.STABLE_LOW: return '▼';
-        case PriceTrend.FALLING: return '↓';
-        case PriceTrend.FALLING_STRONG: return '↓↓';
-        case PriceTrend.VOLATILE: return '↕';
-        default: return '→';
+      case PriceTrend.RISING_STRONG: return '↑↑';
+      case PriceTrend.RISING: return '↑';
+      case PriceTrend.STABLE_HIGH: return '▲';
+      case PriceTrend.STABLE: return '→';
+      case PriceTrend.STABLE_LOW: return '▼';
+      case PriceTrend.FALLING: return '↓';
+      case PriceTrend.FALLING_STRONG: return '↓↓';
+      case PriceTrend.VOLATILE: return '↕';
+      default: return '→';
       }
     };
-    
+
     const getTrendClass = (trend) => {
       switch (trend) {
-        case PriceTrend.RISING_STRONG: return 'trend-rising-strong';
-        case PriceTrend.RISING: return 'trend-rising';
-        case PriceTrend.STABLE_HIGH: return 'trend-stable-high';
-        case PriceTrend.STABLE: return 'trend-stable';
-        case PriceTrend.STABLE_LOW: return 'trend-stable-low';
-        case PriceTrend.FALLING: return 'trend-falling';
-        case PriceTrend.FALLING_STRONG: return 'trend-falling-strong';
-        case PriceTrend.VOLATILE: return 'trend-volatile';
-        default: return 'trend-stable';
+      case PriceTrend.RISING_STRONG: return 'trend-rising-strong';
+      case PriceTrend.RISING: return 'trend-rising';
+      case PriceTrend.STABLE_HIGH: return 'trend-stable-high';
+      case PriceTrend.STABLE: return 'trend-stable';
+      case PriceTrend.STABLE_LOW: return 'trend-stable-low';
+      case PriceTrend.FALLING: return 'trend-falling';
+      case PriceTrend.FALLING_STRONG: return 'trend-falling-strong';
+      case PriceTrend.VOLATILE: return 'trend-volatile';
+      default: return 'trend-stable';
       }
     };
-    
+
     const getChangeClass = (percent) => {
       if (percent > 3) return 'change-up-strong';
       if (percent > 0) return 'change-up';
@@ -329,7 +329,7 @@ export default {
       if (percent < 0) return 'change-down';
       return 'change-neutral';
     };
-    
+
     const getProductImage = () => {
       const categoryImages = {
         'food': 'food.png',
@@ -338,79 +338,79 @@ export default {
         'luxury': 'luxury.png',
         'daily': 'daily.png'
       };
-      
+
       const category = props.product.category || 'daily';
       return require(`@/assets/images/products/${categoryImages[category]}`);
     };
-    
+
     const getBarHeight = (price) => {
       const prices = [props.product.currentPrice, ...priceHistory.value];
       const max = Math.max(...prices);
       const min = Math.min(...prices);
       const range = max - min;
-      
+
       if (range === 0) return 50; // 如果所有价格都相同，返回中间高度
-      
+
       return ((price - min) / range) * 80 + 10; // 保证最低高度为10%，最高为90%
     };
-    
+
     const getBarColor = (price, currentPrice) => {
       if (price > currentPrice) return '#e53e3e'; // 红色，高于当前价格
       if (price < currentPrice) return '#38a169'; // 绿色，低于当前价格
       return '#4299e1'; // 蓝色，当前价格
     };
-    
+
     const getProfitClass = () => {
       if (!ownedItem.value) return '';
-      
+
       const diff = props.product.currentPrice - ownedItem.value.purchasePrice;
       if (diff > 0) return 'profit-positive';
       if (diff < 0) return 'profit-negative';
       return '';
     };
-    
+
     const getProfitText = () => {
       if (!ownedItem.value) return '';
-      
+
       const diff = (props.product.currentPrice - ownedItem.value.purchasePrice) * sellQuantity.value;
       const percentage = ((props.product.currentPrice / ownedItem.value.purchasePrice) - 1) * 100;
-      
+
       const sign = diff > 0 ? '+' : '';
       return `${sign}¥${formatNumber(diff)} (${sign}${percentage.toFixed(1)}%)`;
     };
-    
+
     const incrementBuyQuantity = () => {
       if (buyQuantity.value < maxBuyQuantity.value) {
         buyQuantity.value++;
       }
     };
-    
+
     const decrementBuyQuantity = () => {
       if (buyQuantity.value > 1) {
         buyQuantity.value--;
       }
     };
-    
+
     const setBuyQuantity = (quantity) => {
       buyQuantity.value = Math.min(quantity, maxBuyQuantity.value);
     };
-    
+
     const incrementSellQuantity = () => {
       if (sellQuantity.value < ownedQuantity.value) {
         sellQuantity.value++;
       }
     };
-    
+
     const decrementSellQuantity = () => {
       if (sellQuantity.value > 1) {
         sellQuantity.value--;
       }
     };
-    
+
     const setSellQuantity = (quantity) => {
       sellQuantity.value = Math.min(quantity, ownedQuantity.value);
     };
-    
+
     const executeBuy = () => {
       if (buyQuantity.value > 0) {
         gameStore.buyProduct(props.product.id, buyQuantity.value);
@@ -422,7 +422,7 @@ export default {
         });
       }
     };
-    
+
     const executeSell = () => {
       if (sellQuantity.value > 0 && canSell.value) {
         gameStore.sellProduct(props.product.id, sellQuantity.value);
@@ -434,11 +434,11 @@ export default {
         });
       }
     };
-    
+
     const close = () => {
       emit('close');
     };
-    
+
     return {
       activeTab,
       buyQuantity,
@@ -894,25 +894,25 @@ export default {
   .product-details {
     flex-direction: column;
   }
-  
+
   .product-image-container {
     width: 100%;
     height: 150px;
     margin-right: 0;
     margin-bottom: 15px;
   }
-  
+
   .price-info {
     flex-direction: column;
   }
-  
+
   .price-trend {
     text-align: left;
     margin-top: 10px;
   }
-  
+
   .trend-indicator {
     justify-content: flex-start;
   }
 }
-</style> 
+</style>

@@ -8,12 +8,12 @@
 
       <div class="result-summary">
         <div class="rank-display">
-          <div class="rank-animation" :class="'rank-' + (gameStats.score?.rank || 'D')">
-            <span class="rank-value">{{ gameStats.score?.rank || 'D' }}</span>
+          <div class="rank-animation" :class="'rank-' + (getScoreRank || 'D')">
+            <span class="rank-value">{{ getScoreRank || 'D' }}</span>
           </div>
           <div class="score-display">
             <div class="score-label">最终得分</div>
-            <div class="score-value">{{ formatNumber(gameStats.score?.score || 0) }}</div>
+            <div class="score-value">{{ formatNumber(getFinalScore || 0) }}</div>
           </div>
         </div>
 
@@ -38,17 +38,33 @@
 
       <!-- 房产信息(如果有) -->
       <div v-if="player.purchasedHouses && player.purchasedHouses.length > 0" class="house-info">
+        <h2>已购房产 ({{ player.purchasedHouses.length }}套)</h2>
+
+        <!-- 显示最高级别/最贵的房产 -->
         <div class="house-details">
           <div class="house-image-container">
-            <img :src="getHouseImage(player.purchasedHouses[0])" alt="房屋图片" class="house-image">
+            <img :src="getHouseImage(getBestHouse)" alt="房屋图片" class="house-image">
           </div>
           <div class="house-text">
-            <h3 class="house-name">{{ player.purchasedHouses[0].name }}</h3>
-            <p class="house-price">价格: ¥{{ formatNumber(player.purchasedHouses[0].purchasePrice || player.purchasedHouses[0].price) }}</p>
-            <p class="house-week">购买时间: 第 {{ player.purchasedHouses[0].purchaseWeek || gameStats.week }} 周</p>
-            <div class="victory-info">
-              <div class="victory-badge">游戏通关!</div>
-              <p class="victory-text">在{{ gameState.maxWeeks }}周游戏中，您仅用了{{ player.purchasedHouses[0].purchaseWeek || gameStats.week }}周就完成了购房目标!</p>
+            <h3 class="house-name">{{ getBestHouse.name }} <span class="best-house-badge">{{ getBestHouse === getMostExpensiveHouse ? '最贵房产' : '最高级房产' }}</span></h3>
+            <p class="house-price">价格: ¥{{ formatNumber(getBestHouse.purchasePrice || getBestHouse.price) }}</p>
+            <p class="house-week">购买时间: 第 {{ getBestHouse.purchaseWeek || gameStats.week }} 周</p>
+          </div>
+        </div>
+
+        <!-- 多房产展示 -->
+        <div v-if="player.purchasedHouses.length > 1" class="all-houses-container">
+          <h3>全部房产</h3>
+          <div class="houses-grid">
+            <div v-for="house in player.purchasedHouses" :key="house.houseId" class="mini-house-card">
+              <div class="mini-house-image">
+                <img :src="getHouseImage(house)" alt="房屋图片">
+              </div>
+              <div class="mini-house-info">
+                <div class="mini-house-name">{{ house.name }}</div>
+                <div class="mini-house-price">¥{{ formatNumber(house.purchasePrice) }}</div>
+                <div class="mini-house-week">第{{ house.purchaseWeek }}周</div>
+              </div>
             </div>
           </div>
         </div>
@@ -64,10 +80,6 @@
             <h3 class="house-name">{{ (gameStats.purchasedHouse || gameStats.data.house).name }}</h3>
             <p class="house-price">价格: ¥{{ formatNumber((gameStats.purchasedHouse || gameStats.data.house).price) }}</p>
             <p class="house-week">购买时间: 第 {{ gameStats.week }} 周</p>
-            <div class="victory-info">
-              <div class="victory-badge">游戏通关!</div>
-              <p class="victory-text">在{{ gameState.maxWeeks }}周游戏中，您仅用了{{ gameStats.week }}周就完成了购房目标!</p>
-            </div>
           </div>
         </div>
       </div>
@@ -91,6 +103,55 @@
               <div class="stat-value" :class="{'positive': (gameStats.tradeStats?.totalProfit || 0) > 0, 'negative': (gameStats.tradeStats?.totalProfit || 0) < 0}">
                 {{ (gameStats.tradeStats?.totalProfit || 0) > 0 ? '+' : '' }}¥{{ formatNumber(gameStats.tradeStats?.totalProfit || 0) }}
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 得分明细 -->
+      <div class="score-details-section" v-if="gameStats.scoreDetails">
+        <h2>得分明细</h2>
+        <div class="score-details-grid">
+          <div class="stat-item">
+            <div class="stat-icon">💰</div>
+            <div class="stat-content">
+              <div class="stat-label">资产得分</div>
+              <div class="stat-value">{{ formatNumber(gameStats.scoreDetails?.assetsScore || 0) }}</div>
+            </div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-icon">🏡</div>
+            <div class="stat-content">
+              <div class="stat-label">房产得分</div>
+              <div class="stat-value">{{ formatNumber(gameStats.scoreDetails?.houseScore || 0) }}</div>
+              <div v-if="player.purchasedHouses && player.purchasedHouses.length > 1" class="stat-bonus">
+                含{{ player.purchasedHouses.length }}套房产加成
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-content">
+              <div class="stat-label">时间效率</div>
+              <div class="stat-value">{{ formatNumber(gameStats.scoreDetails?.timeScore || 0) }}</div>
+            </div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-content">
+              <div class="stat-label">交易得分</div>
+              <div class="stat-value">{{ formatNumber(gameStats.scoreDetails?.tradeScore || 0) }}</div>
+            </div>
+          </div>
+
+          <div class="stat-item">
+            <div class="stat-icon">🏦</div>
+            <div class="stat-content">
+              <div class="stat-label">银行管理</div>
+              <div class="stat-value">{{ formatNumber(gameStats.scoreDetails?.bankScore || 0) }}</div>
             </div>
           </div>
         </div>
@@ -160,7 +221,25 @@ export default {
   computed: {
     canContinueGame() {
       // 检查是否可以继续游戏（房屋购买胜利）
-      return this.gameStats.canContinue || this.gameStats.endReason === 'houseVictory';
+      // 增强检查条件，确保在购房胜利情况下显示继续游戏按钮
+      const isHouseVictory = this.gameStats.endReason === 'houseVictory';
+      const hasCanContinueFlag = this.gameStats.canContinue === true;
+      const hasPurchasedHouse = this.player.purchasedHouses && this.player.purchasedHouses.length > 0;
+
+      // 日志输出帮助调试
+      console.log('GameOverView - 继续游戏条件检查:', {
+        isHouseVictory,
+        hasCanContinueFlag,
+        hasPurchasedHouse,
+        endReason: this.gameStats.endReason,
+        playerHouses: this.player.purchasedHouses
+      });
+
+      // 简化判断条件: 只要不是破产或时间限制结束，且有房产就可以继续
+      // 1. 有房产 或 canContinue标记为true
+      // 2. 并且不是破产或时间限制结束
+      return (hasPurchasedHouse || hasCanContinueFlag || isHouseVictory) &&
+             this.gameStats.endReason !== 'bankruptcy';
     },
     resultClass() {
       const endReason = this.gameStats.endReason;
@@ -186,24 +265,34 @@ export default {
     isBankruptcy() {
       return this.gameStats.endReason === 'bankruptcy';
     },
+    hasAchievements() {
+      return this.achievements && this.achievements.length > 0;
+    },
     getGameOverTitle() {
       const endReason = this.gameStats.endReason;
 
+      // 预处理多房产情况
+      let titlePrefix = '';
+      const houseCount = this.player.purchasedHouses?.length || 0;
+      const houseName = this.gameStats.purchasedHouse?.name || this.player.purchasedHouses?.[0]?.name || '房产';
+
+      if (houseCount > 1) {
+        titlePrefix = `🏆 购置${houseCount}套房产！`;
+      } else {
+        titlePrefix = `🎉 恭喜购得${houseName}！`;
+      }
+
+      // 根据结束原因返回不同标题
       switch (endReason) {
         case 'houseVictory':
         case 'victory':
-          const houseName = this.gameStats.purchasedHouse?.name || this.player.purchasedHouses?.[0]?.name || '房产';
-          return `🎉 恭喜购得${houseName}！`;
-
+          return titlePrefix;
         case 'victoryTimeLimit':
           return '🏆 完美通关！事业有成！';
-
         case 'timeLimit':
           return '⌛ 时间已到，未能实现购房梦';
-
         case 'bankruptcy':
           return '💸 破产清算，游戏结束';
-
         case 'playerChoice':
           return '你选择了结束游戏';
         default:
@@ -245,8 +334,84 @@ export default {
           return '游戏结束了，感谢你的游玩！';
       }
     },
-    hasAchievements() {
-      return this.achievements && this.achievements.length > 0;
+    getBestHouse() {
+      if (!this.player.purchasedHouses || this.player.purchasedHouses.length === 0) {
+        return {};
+      }
+      return this.player.purchasedHouses.reduce((best, current) => {
+        if (current.level > best.level) {
+          return current;
+        }
+        if (current.level === best.level && current.price > best.price) {
+          return current;
+        }
+        return best;
+      }, this.player.purchasedHouses[0]);
+    },
+    getMostExpensiveHouse() {
+      if (!this.player.purchasedHouses || this.player.purchasedHouses.length === 0) {
+        return {};
+      }
+      return this.player.purchasedHouses.reduce((mostExpensive, current) => {
+        return (current.price > mostExpensive.price) ? current : mostExpensive;
+      }, this.player.purchasedHouses[0]);
+    },
+    getVictoryBadgeText() {
+      if (this.player.purchasedHouses && this.player.purchasedHouses.length > 0) {
+        return this.player.purchasedHouses.length > 1 ? '豪华置业' : '安家置业';
+      }
+      return '游戏通关!';
+    },
+    getVictoryDescription() {
+      const firstHouse = this.player.purchasedHouses && this.player.purchasedHouses.length > 0
+        ? this.player.purchasedHouses[0]
+        : null;
+
+      if (!firstHouse) {
+        return `在${this.gameState.maxWeeks}周游戏中，您成功通关!`;
+      }
+
+      const firstWeek = firstHouse.purchaseWeek || this.gameStats.week;
+      const houseCount = this.player.purchasedHouses.length;
+
+      if (houseCount > 1) {
+        return `在${this.gameState.maxWeeks}周游戏中，您共购买了${houseCount}套房产，首套房产仅用了${firstWeek}周就购得!`;
+      }
+
+      return `在${this.gameState.maxWeeks}周游戏中，您仅用了${firstWeek}周就完成了购房目标!`;
+    },
+    getScoreRank() {
+      if (this.gameStats.score) {
+        if (this.gameStats.score.rank) {
+          return this.gameStats.score.rank;
+        }
+        if (this.gameStats.score.score >= 1000000) {
+          return 'S';
+        }
+        if (this.gameStats.score.score >= 800000) {
+          return 'A';
+        }
+        if (this.gameStats.score.score >= 600000) {
+          return 'B';
+        }
+        if (this.gameStats.score.score >= 400000) {
+          return 'C';
+        }
+        return 'D';
+      }
+      return 'D';
+    },
+    getFinalScore() {
+      if (this.gameStats.score) {
+        if (this.gameStats.score.score) {
+          return this.gameStats.score.score;
+        }
+        if (this.gameStats.finalAssets) {
+          return this.gameStats.finalAssets;
+        }
+        return 0;
+      }
+      return 0;
     }
   },
   mounted() {
@@ -257,13 +422,117 @@ export default {
     this.$nextTick(() => {
       this.animateScoreElements();
     });
+
+    // 添加调试日志
+    console.log('GameOverView mounted - 原始游戏统计数据对象:', this.gameStats);
+    console.log('GameOverView mounted - 游戏得分数据:', {
+      score: this.gameStats.score,
+      scoreDetails: this.gameStats.scoreDetails,
+      endReason: this.gameStats.endReason,
+      finalAssets: this.gameStats.finalAssets,
+      reason: this.gameStats.reason
+    });
+
+    // 查看得分格式问题
+    if (this.gameStats.score !== undefined) {
+      console.log('得分格式检查:', {
+        scoreType: typeof this.gameStats.score,
+        isNumber: !isNaN(this.gameStats.score),
+        stringValue: String(this.gameStats.score)
+      });
+    }
+
+    // 延迟执行一次强制刷新，确保得分显示正确
+    setTimeout(() => {
+      this.updateScoreDisplay();
+    }, 100);
   },
   methods: {
+    updateScoreDisplay() {
+      // 强制刷新得分显示
+      console.log('强制刷新得分显示...');
+      // 如果得分为0但有净资产，尝试基于净资产计算一个默认得分
+      if (this.getFinalScore === 0 && this.gameStats.finalAssets > 0) {
+        console.log('检测到得分为0但有净资产，尝试计算默认得分');
+        // 直接基于净资产计算得分
+        const calculatedScore = Math.floor(this.gameStats.finalAssets / 500);
+        // 创建完整的得分对象
+        this.$set(this.gameStats, 'score', {
+          score: calculatedScore,
+          rank: this.calculateScoreRank(calculatedScore),
+          details: {
+            assetsScore: Math.floor(this.gameStats.finalAssets / 800),
+            timeScore: 0,
+            houseScore: 0,
+            tradeScore: 0,
+            bankScore: 0,
+            totalScore: calculatedScore
+          }
+        });
+      }
+      this.$forceUpdate();
+    },
+    calculateScoreRank(score) {
+      if (score >= 1000000) return 'S';
+      if (score >= 800000) return 'A';
+      if (score >= 600000) return 'B';
+      if (score >= 400000) return 'C';
+      if (score >= 200000) return 'D';
+      return 'D';
+    },
     formatNumber(num) {
       return formatNumber(num);
     },
     getHouseImage(house) {
-      return house.image || './resources/assets/images/house_1.jpeg';
+      if (!house) return '/resources/assets/images/house_1.jpeg';
+
+      // 记录日志帮助调试
+      console.log('正在获取房产图片:', house);
+
+      // 确保使用house.imageUrl或正确的图片路径
+      // 根据房产ID选择对应图片，使用正确的路径
+      if (house.id || house.houseId) {
+        const houseId = house.id || house.houseId;
+
+        // 特定ID到图片的映射
+        const imageMap = {
+          'apartment': '/resources/assets/images/house_1.jpeg',
+          'second_hand': '/resources/assets/images/house_2.jpeg',
+          'highend': '/resources/assets/images/house_3.jpeg',
+          'villa': '/resources/assets/images/house_4.jpeg',
+          'mansion': '/resources/assets/images/house_5.jpeg'
+        };
+
+        // 先检查是否为预定义的房屋ID
+        if (imageMap[houseId]) {
+          return imageMap[houseId];
+        }
+
+        // 如果不是预定义ID，尝试解析为数字
+        const parsedId = parseInt(houseId);
+        // 如果解析成功，使用对应索引；否则使用默认值1
+        const imageIndex = !isNaN(parsedId) ? (parsedId % 5 || 1) : 1;
+        return `/resources/assets/images/house_${imageIndex}.jpeg`;
+      }
+
+      // 如果存在imageUrl则优先使用
+      if (house.imageUrl) return house.imageUrl;
+      if (house.image) {
+        // 确保image路径正确，添加前导/如果不存在
+        if (house.image.startsWith('./')) {
+          return house.image.replace('./', '/');
+        } else if (!house.image.startsWith('/')) {
+          return `/${house.image}`;
+        }
+        // 如果路径包含NaN，使用默认图片
+        if (house.image.includes('NaN')) {
+          return '/resources/assets/images/house_1.jpeg';
+        }
+        return house.image;
+      }
+
+      // 默认图片
+      return '/resources/assets/images/house_1.jpeg';
     },
     returnToMainMenu() {
       this.$emit('return-to-main');
@@ -272,26 +541,51 @@ export default {
       this.$emit('restart-game');
     },
     continueGame() {
+      // 添加调试日志
+      console.log('GameOverView - 继续游戏按钮被点击');
+
       // 调用游戏核心存储的继续游戏方法
-      const gameStore = useGameCoreStore();
-      gameStore.continueGame();
-
-      // 使用UI Store显示提示，而不是依赖通知系统
       try {
-        const uiStore = useUiStore();
-        if (uiStore && uiStore.showToast) {
-          uiStore.showToast({
-            type: 'success',
-            message: '您选择继续游戏！您可以继续赚钱并购买更多房产，直到第52周游戏结束。',
-            duration: 5000
-          });
-        }
-      } catch (err) {
-        console.warn('显示继续游戏提示失败', err);
-      }
+        const gameStore = useGameCoreStore();
+        console.log('GameOverView - 获取到gameStore:', Boolean(gameStore));
 
-      // 发送事件给父组件
-      this.$emit('continue-game');
+        if (!gameStore) {
+          console.error('GameOverView - 无法获取gameStore');
+          return;
+        }
+
+        // 直接调整gameStore状态
+        gameStore.gameOver = false;
+        gameStore.victoryAchieved = true;
+
+        // 调用继续游戏方法
+        if (typeof gameStore.continueGame === 'function') {
+          gameStore.continueGame();
+          console.log('GameOverView - 成功调用continueGame方法');
+        } else {
+          console.error('GameOverView - continueGame方法不存在');
+        }
+
+        // 使用UI Store显示提示，而不是依赖通知系统
+        try {
+          const uiStore = useUiStore();
+          if (uiStore && uiStore.showToast) {
+            uiStore.showToast({
+              type: 'success',
+              message: '您选择继续游戏！您可以继续赚钱并购买更多房产，直到第52周游戏结束。',
+              duration: 5000
+            });
+          }
+        } catch (err) {
+          console.warn('显示继续游戏提示失败', err);
+        }
+
+        // 发送事件给父组件
+        this.$emit('continue-game');
+        console.log('GameOverView - 已发送continue-game事件');
+      } catch (error) {
+        console.error('GameOverView - 继续游戏失败:', error);
+      }
     },
     loadAchievements() {
       // 这里应该从游戏状态加载成就数据
@@ -362,6 +656,35 @@ export default {
         });
       }
 
+      // 房产相关成就
+      if (this.player.purchasedHouses && this.player.purchasedHouses.length > 0) {
+        this.achievements.push({
+          name: '房产投资专家',
+          description: '成功购买至少一套房产'
+        });
+
+        if (this.player.purchasedHouses.length > 1) {
+          this.achievements.push({
+            name: '豪华置业',
+            description: '成功购买多套房产'
+          });
+        }
+
+        if (this.player.purchasedHouses.length > 5) {
+          this.achievements.push({
+            name: '房产大亨',
+            description: '成功购买超过5套房产'
+          });
+        }
+
+        if (this.player.purchasedHouses.length > 10) {
+          this.achievements.push({
+            name: '房产巨富',
+            description: '成功购买超过10套房产'
+          });
+        }
+      }
+
       // 破产成就
       if (endReason === 'bankruptcy') {
         this.achievements.push({
@@ -411,6 +734,7 @@ export default {
   margin: 0;
 }
 
+/* 修改游戏结算容器样式，添加滚动条 */
 .game-over-container {
   position: relative;
   max-width: 600px;
@@ -418,10 +742,44 @@ export default {
   background-color: white;
   border-radius: 30px; /* 大圆角 */
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.2);
-  padding: 15px 18px;
-  overflow: hidden;
-  max-height: 90vh;
+  padding: 15px 18px 15px 18px;
+  overflow-y: auto; /* 添加垂直滚动条 */
+  max-height: 85vh; /* 略微增加最大高度 */
   border: 2px solid rgba(255, 255, 255, 0.95);
+  scrollbar-width: none; /* 隐藏Firefox原生滚动条 */
+  -ms-overflow-style: none; /* 隐藏IE/Edge滚动条 */
+}
+
+/* 隐藏原生WebKit滚动条 */
+.game-over-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* 创建一个内部自定义滚动条容器 */
+.game-over-container::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 3px;
+  bottom: 5px;
+  width: 3px;
+  background-color: transparent;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease, background-color 0.3s ease;
+  pointer-events: none;
+}
+
+/* 当容器有滚动时显示滚动条指示器 */
+.game-over-container:hover::after {
+  opacity: 0.5;
+  background-color: rgba(52, 152, 219, 0.3);
+}
+
+/* 当实际滚动时增加不透明度 */
+.game-over-container:active::after {
+  opacity: 0.7;
+  background-color: rgba(52, 152, 219, 0.5);
 }
 
 /* 移除伪元素 */
@@ -901,30 +1259,38 @@ h2::before {
   justify-content: center;
   gap: 12px;
   border-radius: 0 0 30px 30px; /* 匹配主容器圆角 */
-  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(249,249,249,0.8));
-  position: relative;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(249,249,249,0.95));
+  position: sticky;
+  bottom: -15px;
+  left: 0;
+  right: 0;
   margin-left: -18px;
   margin-right: -18px;
   padding-left: 18px;
   padding-right: 18px;
-  margin-bottom: -15px;
+  z-index: 100; /* 确保按钮在顶层 */
+  box-shadow: 0 -5px 10px rgba(0,0,0,0.05);
 }
 
+/* 增强按钮样式 */
 .btn {
-  min-width: 110px;
-  padding: 10px 20px; /* 增大按钮内边距 */
+  padding: 10px 20px;
   border: none;
-  border-radius: 30px; /* 显著增大按钮圆角 */
-  font-size: 0.95rem;
-  font-weight: 600;
+  border-radius: 50px;
   cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
   position: relative;
   overflow: hidden;
+  min-width: 140px;
 }
 
 /* 添加按钮闪光效果 */
@@ -964,7 +1330,26 @@ h2::before {
 
 .btn-primary {
   background: linear-gradient(135deg, #3498db, #2980b9);
-  color: white;
+}
+
+/* 特别强调继续游戏按钮 */
+.actions button:first-child {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+  transform: scale(1.05);
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(46, 204, 113, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+  }
 }
 
 .btn-success {
@@ -1148,4 +1533,125 @@ h2::before {
   align-items: center;
   justify-content: center;
 }
+
+/* 多套房产展示样式 */
+.all-houses-container {
+  margin-top: 15px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.all-houses-container h3 {
+  margin-top: 5px;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.houses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.mini-house-card {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.mini-house-image {
+  height: 80px;
+  overflow: hidden;
+}
+
+.mini-house-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mini-house-info {
+  padding: 8px;
+}
+
+.mini-house-name {
+  font-weight: bold;
+  font-size: 0.8rem;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-house-price {
+  color: #e74c3c;
+  font-size: 0.75rem;
+  margin-bottom: 2px;
+}
+
+.mini-house-week {
+  color: #7f8c8d;
+  font-size: 0.7rem;
+}
+
+.best-house-badge {
+  font-size: 0.7rem;
+  background-color: #8e44ad;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* 标题样式更新 */
+.house-info h2 {
+  font-size: 1.2rem;
+  margin: 0 0 10px 0;
+  color: #34495e;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+/* 确保其他样式适配 */
+.house-info {
+  margin-bottom: 15px;
+}
+
+/* 得分明细样式 */
+.score-details-section {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.score-details-section h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  color: #34495e;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.score-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.stat-bonus {
+  margin-top: 5px;
+  font-size: 0.7rem;
+  color: #8e44ad;
+  font-style: italic;
+}
+
 </style>

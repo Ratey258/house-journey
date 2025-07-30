@@ -286,15 +286,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { ref, onMounted, nextTick, watch } from 'vue';
 import { usePlayerStore } from '@/stores/player';
-import { useUiStore } from '@/stores/uiStore';
 import { useI18n } from 'vue-i18n';
 import { formatNumber } from '@/infrastructure/utils';
 
 // 获取需要的store和工具
 const playerStore = usePlayerStore();
-const uiStore = useUiStore();
 const { t } = useI18n();
 
 // 定义组件属性和事件
@@ -543,28 +541,28 @@ const updateSliderBackground = (slider, value, max, type = 'default') => {
   // 根据操作类型选择颜色
   let color;
   switch (type) {
-    case 'deposit':
-      color = '#2ecc71'; // 绿色 - 存款
-      break;
-    case 'withdraw':
-      color = '#3498db'; // 蓝色 - 取款
-      break;
-    case 'loan':
-      color = '#f39c12'; // 橙色 - 贷款
-      break;
-    case 'repay':
-      color = '#e74c3c'; // 红色 - 还款
-      break;
-    default:
-      color = '#3498db'; // 默认蓝色
+  case 'deposit':
+    color = '#2ecc71'; // 绿色 - 存款
+    break;
+  case 'withdraw':
+    color = '#3498db'; // 蓝色 - 取款
+    break;
+  case 'loan':
+    color = '#f39c12'; // 橙色 - 贷款
+    break;
+  case 'repay':
+    color = '#e74c3c'; // 红色 - 还款
+    break;
+  default:
+    color = '#3498db'; // 默认蓝色
   }
 
   // 处理禁用状态
   if (max <= 0) {
     // 使用浅色表示禁用状态
     const disabledColor = type === 'withdraw' ? '#a0c8e7' :
-                        type === 'loan' ? '#f8d29b' :
-                        type === 'repay' ? '#f5b7b1' : '#a0c8e7';
+      type === 'loan' ? '#f8d29b' :
+        type === 'repay' ? '#f5b7b1' : '#a0c8e7';
     slider.style.background = disabledColor;
     return;
   }
@@ -654,11 +652,6 @@ onMounted(() => {
       }
     }
 
-    // 测试弹窗显示 - 取消注释以测试
-    setTimeout(() => {
-      console.log('测试通知显示');
-      showNotification('success', '欢迎使用银行服务');
-    }, 1000);
   });
 });
 </script>

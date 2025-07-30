@@ -306,6 +306,17 @@ const isEndlessMode = computed(() => gameCoreStore.isEndlessMode);
 // 当游戏结束时显示结束对话框
 watch(() => gameCoreStore.gameOver, (newValue) => {
   if (newValue) {
+    // 添加详细调试日志
+    console.log('游戏结束 - GameView监听到gameOver变为true');
+    console.log('详细游戏结果数据:', {
+      gameResult: gameCoreStore.gameResult,
+      score: gameCoreStore.gameResult?.score,
+      scoreDetails: gameCoreStore.gameResult?.scoreDetails,
+      endReason: gameCoreStore.gameResult?.endReason,
+      playerNetWorth: playerStore.netWorth,
+      purchasedHouses: playerStore.purchasedHouses?.length || 0
+    });
+
     nextTick(() => {
       showGameOverDialog.value = true;
     });

@@ -2,13 +2,27 @@
   通用游戏对话框组件
 -->
 <template>
-  <div class="dialog-overlay" v-if="dialogVisible" @click.self="onBackdropClick">
+  <div v-if="dialogVisible" class="dialog-overlay" @click.self="onBackdropClick">
     <div class="dialog-container">
       <div class="dialog-header">
-        <h2 class="dialog-title">{{ dialogData.title }}</h2>
-        <button class="dialog-close" @click="closeDialog" v-if="dialogData.showClose !== false">×</button>
+        <h2 class="dialog-title">
+          {{ dialogData.title }}
+        </h2>
+        <button v-if="dialogData.showClose !== false" class="dialog-close" @click="closeDialog">
+          ×
+        </button>
       </div>
-      <div class="dialog-content" v-html="formattedMessage"></div>
+
+      <!-- 使用更安全的方式处理格式化消息，避免XSS攻击 -->
+      <div class="dialog-content">
+        <p
+          v-for="(line, index) in messageLines"
+          :key="index"
+        >
+          {{ line }}
+        </p>
+      </div>
+
       <div class="dialog-actions">
         <button
           v-if="dialogData.showCancel !== false"
@@ -17,6 +31,7 @@
         >
           {{ dialogData.cancelText || $t('common.cancel') }}
         </button>
+
         <button
           class="dialog-button confirm-button"
           @click="onConfirmClick"
@@ -33,17 +48,18 @@ import { computed } from 'vue';
 import { useUiStore } from '@/stores/uiStore';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
+// 初始化i18n，使其在模板中可用
+useI18n();
 const uiStore = useUiStore();
 
 // 对话框可见性和数据
 const dialogVisible = computed(() => uiStore.dialogVisible);
 const dialogData = computed(() => uiStore.dialogData || {});
 
-// 格式化消息，支持换行符
-const formattedMessage = computed(() => {
-  if (!dialogData.value.message) return '';
-  return dialogData.value.message.replace(/\n/g, '<br/>');
+// 将消息拆分为行
+const messageLines = computed(() => {
+  if (!dialogData.value.message) return [];
+  return dialogData.value.message.split('\n');
 });
 
 // 关闭对话框

@@ -69,6 +69,8 @@ export default {
     houseMarket: {
       title: '房产市场',
       affordable: '可购买',
+      purchased: '已购买',
+      alreadyOwned: '已拥有',
       price: '价格',
       level: '等级',
       size: '面积',

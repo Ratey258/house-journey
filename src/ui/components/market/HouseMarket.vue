@@ -9,7 +9,10 @@
         v-for="house in houses"
         :key="house.id"
         class="house-card"
-        :class="{ 'affordable': canPlayerAfford(house) }"
+        :class="{
+          'affordable': canPlayerAfford(house) && !isHousePurchased(house.id),
+          'purchased': isHousePurchased(house.id)
+        }"
       >
         <div class="house-image">
           <img
@@ -17,10 +20,16 @@
             alt="房屋图片"
           >
           <span
-            v-if="canPlayerAfford(house)"
+            v-if="canPlayerAfford(house) && !isHousePurchased(house.id)"
             class="affordable-badge"
           >
             {{ $t('market.houseMarket.affordable') }}
+          </span>
+          <span
+            v-if="isHousePurchased(house.id)"
+            class="purchased-badge"
+          >
+            {{ $t('market.houseMarket.purchased') }}
           </span>
         </div>
         <div class="house-info">
@@ -42,11 +51,11 @@
           </div>
           <div class="house-actions">
             <button
-              :disabled="!canPlayerAfford(house)"
+              :disabled="!canPlayerAfford(house) || isHousePurchased(house.id)"
               class="buy-btn"
               @click="openBuyModal(house)"
             >
-              {{ $t('market.houseMarket.buyButton') }}
+              {{ isHousePurchased(house.id) ? $t('market.houseMarket.alreadyOwned') : $t('market.houseMarket.buyButton') }}
             </button>
           </div>
         </div>
@@ -76,12 +85,13 @@
           </div>
         </div>
 
-        <p
+        <!-- 移除警告通知 -->
+        <!-- <p
           v-if="isSignificantPurchase"
           class="purchase-warning"
         >
           {{ $t('market.houseMarket.significantWarning') }}
-        </p>
+        </p> -->
 
         <div class="modal-actions">
           <button
@@ -103,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { usePlayerStore } from '@/stores/player';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
@@ -163,12 +173,29 @@ const selectedHouse = ref(null);
 const getHouseImage = (house) => {
   // 优先使用house对象自带的image属性
   if (house && house.image) {
+    // 确保image路径正确，添加前导/
+    if (house.image.startsWith('./')) {
+      return house.image.replace('./', '/');
+    } else if (!house.image.startsWith('/')) {
+      return `/${house.image}`;
+    }
     return house.image;
   }
+
   // 如果没有image属性或为空，则使用getHouseImagePath获取
   // 处理图片路径
-  const defaultImage = './resources/assets/images/house_1.jpeg';
-  return house && house.id ? getHouseImagePath(house.id) : defaultImage;
+  const defaultImage = '/resources/assets/images/house_1.jpeg';
+  if (!house || !house.id) return defaultImage;
+
+  // 尝试使用ID获取图片
+  try {
+    // 确保返回的路径以/开头
+    const path = getHouseImagePath(house.id);
+    return path.startsWith('/') ? path : `/${path}`;
+  } catch (err) {
+    console.warn('获取房屋图片时出错:', err);
+    return defaultImage;
+  }
 };
 
 // 判断玩家是否能买得起
@@ -176,11 +203,17 @@ const canPlayerAfford = (house) => {
   return playerStore.money >= house.price;
 };
 
+// 检查房屋是否已被购买
+const isHousePurchased = (houseId) => {
+  return playerStore.purchasedHouses.some(house => house.houseId === houseId);
+};
+
 // 判断是否为重大购买（超过玩家当前资金的80%）
-const isSignificantPurchase = computed(() => {
-  if (!selectedHouse.value) return false;
-  return selectedHouse.value.price > playerStore.money * 0.8;
-});
+// 移除未使用的计算属性
+// const isSignificantPurchase = computed(() => {
+//   if (!selectedHouse.value) return false;
+//   return selectedHouse.value.price > playerStore.money * 0.8;
+// });
 
 // 打开购买模态框
 const openBuyModal = (house) => {
@@ -327,6 +360,24 @@ const purchaseHouse = () => {
   z-index: 1;
 }
 
+.house-card.purchased {
+  border: none;
+  box-shadow: 0 3px 12px rgba(142, 68, 173, 0.2);
+}
+
+.house-card.purchased::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid #8e44ad;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .house-image {
   position: relative;
   height: 220px; /* 固定图片高度 */
@@ -354,6 +405,23 @@ const purchaseHouse = () => {
   border-radius: 4px;
   font-weight: bold;
   font-size: 0.8em;
+}
+
+.purchased-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #8e44ad;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.8em;
+}
+
+.house-card.purchased .buy-btn {
+  background-color: #8e44ad;
+  cursor: not-allowed;
 }
 
 .house-info {

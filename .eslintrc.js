@@ -21,7 +21,7 @@ module.exports = {
     'vue/component-name-in-template-casing': ['error', 'PascalCase'],
 
     // JavaScript规则
-    'indent': ['error', 2],
+    'indent': ['error', 2, { 'SwitchCase': 1 }],
     'quotes': ['error', 'single', { 'avoidEscape': true }],
     'semi': ['error', 'always'],
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',

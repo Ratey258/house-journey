@@ -48,7 +48,11 @@
           <div class="input-group">
             <button @click="advanceWeek" class="action-button">+1周</button>
             <button @click="advanceMultipleWeeks(5)" class="action-button">+5周</button>
-            <input type="number" v-model.number="weekToSet" min="1" :max="gameStore.maxWeeks" placeholder="周数" />
+            <input type="number"
+                   v-model.number="weekToSet"
+                   min="1"
+                   :max="gameStore.maxWeeks"
+                   placeholder="周数" />
             <button @click="setCurrentWeek" class="action-button">设置</button>
           </div>
         </div>
@@ -59,7 +63,10 @@
         <div class="tool-group">
           <h4>背包容量</h4>
           <div class="input-group">
-            <input type="number" v-model.number="capacityValue" placeholder="容量" min="1" />
+            <input type="number"
+                   v-model.number="capacityValue"
+                   placeholder="容量"
+                   min="1" />
             <button @click="setCapacity" class="action-button">设置</button>
           </div>
         </div>
@@ -68,7 +75,11 @@
           <h4>库存操作</h4>
           <div class="input-group">
             <button @click="clearInventory" class="action-button warning">清空库存</button>
-            <input type="number" v-model.number="randomItemsCount" placeholder="物品数量" min="1" max="10" />
+            <input type="number"
+                   v-model.number="randomItemsCount"
+                   placeholder="物品数量"
+                   min="1"
+                   max="10" />
             <button @click="addRandomItems" class="action-button">添加随机物品</button>
           </div>
         </div>
@@ -79,8 +90,17 @@
         <div class="tool-group">
           <h4>全局市场修正</h4>
           <div class="input-group">
-            <input type="number" v-model.number="priceModifier" step="0.1" min="0.5" max="2.0" placeholder="修正值" />
-            <input type="number" v-model.number="marketModifierDuration" min="1" max="10" placeholder="持续周数" />
+            <input type="number"
+                   v-model.number="priceModifier"
+                   step="0.1"
+                   min="0.5"
+                   max="2.0"
+                   placeholder="修正值" />
+            <input type="number"
+                   v-model.number="marketModifierDuration"
+                   min="1"
+                   max="10"
+                   placeholder="持续周数" />
             <button @click="applyGlobalModifier" class="action-button">应用全局修正</button>
           </div>
         </div>
@@ -94,7 +114,12 @@
                 {{ category }}
               </option>
             </select>
-            <input type="number" v-model.number="priceModifier" step="0.1" min="0.5" max="2.0" placeholder="修正值" />
+            <input type="number"
+                   v-model.number="priceModifier"
+                   step="0.1"
+                   min="0.5"
+                   max="2.0"
+                   placeholder="修正值" />
             <button @click="applyCategoryModifier" class="action-button">应用修正</button>
           </div>
         </div>
@@ -108,7 +133,12 @@
                 {{ product.name }}
               </option>
             </select>
-            <input type="number" v-model.number="priceModifier" step="0.1" min="0.5" max="2.0" placeholder="修正值" />
+            <input type="number"
+                   v-model.number="priceModifier"
+                   step="0.1"
+                   min="0.5"
+                   max="2.0"
+                   placeholder="修正值" />
             <button @click="applyProductPriceModifier" class="action-button">应用修正</button>
           </div>
         </div>
@@ -128,12 +158,18 @@
             <div v-if="availableHouses.length === 0" class="empty-message">
               无可用房产
             </div>
-            <div v-else v-for="house in availableHouses" :key="house.id" class="house-item">
+            <div v-else
+                 v-for="house in availableHouses"
+                 :key="house.id"
+                 class="house-item">
               <div class="house-info">
                 <div class="house-name">{{ house.name }}</div>
                 <div class="house-price">¥{{ formatNumber(house.price) }}</div>
               </div>
-              <button @click="() => { selectedHouse = house.id; buySelectedHouse(); }" class="action-button">
+              <button
+                @click="() => { selectedHouse = house.id; buySelectedHouse(); }"
+                class="action-button"
+              >
                 购买
               </button>
             </div>
@@ -180,7 +216,10 @@
             <div v-if="savedGames.length === 0" class="empty-message">
               无可用存档
             </div>
-            <div v-else v-for="save in savedGames" :key="save.id" class="save-item">
+            <div v-else
+                 v-for="save in savedGames"
+                 :key="save.id"
+                 class="save-item">
               <div class="save-info">
                 <div class="save-name">{{ save.name }}</div>
                 <div class="save-date">{{ new Date(save.date).toLocaleString() }}</div>
@@ -228,11 +267,11 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useGameStore } from '@/stores';
 import { usePlayerStore } from '@/stores/player';
-import { useMarketStore } from '@/stores/market';
 import { useInventoryActions } from '@/stores/player/inventoryActions';
 import { useEventStore } from '@/stores/events'; // 新增导入
 import { useEventActions } from '@/stores/events/eventActions'; // 新增导入
 import { formatNumber } from '@/infrastructure/utils';
+import { useGameCoreStore } from '@/stores/gameCore'; // 新增导入
 
 // 状态
 const gameStore = useGameStore();
@@ -267,7 +306,6 @@ const selectedHouse = ref(null);
 
 // 新增：事件相关状态
 const selectedEvent = ref(null);
-const eventParams = ref({});
 
 // 新增：存档相关状态
 const saveGameName = ref('快速存档');
@@ -281,7 +319,7 @@ const tabs = [
   { id: 'house', name: '房产' },
   { id: 'events', name: '事件' },
   { id: 'status', name: '状态' },
-  { id: 'save', name: '存档' },
+  { id: 'save', name: '存档' }
 ];
 
 // 计算属性
@@ -290,7 +328,7 @@ const positionStyle = computed(() => {
     left: `${posX.value}px`,
     top: `${posY.value}px`,
     width: `${width.value}px`,
-    height: isMinimized.value ? 'auto' : `${height.value}px`,
+    height: isMinimized.value ? 'auto' : `${height.value}px`
   };
 });
 
@@ -445,10 +483,6 @@ const addRandomItems = () => {
   inventoryActions.addToInventory(randomProduct, count, randomPrice);
 };
 
-const applyScenario = (scenario) => {
-  // 已删除场景系统
-};
-
 // 新增：市场操作方法
 const applyProductPriceModifier = () => {
   if (selectedProduct.value) {
@@ -485,7 +519,35 @@ const refreshMarket = () => {
 // 新增：房屋操作方法
 const buySelectedHouse = () => {
   if (selectedHouse.value) {
-    gameStore.buyHouse(selectedHouse.value);
+    // 获取选中的房屋对象
+    const house = availableHouses.value.find(h => h.id === selectedHouse.value);
+    if (!house) return;
+
+    // 获取游戏核心存储以调用结算方法
+    const gameCoreStore = useGameCoreStore();
+
+    // 直接购买房屋，不检查资金
+    // 1. 先扣减资金以满足purchaseHouse方法的要求
+    const originalMoney = gameStore.player.money;
+    if (originalMoney < house.price) {
+      // 临时增加足够的资金
+      gameStore.player.money = house.price + 1000; // 加一些额外资金防止边界情况
+    }
+
+    // 2. 使用playerStore购买房屋
+    const playerStore = usePlayerStore();
+    const success = playerStore.purchaseHouse(house);
+
+    // 3. 如果购买成功，显示结算画面
+    if (success) {
+      console.log('开发工具 - 成功购买房屋:', house.name);
+      // 触发正常的游戏结算逻辑
+      gameCoreStore.achieveVictoryWithHouse(house);
+    } else {
+      // 购买失败，可能是其他原因
+      console.error('开发工具 - 购买房屋失败');
+      alert('购买失败，请检查开发者控制台获取更多信息');
+    }
   }
 };
 

@@ -1,40 +1,42 @@
 <template>
   <div class="market">
-    <h2 class="title">{{ $t('market.title', { location: currentLocation.name }) }}</h2>
-    
+    <h2 class="title">
+      {{ $t('market.title', { location: currentLocation.name }) }}
+    </h2>
+
     <div class="market-header">
       <div class="header-row">
-      <!-- 将地点选择改为按钮组 -->
-      <div class="location-buttons">
-        <button 
-          v-for="location in locations" 
-          :key="location.id" 
-          class="location-btn"
-          :class="{ active: location.id === currentLocation.id }"
-          @click="changeLocation(location.id)"
-        >
-          {{ location.name }}
-        </button>
-      </div>
-      
+        <!-- 将地点选择改为按钮组 -->
+        <div class="location-buttons">
+          <button
+            v-for="location in locations"
+            :key="location.id"
+            class="location-btn"
+            :class="{ active: location.id === currentLocation.id }"
+            @click="changeLocation(location.id)"
+          >
+            {{ location.name }}
+          </button>
+        </div>
+
         <!-- 视图切换按钮移到右上角 -->
-      <div class="view-toggle">
-        <button 
-          :class="['view-btn', { active: viewMode === 'table' }]" 
-          @click="viewMode = 'table'"
-        >
-          <i class="icon-table"></i> 表格视图
-        </button>
-        <button 
-          :class="['view-btn', { active: viewMode === 'card' }]" 
-          @click="viewMode = 'card'"
-        >
-          <i class="icon-card"></i> 卡片视图
-        </button>
+        <div class="view-toggle">
+          <button
+            :class="['view-btn', { active: viewMode === 'table' }]"
+            @click="viewMode = 'table'"
+          >
+            <i class="icon-table" /> 表格视图
+          </button>
+          <button
+            :class="['view-btn', { active: viewMode === 'card' }]"
+            @click="viewMode = 'card'"
+          >
+            <i class="icon-card" /> 卡片视图
+          </button>
         </div>
       </div>
     </div>
-    
+
     <!-- 表格视图 -->
     <div v-if="viewMode === 'table'" class="products-container">
       <table class="products-table">
@@ -55,10 +57,12 @@
                 <span v-if="product.isSpecial" class="special-badge" title="特色商品，价格更优惠">✦</span>
               </div>
             </td>
-            <td class="price">¥{{ formatNumber(product.currentPrice) }}</td>
+            <td class="price">
+              ¥{{ formatNumber(product.currentPrice) }}
+            </td>
             <td class="trend-column">
               <div class="trend-container">
-                <price-trend-component 
+                <PriceTrendComponent
                   :trend="product.trend"
                   :percent="product.changePercent"
                 />
@@ -71,70 +75,72 @@
               <div class="action-buttons">
                 <!-- 购买按钮组 -->
                 <div class="button-group">
-                <button 
-                  class="buy-btn" 
-                  @click="openTradePanel(product)" 
-                  :disabled="!canPlayerBuy(product)"
-                >
+                  <button
+                    class="buy-btn"
+                    :disabled="!canPlayerBuy(product)"
+                    @click="openTradePanel(product)"
+                  >
                     购买
-                </button>
-                <button 
-                  class="quick-buy-btn" 
-                  @click="quickBuy(product)" 
-                  :disabled="!canPlayerBuy(product)"
-                  title="快速买入1个"
-                >
-                  +1
-                </button>
-                <button 
-                    class="quick-buy-btn-10" 
-                    @click="quickBuyMultiple(product, 10)" 
+                  </button>
+                  <button
+                    class="quick-buy-btn"
+                    :disabled="!canPlayerBuy(product)"
+                    title="快速买入1个"
+                    @click="quickBuy(product)"
+                  >
+                    +1
+                  </button>
+                  <button
+                    class="quick-buy-btn-10"
                     :disabled="!canPlayerBuy(product)"
                     title="快速买入10个"
+                    @click="quickBuyMultiple(product, 10)"
                   >
                     +10
                   </button>
                 </div>
-                
+
                 <!-- 出售按钮组 -->
                 <div v-if="canPlayerSell(product)" class="button-group">
-                  <button 
-                  class="sell-btn" 
-                  @click="openSellPanel(product)" 
-                  title="出售该物品"
-                >
+                  <button
+                    class="sell-btn"
+                    title="出售该物品"
+                    @click="openSellPanel(product)"
+                  >
                     出售
-                </button>
-                <button 
-                  class="quick-sell-btn" 
-                  @click="quickSell(product)" 
-                  title="快速卖出1个"
-                >
-                  -1
-                </button>
-                  <button 
-                    class="quick-sell-btn-10" 
-                    @click="quickSellMultiple(product, 10)" 
+                  </button>
+                  <button
+                    class="quick-sell-btn"
+                    title="快速卖出1个"
+                    @click="quickSell(product)"
+                  >
+                    -1
+                  </button>
+                  <button
+                    class="quick-sell-btn-10"
                     title="快速卖出10个"
+                    @click="quickSellMultiple(product, 10)"
                   >
                     -10
-                </button>
+                  </button>
                 </div>
               </div>
             </td>
           </tr>
           <tr v-if="availableProducts.length === 0">
-            <td colspan="5" class="no-products">{{ $t('market.noProducts') }}</td>
+            <td colspan="5" class="no-products">
+              {{ $t('market.noProducts') }}
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
-    
+
     <!-- 卡片视图 -->
     <div v-else class="products-grid">
-      <div 
-        v-for="product in availableProducts" 
-        :key="product.id" 
+      <div
+        v-for="product in availableProducts"
+        :key="product.id"
         class="product-card"
         :class="{'special-product': product.isSpecial}"
       >
@@ -144,13 +150,15 @@
             <span v-if="product.isSpecial" class="special-badge" title="特色商品，价格更优惠">✦</span>
           </h3>
         </div>
-        
+
         <div class="product-card-body">
           <div class="price-section">
-            <div class="current-price">¥{{ formatNumber(product.currentPrice) }}</div>
+            <div class="current-price">
+              ¥{{ formatNumber(product.currentPrice) }}
+            </div>
             <div class="trend-price-change">
-              <price-trend-component 
-                :trend="product.trend" 
+              <PriceTrendComponent
+                :trend="product.trend"
                 :percent="product.changePercent"
               />
               <span class="card-price-change" :class="getPriceChangeClass(product.changePercent)">
@@ -158,96 +166,96 @@
               </span>
             </div>
           </div>
-          
-          <mini-price-chart 
+
+          <MiniPriceChart
             v-if="getPriceHistory(product.id).length > 1"
-            :history="getPriceHistory(product.id)" 
+            :history="getPriceHistory(product.id)"
             :height="40"
           />
-          
+
           <div class="product-actions">
             <!-- 购买和出售按钮在同一行 -->
             <div class="action-row">
               <div class="button-group">
-            <button 
-              class="buy-btn" 
-              @click="openTradePanel(product)" 
-              :disabled="!canPlayerBuy(product)"
-            >
+                <button
+                  class="buy-btn"
+                  :disabled="!canPlayerBuy(product)"
+                  @click="openTradePanel(product)"
+                >
                   购买
-            </button>
-            <button 
-              class="quick-buy-btn" 
-              @click="quickBuy(product)" 
-              :disabled="!canPlayerBuy(product)"
-              title="快速买入1个"
-            >
-              +1
-            </button>
-            <button 
-                  class="quick-buy-btn-10" 
-                  @click="quickBuyMultiple(product, 10)" 
+                </button>
+                <button
+                  class="quick-buy-btn"
+                  :disabled="!canPlayerBuy(product)"
+                  title="快速买入1个"
+                  @click="quickBuy(product)"
+                >
+                  +1
+                </button>
+                <button
+                  class="quick-buy-btn-10"
                   :disabled="!canPlayerBuy(product)"
                   title="快速买入10个"
+                  @click="quickBuyMultiple(product, 10)"
                 >
                   +10
                 </button>
               </div>
-              
+
               <div v-if="canPlayerSell(product)" class="button-group">
-                <button 
-              class="sell-btn" 
-              @click="openSellPanel(product)" 
-              title="出售该物品"
-            >
+                <button
+                  class="sell-btn"
+                  title="出售该物品"
+                  @click="openSellPanel(product)"
+                >
                   出售
-            </button>
-            <button 
-              class="quick-sell-btn" 
-              @click="quickSell(product)" 
-              title="快速卖出1个"
-            >
-              -1
-            </button>
-                <button 
-                  class="quick-sell-btn-10" 
-                  @click="quickSellMultiple(product, 10)" 
+                </button>
+                <button
+                  class="quick-sell-btn"
+                  title="快速卖出1个"
+                  @click="quickSell(product)"
+                >
+                  -1
+                </button>
+                <button
+                  class="quick-sell-btn-10"
                   title="快速卖出10个"
+                  @click="quickSellMultiple(product, 10)"
                 >
                   -10
-            </button>
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
+
       <div v-if="availableProducts.length === 0" class="no-products-card">
         {{ $t('market.noProducts') }}
       </div>
     </div>
-    
+
     <!-- 增强交易面板 -->
     <transition name="modal" appear>
-    <div v-if="showTradePanel" class="modal-backdrop" @click.self="closeTradePanel">
-      <div class="modal-container">
-        <EnhancedTradePanel 
-          :selected-product="selectedProduct"
-          @close="closeTradePanel"
-        />
+      <div v-if="showTradePanel" class="modal-backdrop" @click.self="closeTradePanel">
+        <div class="modal-container">
+          <EnhancedTradePanel
+            :selected-product="selectedProduct"
+            @close="closeTradePanel"
+          />
+        </div>
       </div>
-    </div>
     </transition>
-    
+
     <!-- 交易成功提示 -->
     <transition name="fade">
-    <div v-if="showTransactionToast" class="transaction-toast" :class="transactionToastClass">
-      <div class="toast-content">
-        <span class="toast-icon">{{ transactionToastIcon }}</span>
-        <span class="toast-message">{{ transactionToastMessage }}</span>
+      <div v-if="showTransactionToast" class="transaction-toast" :class="transactionToastClass">
+        <div class="toast-content">
+          <span class="toast-icon">{{ transactionToastIcon }}</span>
+          <span class="toast-message">{{ transactionToastMessage }}</span>
+        </div>
+        <div class="toast-progress-bar" />
       </div>
-        <div class="toast-progress-bar"></div>
-    </div>
     </transition>
   </div>
 </template>
@@ -296,10 +304,10 @@ const changeLocation = (locationId) => {
   if (locationId && locationId !== currentLocation.value?.id) {
     // 先进入下一周
     gameCoreStore.advanceWeek();
-    
+
     // 然后切换地点
     gameStore.changeLocation(locationId);
-    
+
     // 显示提示消息
     const newLocation = locations.value.find(loc => loc.id === locationId);
     if (newLocation) {
@@ -307,7 +315,7 @@ const changeLocation = (locationId) => {
       transactionToastClass.value = 'location-change';
       transactionToastIcon.value = '🚶';
       showTransactionToast.value = true;
-      
+
       // 3秒后自动隐藏提示
       setTimeout(() => {
         showTransactionToast.value = false;
@@ -319,20 +327,20 @@ const changeLocation = (locationId) => {
 // 判断玩家是否可以购买商品
 const canPlayerBuy = (product) => {
   if (!product) return false;
-  
+
   // 检查玩家资金是否足够
   if (product.currentPrice > player.value.money) return false;
-  
+
   // 检查玩家背包容量是否足够
   if (player.value.inventoryUsed >= player.value.capacity) return false;
-  
+
   return true;
 };
 
 // 判断玩家是否可以出售商品
 const canPlayerSell = (product) => {
   if (!product) return false;
-  
+
   // 检查玩家是否拥有该商品
   const playerInventory = player.value.inventory || [];
   return playerInventory.some(item => item.productId === product.id && item.quantity > 0);
@@ -375,45 +383,45 @@ const getPriceHistory = (productId) => {
 // 快速购买1个
 const quickBuy = (product) => {
   if (!canPlayerBuy(product)) return;
-  
+
   try {
     // 调用游戏商店的购买方法，传递productId而不是整个product对象
     const result = gameStore.buyProduct(product.id, 1);
-    
+
     if (result.success) {
       // 显示成功提示，带有产品图标和名称
       transactionToastMessage.value = `已购买 1 个 ${product.name}`;
       transactionToastClass.value = 'purchase-success';
       transactionToastIcon.value = '✓';
-      
+
       // 重置之前的提示（如果存在）
       showTransactionToast.value = false;
-      
+
       // 延迟一帧后显示，确保动画正确播放
       requestAnimationFrame(() => {
-      showTransactionToast.value = true;
-      
+        showTransactionToast.value = true;
+
         // 弹窗将通过CSS动画自动淡出
         // 但我们仍需在动画结束后隐藏元素
-      setTimeout(() => {
-        showTransactionToast.value = false;
-      }, 3000);
+        setTimeout(() => {
+          showTransactionToast.value = false;
+        }, 3000);
       });
     } else {
       // 显示失败提示
       transactionToastMessage.value = result.message || '购买失败';
       transactionToastClass.value = 'purchase-failed';
       transactionToastIcon.value = '✗';
-      
+
       // 重置之前的提示（如果存在）
       showTransactionToast.value = false;
-      
+
       requestAnimationFrame(() => {
-      showTransactionToast.value = true;
-      
-      setTimeout(() => {
-        showTransactionToast.value = false;
-      }, 3000);
+        showTransactionToast.value = true;
+
+        setTimeout(() => {
+          showTransactionToast.value = false;
+        }, 3000);
       });
     }
   } catch (error) {
@@ -424,24 +432,24 @@ const quickBuy = (product) => {
 // 快速购买多个
 const quickBuyMultiple = (product, quantity) => {
   if (!canPlayerBuy(product)) return;
-  
+
   try {
     // 调用游戏商店的购买方法
     const result = gameStore.buyProduct(product.id, quantity);
-    
+
     if (result.success) {
       // 显示成功提示
       transactionToastMessage.value = `已购买 ${quantity} 个 ${product.name}`;
       transactionToastClass.value = 'purchase-success';
       transactionToastIcon.value = '✓';
-      
+
       // 重置之前的提示（如果存在）
       showTransactionToast.value = false;
-      
+
       // 延迟一帧后显示，确保动画正确播放
       requestAnimationFrame(() => {
         showTransactionToast.value = true;
-        
+
         // 弹窗将通过CSS动画自动淡出
         setTimeout(() => {
           showTransactionToast.value = false;
@@ -452,13 +460,13 @@ const quickBuyMultiple = (product, quantity) => {
       transactionToastMessage.value = result.message || '购买失败';
       transactionToastClass.value = 'purchase-failed';
       transactionToastIcon.value = '✗';
-      
+
       // 重置之前的提示（如果存在）
       showTransactionToast.value = false;
-      
+
       requestAnimationFrame(() => {
         showTransactionToast.value = true;
-        
+
         setTimeout(() => {
           showTransactionToast.value = false;
         }, 3000);
@@ -472,98 +480,37 @@ const quickBuyMultiple = (product, quantity) => {
 // 快速出售1个
 const quickSell = (product) => {
   if (!canPlayerSell(product)) return;
-  
+
   try {
     // 调用游戏商店的出售方法
     const result = gameStore.sellProduct(product.id, 1);
-    
+
     if (result.success) {
       // 显示成功提示，包含收入金额和利润信息
       let message = `已出售 1 个 ${product.name}`;
-      
-      if (result.income) {
-        message += `，获得 ${formatNumber(result.income)} 元`;
-      }
-      
-      if (result.profit) {
-        const profitText = result.profit > 0 
-          ? `，盈利 ${formatNumber(result.profit)}` 
-          : `，亏损 ${formatNumber(Math.abs(result.profit))}`;
-        message += profitText;
-      }
-      
-      transactionToastMessage.value = message;
-      transactionToastClass.value = 'sale-success';
-      transactionToastIcon.value = '💰';
-      
-      // 重置之前的提示（如果存在）
-      showTransactionToast.value = false;
-      
-      // 延迟一帧后显示，确保动画正确播放
-      requestAnimationFrame(() => {
-      showTransactionToast.value = true;
-      
-        // 弹窗将通过CSS动画自动淡出
-      setTimeout(() => {
-        showTransactionToast.value = false;
-      }, 3000);
-      });
-    } else {
-      // 显示失败提示
-      transactionToastMessage.value = result.message || '出售失败';
-      transactionToastClass.value = 'purchase-failed'; // 使用相同的失败样式
-      transactionToastIcon.value = '✗';
-      
-      // 重置之前的提示（如果存在）
-      showTransactionToast.value = false;
-      
-      requestAnimationFrame(() => {
-      showTransactionToast.value = true;
-      
-      setTimeout(() => {
-        showTransactionToast.value = false;
-      }, 3000);
-      });
-    }
-  } catch (error) {
-    console.error('快速出售出错:', error);
-  }
-};
 
-// 快速出售多个
-const quickSellMultiple = (product, quantity) => {
-  if (!canPlayerSell(product)) return;
-  
-  try {
-    // 调用游戏商店的出售方法
-    const result = gameStore.sellProduct(product.id, quantity);
-    
-    if (result.success) {
-      // 显示成功提示，包含收入金额和利润信息
-      let message = `已出售 ${quantity} 个 ${product.name}`;
-      
       if (result.income) {
         message += `，获得 ${formatNumber(result.income)} 元`;
       }
-      
+
       if (result.profit) {
-        const profitText = result.profit > 0 
-          ? `，盈利 ${formatNumber(result.profit)}` 
+        const profitText = result.profit > 0
+          ? `，盈利 ${formatNumber(result.profit)}`
           : `，亏损 ${formatNumber(Math.abs(result.profit))}`;
         message += profitText;
       }
-      
+
       transactionToastMessage.value = message;
       transactionToastClass.value = 'sale-success';
       transactionToastIcon.value = '💰';
-      
+
       // 重置之前的提示（如果存在）
       showTransactionToast.value = false;
-      
+
       // 延迟一帧后显示，确保动画正确播放
       requestAnimationFrame(() => {
         showTransactionToast.value = true;
-        
+
         // 弹窗将通过CSS动画自动淡出
         setTimeout(() => {
           showTransactionToast.value = false;
@@ -574,13 +521,74 @@ const quickSellMultiple = (product, quantity) => {
       transactionToastMessage.value = result.message || '出售失败';
       transactionToastClass.value = 'purchase-failed'; // 使用相同的失败样式
       transactionToastIcon.value = '✗';
-      
+
       // 重置之前的提示（如果存在）
       showTransactionToast.value = false;
-      
+
       requestAnimationFrame(() => {
         showTransactionToast.value = true;
-        
+
+        setTimeout(() => {
+          showTransactionToast.value = false;
+        }, 3000);
+      });
+    }
+  } catch (error) {
+    console.error('快速出售出错:', error);
+  }
+};
+
+// 快速出售多个
+const quickSellMultiple = (product, quantity) => {
+  if (!canPlayerSell(product)) return;
+
+  try {
+    // 调用游戏商店的出售方法
+    const result = gameStore.sellProduct(product.id, quantity);
+
+    if (result.success) {
+      // 显示成功提示，包含收入金额和利润信息
+      let message = `已出售 ${quantity} 个 ${product.name}`;
+
+      if (result.income) {
+        message += `，获得 ${formatNumber(result.income)} 元`;
+      }
+
+      if (result.profit) {
+        const profitText = result.profit > 0
+          ? `，盈利 ${formatNumber(result.profit)}`
+          : `，亏损 ${formatNumber(Math.abs(result.profit))}`;
+        message += profitText;
+      }
+
+      transactionToastMessage.value = message;
+      transactionToastClass.value = 'sale-success';
+      transactionToastIcon.value = '💰';
+
+      // 重置之前的提示（如果存在）
+      showTransactionToast.value = false;
+
+      // 延迟一帧后显示，确保动画正确播放
+      requestAnimationFrame(() => {
+        showTransactionToast.value = true;
+
+        // 弹窗将通过CSS动画自动淡出
+        setTimeout(() => {
+          showTransactionToast.value = false;
+        }, 3000);
+      });
+    } else {
+      // 显示失败提示
+      transactionToastMessage.value = result.message || '出售失败';
+      transactionToastClass.value = 'purchase-failed'; // 使用相同的失败样式
+      transactionToastIcon.value = '✗';
+
+      // 重置之前的提示（如果存在）
+      showTransactionToast.value = false;
+
+      requestAnimationFrame(() => {
+        showTransactionToast.value = true;
+
         setTimeout(() => {
           showTransactionToast.value = false;
         }, 3000);
@@ -1391,4 +1399,4 @@ const quickSellMultiple = (product, quantity) => {
   background-color: rgba(243, 156, 18, 0.2);
   color: #f39c12;
 }
-</style> 
+</style>

@@ -280,23 +280,21 @@ export const useGameCoreStore = defineStore('gameCore', {
      * 检查游戏结束条件
      */
     checkGameEnd() {
-      const playerStore = usePlayerStore();
-      const netWorth = playerStore.netWorth;
-      const money = playerStore.money;
-      const bankDeposit = playerStore.bankDeposit;
-      const debt = playerStore.debt;
+      // 如果游戏已经结束，不再检查
+      if (this.gameOver) return;
 
-      // 周数限制检查 - 仅对经典模式适用
-      if (this.currentWeek >= this.maxWeeks && this.maxWeeks === 52) {
-        this.endGame(this.victoryAchieved ? 'victoryTimeLimit' : 'timeLimit');
+      // 检查是否达到52周
+      if (this.currentWeek >= this.maxWeeks) {
+        // 游戏时间限制到达
+        this.endGameWithTimeLimit();
         return;
       }
 
-      // 胜利条件：购买了最高级别的房子
-      // 不再直接结束游戏，而是标记胜利状态
-      if (playerStore.hasHighestHouse && !this.victoryAchieved) {
-        this.victoryAchieved = true;
-        this.addNotification('success', '恭喜！您已经购买了豪宅，达成了游戏主要目标！您可以选择继续游戏，争取更高分数，或者结束游戏查看您的成绩。');
+      const playerStore = usePlayerStore();
+      const netWorth = playerStore.netWorth;
+
+      // 资产达到胜利条件 - 100万净资产
+      if (netWorth >= 1000000 && !this.victoryAchieved) {
         // 触发胜利成就，但不结束游戏
         this.achieveVictory();
         return;
@@ -310,6 +308,100 @@ export const useGameCoreStore = defineStore('gameCore', {
       if (this.currentWeek > 1 && netWorth < 0 && !this.hasAffordableProducts(true)) {
         this.endGame('bankruptcy');
         return;
+      }
+    },
+
+    /**
+     * 游戏时间限制达到时结束游戏
+     */
+    endGameWithTimeLimit() {
+      const playerStore = usePlayerStore();
+      const hasHouses = playerStore.purchasedHouses && playerStore.purchasedHouses.length > 0;
+
+      console.log('游戏时间限制达到 - endGameWithTimeLimit', {
+        victoryAchieved: this.victoryAchieved,
+        hasHouses,
+        purchasedHouses: playerStore.purchasedHouses?.length,
+        netWorth: playerStore.netWorth
+      });
+
+      // 如果玩家已经购买了房产，就是完美胜利
+      if (this.victoryAchieved || hasHouses) {
+        // 完美胜利 - 购买房产并坚持到游戏结束
+
+        // 直接在这里计算得分，避免endGame函数中可能的问题
+        const finalScore = this.calculateGameScore('victoryTimeLimit');
+        const scoreRank = this.calculateRank(finalScore);
+        const scoreDetails = this.calculateScoreDetails('victoryTimeLimit');
+
+        console.log('时间限制胜利 - 直接计算得分', {
+          finalScore,
+          rank: scoreRank
+        });
+
+        // 完美胜利结果对象
+        this.gameResult = {
+          reason: 'victoryTimeLimit',
+          week: this.currentWeek,
+          weeksPassed: this.currentWeek,
+          score: finalScore, // 直接设置得分
+          achievementName: null,
+          victoryAchieved: true,
+          firstVictoryWeek: this.gameResult?.firstVictoryWeek || this.currentWeek,
+          firstVictoryHouse: this.gameResult?.firstVictoryHouse || null,
+          finalMoney: playerStore.money,
+          finalAssets: playerStore.netWorth,
+          debt: playerStore.debt,
+          // 确保包含交易统计数据
+          tradeStats: {
+            totalTrades: playerStore.statistics?.transactionCount || 0,
+            totalProfit: playerStore.statistics?.totalProfit || 0,
+            averageProfit: playerStore.statistics?.transactionCount > 0
+              ? (playerStore.statistics?.totalProfit || 0) / playerStore.statistics.transactionCount
+              : 0
+          },
+          scoreDetails: {
+            score: finalScore,
+            rank: scoreRank,
+            details: scoreDetails
+          },
+          endReason: 'victoryTimeLimit'
+        };
+
+        // 标记游戏结束
+        this.gameOver = true;
+
+        // 更新房产信息，确保所有房产数据都会在结算时显示
+        if (playerStore.purchasedHouses.length > 0) {
+          // 添加多房产信息
+          this.gameResult.allPurchasedHouses = playerStore.purchasedHouses;
+          this.gameResult.houseCount = playerStore.purchasedHouses.length;
+
+          // 记录最贵和最高级别的房产
+          let mostExpensiveHouse = playerStore.purchasedHouses[0];
+          let highestLevelHouse = playerStore.purchasedHouses[0];
+
+          playerStore.purchasedHouses.forEach(house => {
+            if (house.purchasePrice > mostExpensiveHouse.purchasePrice) {
+              mostExpensiveHouse = house;
+            }
+            if (house.level > highestLevelHouse.level ||
+               (house.level === highestLevelHouse.level && house.purchasePrice > highestLevelHouse.purchasePrice)) {
+              highestLevelHouse = house;
+            }
+          });
+
+          this.gameResult.mostExpensiveHouse = mostExpensiveHouse;
+          this.gameResult.highestLevelHouse = highestLevelHouse;
+        }
+
+        console.log('时间限制胜利 - 游戏结果对象已创建', {
+          score: this.gameResult.score,
+          scoreDetails: this.gameResult.scoreDetails
+        });
+      } else {
+        // 标准结束 - 未能购买房产
+        this.endGame('timeLimit');
       }
     },
 
@@ -344,26 +436,47 @@ export const useGameCoreStore = defineStore('gameCore', {
       this.victoryAchieved = true;
 
       const playerStore = usePlayerStore();
+      console.log('购房胜利 - 开始计算结果', {
+        houseCount: playerStore.purchasedHouses.length,
+        netWorth: playerStore.netWorth
+      });
 
       // 确保房屋数据存在并设置默认图片路径
-      if (house && !house.image) {
-        house.image = './resources/assets/images/house_1.jpeg';
+      if (house) {
+        if (!house.image) {
+          house.image = '/resources/assets/images/house_1.jpeg';
+        } else if (house.image.startsWith('./')) {
+          house.image = house.image.replace('./', '/');
+        } else if (!house.image.startsWith('/')) {
+          house.image = `/${house.image}`;
+        }
       }
 
-      // 将房屋添加到玩家已购房屋列表（如果还没有添加的话）
-      const houseAlreadyAdded = playerStore.purchasedHouses.some(h => h.id === house.id);
-      if (!houseAlreadyAdded && house) {
-        playerStore.purchasedHouses.push({
-          houseId: house.id,
-          id: house.id,
-          name: house.name,
-          description: house.description || '',
-          price: house.price,
-          purchasePrice: house.price,
-          purchaseWeek: this.currentWeek,
-          level: house.level || 1,
-          image: house.image || './resources/assets/images/house_1.jpeg'
-        });
+      // 移除重复添加房屋的代码，因为playerStore.purchaseHouse已经添加了房屋
+      // 只检查房屋是否已添加，而不再重复添加
+      const houseExists = playerStore.purchasedHouses.some(h => h.houseId === house.id || h.id === house.id);
+
+      if (!houseExists) {
+        console.warn('房屋购买记录不一致，这种情况不应该出现');
+        // 如果发现不一致，记录日志但不再重复添加
+      }
+
+      // 计算得分
+      const finalScore = this.calculateGameScore('houseVictory');
+      const scoreRank = this.calculateRank(finalScore);
+      const scoreDetails = this.calculateScoreDetails('houseVictory');
+
+      console.log('购房胜利 - 计算得分结果', {
+        finalScore,
+        scoreRank,
+        details: scoreDetails
+      });
+
+      // 确保房屋图片路径正确
+      const safeHouse = { ...house };
+      if (!safeHouse.image || safeHouse.image.includes('NaN')) {
+        console.warn('房屋图片路径无效，使用默认值');
+        safeHouse.image = '/resources/assets/images/house_1.jpeg';
       }
 
       // 准备游戏结果数据，包含完整的统计信息
@@ -371,15 +484,15 @@ export const useGameCoreStore = defineStore('gameCore', {
         reason: 'houseVictory', // 自定义的胜利原因：购买房屋
         week: this.currentWeek,
         weeksPassed: this.currentWeek,
-        score: this.calculateGameScore('victory'),
+        score: finalScore,
         victoryAchieved: true,
         firstVictoryWeek: this.currentWeek,
-        firstVictoryHouse: house,
+        firstVictoryHouse: safeHouse,
         canContinue: true, // 标记可继续游戏
         finalMoney: playerStore.money,
         finalAssets: playerStore.netWorth,
         debt: playerStore.debt,
-        purchasedHouse: house,
+        purchasedHouse: safeHouse,
         // 确保包含交易统计数据
         tradeStats: {
           totalTrades: playerStore.statistics?.transactionCount || 0,
@@ -389,21 +502,20 @@ export const useGameCoreStore = defineStore('gameCore', {
             : 0
         },
         scoreDetails: {
-          score: this.calculateGameScore('victory'),
-          rank: this.calculateRank(this.calculateGameScore('victory')),
-          details: this.calculateScoreDetails('victory')
+          score: finalScore,
+          rank: scoreRank,
+          details: scoreDetails
         },
-        endReason: 'houseVictory',
-        data: {
-          house: {
-            ...house,
-            image: house.image || './resources/assets/images/house_1.jpeg'
-          }
-        }
+        endReason: 'houseVictory'
       };
 
-      // 暂时设置游戏结束标志，显示通关页面
+      // 设置游戏为结束状态，但可继续游戏
       this.gameOver = true;
+
+      console.log('购房胜利 - 游戏结果对象创建完成', {
+        score: this.gameResult.score,
+        scoreDetails: this.gameResult.scoreDetails
+      });
     },
 
     /**
@@ -434,13 +546,30 @@ export const useGameCoreStore = defineStore('gameCore', {
       }
 
       const playerStore = usePlayerStore();
+      console.log('游戏结束 - endGame', {
+        reason,
+        week: this.currentWeek,
+        netWorth: playerStore.netWorth,
+        houseCount: playerStore.purchasedHouses?.length || 0
+      });
+
+      // 预先计算游戏得分，避免重复计算
+      const gameScore = this.calculateGameScore(reason);
+      const scoreRank = this.calculateRank(gameScore);
+      const scoreDetails = this.calculateScoreDetails(reason);
+
+      console.log('endGame得分计算完成', {
+        score: gameScore,
+        rank: scoreRank,
+        details: scoreDetails
+      });
 
       // 构建完整的游戏结果对象，包含所有可能需要的统计数据
       this.gameResult = {
         reason,
         week: this.currentWeek,
         weeksPassed: this.currentWeek,
-        score: this.calculateGameScore(reason),
+        score: gameScore,
         achievementName,
         victoryAchieved: this.victoryAchieved,
         firstVictoryWeek: this.gameResult?.firstVictoryWeek || null,
@@ -456,11 +585,10 @@ export const useGameCoreStore = defineStore('gameCore', {
             ? (playerStore.statistics?.totalProfit || 0) / playerStore.statistics.transactionCount
             : 0
         },
-        // 添加其他可能需要的统计数据
         scoreDetails: {
-          score: this.calculateGameScore(reason),
-          rank: this.calculateRank(this.calculateGameScore(reason)),
-          details: this.calculateScoreDetails(reason)
+          score: gameScore,
+          rank: scoreRank,
+          details: scoreDetails
         },
         endReason: reason,
         data: {
@@ -468,6 +596,11 @@ export const useGameCoreStore = defineStore('gameCore', {
           firstVictoryWeek: this.gameResult?.firstVictoryWeek || this.currentWeek
         }
       };
+
+      console.log('游戏结果对象已创建', {
+        score: this.gameResult.score,
+        scoreInDetails: this.gameResult.scoreDetails.score
+      });
     },
 
     /**
@@ -477,37 +610,91 @@ export const useGameCoreStore = defineStore('gameCore', {
      */
     calculateGameScore(endReason) {
       const playerStore = usePlayerStore();
-      const baseScore = playerStore.netWorth / 1000;
 
-      // 根据结束原因调整分数
-      let multiplier = 1;
-      switch (endReason) {
-        case 'victory':
-          multiplier = 1.5;
-          break;
-        case 'victoryTimeLimit':
-          // 达成胜利并玩到最后，给予最高奖励
-          multiplier = 2.0;
-          break;
-        case 'bankruptcy':
-          multiplier = 0.5;
-          break;
-        case 'achievement':
-          multiplier = 1.2;
-          break;
+      try {
+        // 记录输入数据
+        console.log('计算游戏得分 - 原始数据', {
+          netWorth: playerStore.netWorth,
+          money: playerStore.money,
+          debt: playerStore.debt,
+          week: this.currentWeek,
+          endReason,
+          purchasedHouses: playerStore.purchasedHouses?.length || 0
+        });
+
+        // 基础分数 = 净资产 / 1000
+        // 确保净资产是有效数字，否则使用默认值
+        let netWorth = playerStore.netWorth;
+        if (isNaN(netWorth) || netWorth === undefined) {
+          console.warn('计算游戏得分 - 净资产无效，使用备用计算');
+          // 使用备用计算：钱 - 债务
+          netWorth = (playerStore.money || 0) - (playerStore.debt || 0);
+        }
+
+        // 确保不为0或负数
+        netWorth = Math.max(1000, netWorth);
+        const baseScore = netWorth / 1000;
+
+        // 根据结束原因调整分数
+        let multiplier = 1;
+        switch (endReason) {
+          case 'victory':
+          case 'houseVictory':
+            multiplier = 1.5;
+            break;
+          case 'victoryTimeLimit':
+            // 达成胜利并玩到最后，给予最高奖励
+            multiplier = 2.0;
+            break;
+          case 'bankruptcy':
+            multiplier = 0.5;
+            break;
+          case 'achievement':
+            multiplier = 1.2;
+            break;
+          default:
+            multiplier = 1.0;
+            break;
+        }
+
+        // 根据完成速度调整分数
+        let speedMultiplier = 1;
+        const isVictory = endReason.includes('victory');
+
+        if (isVictory) {
+          // 速度系数：越早越高
+          const currentWeek = Math.max(1, this.currentWeek);
+          speedMultiplier = Math.max(0.5, 1.0 + (10.0 / currentWeek));
+        }
+
+        // 根据拥有的房产数量调整
+        let houseBonus = 1;
+        const houseCount = playerStore.purchasedHouses?.length || 0;
+
+        if (houseCount > 0) {
+          houseBonus = 1 + (houseCount * 0.2); // 每套房产增加20%分数
+        }
+
+        // 计算总分并取整
+        let totalScore = baseScore * multiplier * speedMultiplier * houseBonus;
+
+        // 确保得分至少为1
+        totalScore = Math.max(1, Math.floor(totalScore));
+
+        console.log('计算游戏得分 - 最终结果', {
+          baseScore,
+          multiplier,
+          speedMultiplier,
+          houseBonus,
+          totalScore
+        });
+
+        return totalScore;
+      } catch (error) {
+        console.error('计算游戏得分时发生错误:', error);
+        // 发生错误时返回默认分数
+        return Math.max(1, Math.floor(playerStore.netWorth / 1000));
       }
-
-      // 根据完成速度调整分数
-      let speedMultiplier = 1;
-
-      // 如果是胜利结局，使用首次达成胜利的周数计算速度加成
-      if ((endReason === 'victory' || endReason === 'victoryTimeLimit') && this.gameResult?.firstVictoryWeek) {
-        speedMultiplier = this.maxWeeks / Math.max(1, this.gameResult.firstVictoryWeek);
-      } else {
-        speedMultiplier = this.maxWeeks / Math.max(1, this.currentWeek);
-      }
-
-      return Math.round(baseScore * multiplier * speedMultiplier);
     },
 
     /**
@@ -529,35 +716,147 @@ export const useGameCoreStore = defineStore('gameCore', {
      * @returns {Object} 得分详情
      */
     calculateScoreDetails(endReason) {
-      const playerStore = usePlayerStore();
+      try {
+        const playerStore = usePlayerStore();
+        console.log('计算得分明细 - 开始', {
+          endReason,
+          playerNetWorth: playerStore.netWorth
+        });
 
-      // 资产得分 - 基于净资产
-      const assetsScore = playerStore.netWorth / 800;
+        // 资产得分 - 基于净资产
+        let assetsScore = 0;
+        try {
+          assetsScore = Math.max(0, Math.floor(playerStore.netWorth / 800));
+          console.log('资产得分计算', { netWorth: playerStore.netWorth, assetsScore });
+        } catch (err) {
+          console.error('资产得分计算错误:', err);
+          assetsScore = 100; // 默认值
+        }
 
-      // 时间效率得分 - 基于完成时间
-      let timeScore = 0;
-      if ((endReason === 'victory' || endReason === 'victoryTimeLimit') && this.gameResult?.firstVictoryWeek) {
-        timeScore = Math.round(500000 / Math.max(1, this.gameResult.firstVictoryWeek));
+        // 时间效率得分 - 基于完成时间
+        let timeScore = 0;
+        try {
+          // 任何胜利结局都给予时间效率得分
+          if (endReason.includes('victory')) {
+            const currentWeek = Math.max(1, this.currentWeek);
+            timeScore = Math.round(500000 / currentWeek);
+            console.log('时间效率得分计算', { week: currentWeek, timeScore });
+          }
+        } catch (err) {
+          console.error('时间效率得分计算错误:', err);
+          timeScore = 50; // 默认值
+        }
+
+        // 房产得分 - 基于房产价值和等级
+        let houseScore = 0;
+        try {
+          if (playerStore.purchasedHouses && playerStore.purchasedHouses.length > 0) {
+            let totalHouseValue = 0;
+            // 遍历所有房产，累计总价值
+            playerStore.purchasedHouses.forEach(house => {
+              // 使用购买价格或默认价格
+              const housePrice = house.purchasePrice || house.price || 0;
+              totalHouseValue += housePrice;
+            });
+
+            // 计算房产得分
+            houseScore = Math.floor(totalHouseValue / 5000);
+
+            // 多房产奖励
+            if (playerStore.purchasedHouses.length > 1) {
+              houseScore *= (1 + (playerStore.purchasedHouses.length - 1) * 0.2);
+            }
+
+            console.log('房产得分计算', {
+              houseCount: playerStore.purchasedHouses.length,
+              totalHouseValue,
+              houseScore
+            });
+          }
+        } catch (err) {
+          console.error('房产得分计算错误:', err);
+          houseScore = 100; // 默认值
+        }
+
+        // 交易得分 - 基于交易次数和利润
+        let tradeScore = 0;
+        try {
+          const totalProfit = playerStore.statistics?.totalProfit || 0;
+          const tradeCount = playerStore.statistics?.transactionCount || 0;
+
+          if (tradeCount > 0) {
+            // 基本交易得分
+            tradeScore = Math.floor(totalProfit / 1000);
+
+            // 交易次数加成
+            if (tradeCount > 10) {
+              tradeScore *= (1 + (tradeCount - 10) * 0.02);
+            }
+          }
+
+          console.log('交易得分计算', {
+            tradeCount,
+            totalProfit,
+            tradeScore
+          });
+        } catch (err) {
+          console.error('交易得分计算错误:', err);
+          tradeScore = 50; // 默认值
+        }
+
+        // 银行管理得分 - 基于存款利息
+        let bankScore = 0;
+        try {
+          const totalInterest = playerStore.statistics?.totalInterestEarned || 0;
+          // 确保存在交易利润数据
+          if (totalInterest > 0) {
+            bankScore = Math.floor(totalInterest / 500);
+          } else {
+            // 提供最低分数
+            bankScore = Math.floor(playerStore.bankDeposit / 10000);
+          }
+
+          console.log('银行得分计算', {
+            totalInterest,
+            bankDeposit: playerStore.bankDeposit,
+            bankScore
+          });
+        } catch (err) {
+          console.error('银行得分计算错误:', err);
+          bankScore = 10; // 默认值
+        }
+
+        // 总得分
+        const totalScore = assetsScore + timeScore + houseScore + tradeScore + bankScore;
+        console.log('得分明细总结', {
+          assetsScore,
+          timeScore,
+          houseScore,
+          tradeScore,
+          bankScore,
+          totalScore
+        });
+
+        return {
+          assetsScore,
+          timeScore,
+          houseScore,
+          tradeScore,
+          bankScore,
+          totalScore
+        };
+      } catch (error) {
+        console.error('计算得分明细时出错:', error);
+        // 返回默认得分明细
+        return {
+          assetsScore: 100,
+          timeScore: 50,
+          houseScore: 100,
+          tradeScore: 50,
+          bankScore: 10,
+          totalScore: 310
+        };
       }
-
-      // 房产得分 - 基于房产价值和等级
-      const houseScore = playerStore.purchasedHouses.reduce((score, house) => {
-        return score + (house.purchasePrice / 500) * (house.level || 1);
-      }, 0);
-
-      // 交易效率得分
-      const tradeScore = (playerStore.statistics?.totalProfit || 0) / 500;
-
-      // 事件处理得分 - 这部分可能需要其他系统支持
-      const eventScore = 0;
-
-      return {
-        assetsScore: Math.round(assetsScore),
-        timeScore: Math.round(timeScore),
-        houseScore: Math.round(houseScore),
-        tradeScore: Math.round(tradeScore),
-        eventScore: Math.round(eventScore)
-      };
     },
 
     /**
