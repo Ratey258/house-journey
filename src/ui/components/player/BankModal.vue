@@ -13,7 +13,7 @@
 
     <div class="modal-content">
       <!-- 移除这里的通知组件 -->
-      
+
       <div class="modal-header bank-header">
         <div class="modal-title-container">
           <span class="bank-icon">🏦</span>
@@ -325,7 +325,7 @@ const notification = ref({
 // 显示通知
 const showNotification = (type, message, duration = 2500) => {
   console.log('显示通知:', type, message); // 调试日志
-  
+
   // 立即显示通知
   notification.value = {
     show: true,
@@ -333,12 +333,12 @@ const showNotification = (type, message, duration = 2500) => {
     message,
     timeout: null
   };
-  
+
   // 清除任何现有的超时
   if (notification.value.timeout) {
     clearTimeout(notification.value.timeout);
   }
-  
+
   // 设置新的超时来隐藏通知
   notification.value.timeout = setTimeout(() => {
     hideNotification();
@@ -349,7 +349,7 @@ const showNotification = (type, message, duration = 2500) => {
 const hideNotification = () => {
   console.log('隐藏通知'); // 调试日志
   notification.value.show = false;
-  
+
   // 清除超时
   if (notification.value.timeout) {
     clearTimeout(notification.value.timeout);
@@ -376,7 +376,7 @@ const formatPercent = (value) => {
 // 添加数字变化动画效果
 const animateNumberChange = (element, startValue, endValue, duration = 500) => {
   if (!element) return;
-  
+
   const startTime = performance.now();
   const animateFrame = (currentTime) => {
     const elapsedTime = currentTime - startTime;
@@ -384,13 +384,13 @@ const animateNumberChange = (element, startValue, endValue, duration = 500) => {
       element.textContent = formatNumber(endValue);
       return;
     }
-    
+
     const progress = elapsedTime / duration;
     const currentValue = startValue + (endValue - startValue) * progress;
     element.textContent = formatNumber(Math.floor(currentValue));
     requestAnimationFrame(animateFrame);
   };
-  
+
   requestAnimationFrame(animateFrame);
 };
 
@@ -398,7 +398,7 @@ const animateNumberChange = (element, startValue, endValue, duration = 500) => {
 const makeDeposit = () => {
   const amount = Number(depositAmount.value);
   if (amount <= 0) return;
-  
+
   // 获取相关元素
   const depositValueEl = document.querySelector('.deposit-value');
   const moneyValueEl = document.querySelector('.money-value');
@@ -409,17 +409,17 @@ const makeDeposit = () => {
     // 动画过渡数值变化
     animateNumberChange(depositValueEl, oldDepositValue, playerStore.bankDeposit);
     animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
-    
+
     // 添加成功反馈动画
     depositValueEl.classList.add('value-change-success');
     setTimeout(() => {
       depositValueEl.classList.remove('value-change-success');
     }, 1000);
-    
+
     // 显示成功通知
     console.log('存款操作成功，调用showNotification');
     showNotification('success', t('bank.depositSuccess'));
-    
+
     // 重置存款金额
     depositAmount.value = 0;
   } else {
@@ -433,7 +433,7 @@ const makeDeposit = () => {
 const makeWithdrawal = () => {
   const amount = Number(withdrawAmount.value);
   if (amount <= 0) return;
-  
+
   // 获取相关元素
   const depositValueEl = document.querySelector('.deposit-value');
   const moneyValueEl = document.querySelector('.money-value');
@@ -444,17 +444,17 @@ const makeWithdrawal = () => {
     // 动画过渡数值变化
     animateNumberChange(depositValueEl, oldDepositValue, playerStore.bankDeposit);
     animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
-    
+
     // 添加成功反馈动画
     moneyValueEl.classList.add('value-change-success');
     setTimeout(() => {
       moneyValueEl.classList.remove('value-change-success');
     }, 1000);
-    
+
     // 显示成功通知
     console.log('取款操作成功，调用showNotification');
     showNotification('success', t('bank.withdrawSuccess'));
-    
+
     // 重置取款金额
     withdrawAmount.value = 0;
   } else {
@@ -468,7 +468,7 @@ const makeWithdrawal = () => {
 const takeLoan = () => {
   const amount = Number(loanAmount.value);
   if (amount <= 0) return;
-  
+
   // 获取相关元素
   const debtValueEl = document.querySelector('.debt-value');
   const moneyValueEl = document.querySelector('.money-value');
@@ -479,17 +479,17 @@ const takeLoan = () => {
     // 动画过渡数值变化
     animateNumberChange(debtValueEl, oldDebtValue, playerStore.debt);
     animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
-    
+
     // 添加成功反馈动画
     moneyValueEl.classList.add('value-change-success');
     setTimeout(() => {
       moneyValueEl.classList.remove('value-change-success');
     }, 1000);
-    
+
     // 显示成功通知
     console.log('贷款操作成功，调用showNotification');
     showNotification('success', t('bank.loanSuccess'));
-    
+
     // 重置贷款金额
     loanAmount.value = 0;
   } else {
@@ -503,7 +503,7 @@ const takeLoan = () => {
 const repayLoan = () => {
   const amount = Number(repayAmount.value);
   if (amount <= 0) return;
-  
+
   // 获取相关元素
   const debtValueEl = document.querySelector('.debt-value');
   const moneyValueEl = document.querySelector('.money-value');
@@ -514,17 +514,17 @@ const repayLoan = () => {
     // 动画过渡数值变化
     animateNumberChange(debtValueEl, oldDebtValue, playerStore.debt);
     animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
-    
+
     // 添加成功反馈动画
     debtValueEl.classList.add('value-change-success');
     setTimeout(() => {
       debtValueEl.classList.remove('value-change-success');
     }, 1000);
-    
+
     // 显示成功通知
     console.log('还款操作成功，调用showNotification');
     showNotification('success', t('bank.repaySuccess'));
-    
+
     // 重置还款金额
     repayAmount.value = 0;
   } else {
@@ -539,7 +539,7 @@ const repayLoan = () => {
 // 更新滑块背景进度，根据不同操作类型应用不同颜色
 const updateSliderBackground = (slider, value, max, type = 'default') => {
   if (!slider) return;
-  
+
   // 根据操作类型选择颜色
   let color;
   switch (type) {
@@ -558,17 +558,17 @@ const updateSliderBackground = (slider, value, max, type = 'default') => {
     default:
       color = '#3498db'; // 默认蓝色
   }
-  
+
   // 处理禁用状态
   if (max <= 0) {
     // 使用浅色表示禁用状态
-    const disabledColor = type === 'withdraw' ? '#a0c8e7' : 
+    const disabledColor = type === 'withdraw' ? '#a0c8e7' :
                         type === 'loan' ? '#f8d29b' :
                         type === 'repay' ? '#f5b7b1' : '#a0c8e7';
     slider.style.background = disabledColor;
     return;
   }
-  
+
   const percentage = Math.min((value / max) * 100, 100);
   slider.style.background = `linear-gradient(to right, ${color} ${percentage}%, #e9ecef ${percentage}%)`;
 };
@@ -624,7 +624,7 @@ watch(() => activeTab.value, () => {
       loan: { slider: '.loan-slider', value: loanAmount.value, max: playerStore.availableLoanAmount, type: 'loan' },
       repay: { slider: '.repay-slider', value: repayAmount.value, max: Math.min(playerStore.money, playerStore.debt), type: 'repay' }
     };
-    
+
     const current = sliders[activeTab.value];
     if (current) {
       const slider = document.querySelector(current.slider);
@@ -645,7 +645,7 @@ onMounted(() => {
       loan: { slider: '.loan-slider', value: loanAmount.value, max: playerStore.availableLoanAmount, type: 'loan' },
       repay: { slider: '.repay-slider', value: repayAmount.value, max: Math.min(playerStore.money, playerStore.debt), type: 'repay' }
     };
-    
+
     const current = sliders[activeTab.value];
     if (current) {
       const slider = document.querySelector(current.slider);
@@ -653,7 +653,7 @@ onMounted(() => {
         updateSliderBackground(slider, Number(current.value), current.max, current.type);
       }
     }
-    
+
     // 测试弹窗显示 - 取消注释以测试
     setTimeout(() => {
       console.log('测试通知显示');
@@ -1419,13 +1419,13 @@ onMounted(() => {
 
 /* 模态框入场动画增强 */
 @keyframes slideUp {
-  from { 
-    opacity: 0; 
-    transform: translateY(30px) scale(0.95); 
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
   }
-  to { 
-    opacity: 1; 
-    transform: translateY(0) scale(1); 
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

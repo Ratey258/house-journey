@@ -39,7 +39,7 @@
       <!-- 可贷款额度项 -->
       <div class="finance-item loan-item">
         <span class="finance-icon">📊</span>
-        <div class="finance-value loan">¥{{ formatNumber(Math.max(0, player.maxLoanAmount - player.debt)) }}</div>
+        <div class="finance-value loan">¥{{ formatNumber(player.availableLoanAmount) }}</div>
         <div class="finance-label">{{ $t('bank.availableLoan') }}</div>
       </div>
     </div>

@@ -24,11 +24,14 @@ export class Player {
     debt = 2000,
     capacity = 100,
     bankDeposit = 0,
-    maxLoanAmount = 20000
+    maxLoanAmount = 20000,
+    loanPrincipal = null // 添加贷款本金参数
   } = {}) {
     this.name = name;
     this.money = money;
     this.debt = debt;
+    // 初始化贷款本金，默认与债务相同
+    this.loanPrincipal = loanPrincipal !== null ? loanPrincipal : debt;
     this.capacity = capacity;
     this.inventoryUsed = 0;
     this.inventory = [];
@@ -79,8 +82,23 @@ export class Player {
     if (amount > this.debt) {
       amount = this.debt; // 只还清债务
     }
+
     this.money -= amount;
     this.debt -= amount;
+
+    // 更新贷款本金
+    if (this.loanPrincipal === undefined) {
+      this.loanPrincipal = this.debt;
+    } else {
+      // 如果还款金额小于等于贷款本金，直接减少本金
+      if (amount <= this.loanPrincipal) {
+        this.loanPrincipal -= amount;
+      } else {
+        // 如果还款金额大于贷款本金，则本金归零
+        this.loanPrincipal = 0;
+      }
+    }
+
     return true;
   }
 
@@ -202,21 +220,7 @@ export class Player {
     this.money += amount;
     return true;
   }
-
-  /**
-   * 从银行借款
-   * @param {number} amount 借款金额
-   * @returns {boolean} 操作是否成功
-   */
-  takeNewLoan(amount) {
-    // 计算当前可贷款额度
-    const availableLoanAmount = this.maxLoanAmount - this.debt;
-    if (amount <= 0 || amount > availableLoanAmount) return false;
-    this.debt += amount;
-    this.money += amount;
-    return true;
-  }
-
+  
   /**
    * 更新玩家每周状态
    * @param {number} currentWeek 当前周数
@@ -225,6 +229,7 @@ export class Player {
     this.statistics.weekCount = currentWeek;
 
     // 更新债务（每周增加0.5%的利息）
+    // 注意：利息只增加债务总额，不影响贷款本金
     if (this.debt > 0) {
       const interest = Math.floor(this.debt * 0.005);
       this.debt += interest;
@@ -264,7 +269,13 @@ export class Player {
    * @returns {number} 可贷款金额
    */
   get availableLoanAmount() {
-    return Math.max(0, this.maxLoanAmount - this.debt);
+    // 初始化贷款本金（如果不存在）
+    if (this.loanPrincipal === undefined) {
+      this.loanPrincipal = this.debt;
+    }
+
+    // 计算可贷款额度 = 最大贷款额度 - 已借贷本金
+    return Math.max(0, this.maxLoanAmount - this.loanPrincipal);
   }
 
   /**

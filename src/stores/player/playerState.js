@@ -11,6 +11,7 @@ export const usePlayerStore = defineStore('player', {
     name: '',
     money: 2000,
     debt: 5000,
+    loanPrincipal: 5000, // 添加贷款本金追踪，初始值与debt相同
     capacity: 100,
     inventoryUsed: 0,
     inventory: [],
@@ -47,6 +48,7 @@ export const usePlayerStore = defineStore('player', {
           this.name = playerName || i18n.global.t('system.defaultPlayerName');
           this.money = 2000;
           this.debt = 5000;
+          this.loanPrincipal = 5000; // 设置初始贷款本金
           this.capacity = 100;
           this.inventoryUsed = 0;
           this.inventory = [];
@@ -81,6 +83,7 @@ export const usePlayerStore = defineStore('player', {
       this.statistics.weekCount = currentWeek;
 
       // 更新债务（每周增加0.5%的利息）
+      // 注意：利息只增加债务总额，不影响贷款本金
       if (this.debt > 0) {
         const interest = Math.floor(this.debt * 0.005);
         this.debt += interest;
@@ -146,6 +149,15 @@ export const usePlayerStore = defineStore('player', {
 
       this.money -= amount;
       this.debt -= amount;
+
+      // 更新贷款本金
+      // 如果还款金额小于等于贷款本金，直接减少本金
+      if (amount <= this.loanPrincipal) {
+        this.loanPrincipal -= amount;
+      } else {
+        // 如果还款金额大于贷款本金，则本金归零
+        this.loanPrincipal = 0;
+      }
 
       return true;
     },
@@ -301,29 +313,15 @@ export const usePlayerStore = defineStore('player', {
      */
     takeLoan(amount) {
       // 检查金额有效性和贷款上限
-      const availableLoanAmount = this.maxLoanAmount - this.debt;
+      // 使用 loanPrincipal 而不是 debt 来计算可贷款金额
+      const availableLoanAmount = this.availableLoanAmount;
       if (amount <= 0 || amount > availableLoanAmount) {
         return false;
       }
 
       this.debt += amount;
+      this.loanPrincipal += amount; // 更新贷款本金
       this.money += amount;
-      return true;
-    },
-
-    /**
-     * 偿还银行贷款
-     * @param {number} amount - 还款金额
-     * @returns {boolean} 是否成功
-     */
-    repayBankLoan(amount) {
-      // 检查金额有效性
-      if (amount <= 0 || amount > this.money || amount > this.debt) {
-        return false;
-      }
-
-      this.money -= amount;
-      this.debt -= amount;
       return true;
     }
   },
@@ -393,14 +391,17 @@ export const usePlayerStore = defineStore('player', {
      * @returns {number} 可贷款金额
      */
     availableLoanAmount: (state) => {
-      // 新的计算方法：考虑玩家的净资产作为贷款额度参考
-      // 基础贷款额度 + 净资产的一定比例(但不小于0)
-      const baseMaxLoan = state.maxLoanAmount; 
-      const assetBasedBonus = Math.max(0, state.money + state.bankDeposit) * 0.5;
-      const dynamicMaxLoan = baseMaxLoan + assetBasedBonus;
-      
-      // 可贷款金额 = 最大贷款额度 - 当前债务
-      return Math.max(0, Math.floor(dynamicMaxLoan - state.debt));
+      // 新的计算方法：不考虑利息影响，只考虑实际借贷本金
+      // 添加一个新属性跟踪已借贷金额的本金部分（如果不存在）
+      if (state.loanPrincipal === undefined) {
+        state.loanPrincipal = state.debt; // 初始化为当前债务
+      }
+
+      // 直接使用固定的最大贷款额度，不考虑资产加成
+      const maxLoanAmount = state.maxLoanAmount;
+
+      // 可贷款金额 = 最大贷款额度 - 已借贷本金
+      return Math.max(0, Math.floor(maxLoanAmount - state.loanPrincipal));
     },
 
     /**
