@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/icon.ico" type="image/x-icon">
+  <link rel="icon" href="./icon.ico" type="image/x-icon">
   <title>买房记v0.1.1</title>
   <style>
     /* 初始加载动画样式 */
@@ -110,6 +110,15 @@
   <link rel="modulepreload" crossorigin href="./assets/stores-6a84416e.js">
   <link rel="stylesheet" href="./assets/ui-b9d25494.css">
   <link rel="stylesheet" href="./assets/index-328e6097.css">
+
+<script>
+  window.addEventListener('error', function(e) {
+    console.error('全局错误捕获:', e.error);
+    if (document.getElementById('app').innerHTML === '') {
+      document.getElementById('app').innerHTML = '<div style="text-align:center;padding:20px;"><h2>加载出错</h2><p>请尝试刷新页面</p><p>错误信息: ' + e.message + '</p></div>';
+    }
+  });
+</script>
 </head>
 <body>
   <!-- 初始加载动画 -->
