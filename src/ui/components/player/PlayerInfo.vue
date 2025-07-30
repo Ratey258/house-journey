@@ -59,14 +59,21 @@
       </div>
     </div>
 
-    <!-- 只保留银行按钮 -->
+    <!-- 银行和下一周按钮 -->
     <div class="action-buttons">
+      <button
+        class="btn next-week-btn"
+        @click="advanceWeek"
+      >
+        <span class="btn-icon">⏭️</span>
+        <span class="btn-text">下一周</span>
+      </button>
       <button
         class="btn bank-btn"
         @click="showBankModal = true"
       >
         <span class="btn-icon">🏦</span>
-        {{ $t('playerInfo.bank') }}
+        <span class="btn-text">银行</span>
       </button>
     </div>
 
@@ -81,11 +88,12 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useGameStore } from '@/stores';
+import { useGameStore, useGameCoreStore } from '@/stores';
 import { formatNumber } from '@/infrastructure/utils';
 import BankModal from './BankModal.vue';
 
 const gameStore = useGameStore();
+const gameCoreStore = useGameCoreStore();
 
 const player = computed(() => gameStore.player);
 const currentWeek = computed(() => gameStore.currentWeek);
@@ -93,6 +101,11 @@ const isEndlessMode = computed(() => gameStore.isEndlessMode);
 
 // 银行相关
 const showBankModal = ref(false);
+
+// 进入下一周
+const advanceWeek = () => {
+  gameCoreStore.advanceWeek();
+};
 
 // 获取玩家名称首字母作为头像
 const getPlayerInitials = () => {
@@ -276,23 +289,27 @@ const getPlayerInitials = () => {
 /* 按钮样式 */
 .action-buttons {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 5px;
+  margin-bottom: 3px;
 }
 
 .btn {
   flex: 1;
-  max-width: 80%;
-  padding: 10px 0;
-  border-radius: 8px;
+  padding: 5px 10px;
+  border-radius: 5px;
   border: none;
   cursor: pointer;
   font-weight: 500;
-  font-size: 1rem;
+  font-size: 0.85rem;
   transition: all 0.2s;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  min-height: 36px;
 }
 
 .bank-btn {
@@ -302,13 +319,31 @@ const getPlayerInitials = () => {
 
 .bank-btn:hover {
   background-color: #27ae60;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+}
+
+.next-week-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.next-week-btn:hover {
+  background-color: #2980b9;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.12);
 }
 
 .btn-icon {
-  margin-right: 8px;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
+  margin-right: 5px;
+  line-height: 1;
+}
+
+.btn-text {
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* 保持模态框样式不变 */
