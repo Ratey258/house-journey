@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="/icon.ico" type="image/x-icon">
+  <title>买房记v0.1.1</title>
+  <style>
+    /* 初始加载动画样式 */
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    #initial-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #1a1a2e;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    .loader-content {
+      text-align: center;
+      color: #fff;
+    }
+
+    .loader-title {
+      font-size: 28px;
+      margin-bottom: 20px;
+      color: #4cc9f0;
+    }
+
+    .loader-spinner {
+      width: 80px;
+      height: 80px;
+      margin: 20px auto;
+      position: relative;
+    }
+
+    .loader-spinner:before,
+    .loader-spinner:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 6px solid transparent;
+      border-top-color: #4361ee;
+    }
+
+    .loader-spinner:before {
+      z-index: 10;
+      animation: spin 1.5s infinite;
+    }
+
+    .loader-spinner:after {
+      border: 6px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .loader-status {
+      margin: 20px 0;
+      font-size: 16px;
+    }
+
+    .loader-progress-container {
+      width: 300px;
+      height: 10px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+      overflow: hidden;
+      margin: 10px auto;
+    }
+
+    .loader-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4361ee, #4cc9f0);
+      border-radius: 5px;
+      transition: width 0.3s ease;
+    }
+
+    .loader-tip {
+      font-style: italic;
+      color: #a8dadc;
+      margin-top: 20px;
+      min-height: 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+  <script type="module" crossorigin src="./assets/main-0adc9c3e.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/ui-a9bb16a6.js">
+  <link rel="modulepreload" crossorigin href="./assets/vendor-3ea32499.js">
+  <link rel="modulepreload" crossorigin href="./assets/stores-6a84416e.js">
+  <link rel="stylesheet" href="./assets/ui-b9d25494.css">
+  <link rel="stylesheet" href="./assets/index-328e6097.css">
+</head>
+<body>
+  <!-- 初始加载动画 -->
+  <div id="initial-loader">
+    <div class="loader-content">
+      <div class="loader-title">买房记v0.1.1</div>
+      <div class="loader-spinner"></div>
+      <div class="loader-status">正在加载游戏资源...</div>
+      <div class="loader-progress-container">
+        <div class="loader-progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="loader-tip" id="loader-tip">游戏即将开始，请稍候...</div>
+    </div>
+  </div>
+
+  <!-- 应用挂载点 -->
+  <div id="app"></div>
+
+  <!-- 加载脚本 -->
+  
+
+  <!-- 初始加载动画脚本 -->
+  <script>
+    // 加载提示
+    const tips = [
+      '正在加载游戏引擎...',
+      '准备房产数据...',
+      '生成市场行情...',
+      '初始化游戏事件...',
+      '加载游戏界面...',
+      '游戏即将开始...'
+    ];
+
+    let currentTip = 0;
+    let progress = 0;
+    const progressBar = document.getElementById('progress-bar');
+    const loaderTip = document.getElementById('loader-tip');
+
+    // 轮换提示
+    setInterval(() => {
+      loaderTip.textContent = tips[currentTip];
+      currentTip = (currentTip + 1) % tips.length;
+    }, 3000);
+
+    // 模拟加载进度
+    const progressInterval = setInterval(() => {
+      // 缓慢增加进度，最多到80%（剩余20%留给Vue应用加载）
+      if (progress < 80) {
+        progress += Math.random() * 5;
+        progress = Math.min(progress, 80);
+        progressBar.style.width = progress + '%';
+      }
+    }, 300);
+
+    // 监听Vue应用加载完成事件
+    window.addEventListener('app-loaded', () => {
+      // 快速完成进度条
+      clearInterval(progressInterval);
+      progress = 100;
+      progressBar.style.width = '100%';
+
+      // 延迟后隐藏初始加载动画
+      setTimeout(() => {
+        const loader = document.getElementById('initial-loader');
+        if (loader) {
+          loader.style.opacity = '0';
+          loader.style.transition = 'opacity 0.5s ease';
+          setTimeout(() => {
+            loader.style.display = 'none';
+          }, 500);
+        }
+      }, 500);
+    });
+
+    // 如果Vue应用长时间未加载，也隐藏加载动画
+    setTimeout(() => {
+      const loader = document.getElementById('initial-loader');
+      if (loader && loader.style.display !== 'none') {
+        progress = 100;
+        progressBar.style.width = '100%';
+        setTimeout(() => {
+          loader.style.opacity = '0';
+          loader.style.transition = 'opacity 0.5s ease';
+          setTimeout(() => {
+            loader.style.display = 'none';
+          }, 500);
+        }, 500);
+      }
+    }, 15000); // 15秒后强制隐藏
+  </script>
+</body>
+</html>
