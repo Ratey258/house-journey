@@ -59,7 +59,7 @@ export class Product {
     this.icon = icon;
     this.availableAt = availableAt;
   }
-  
+
   /**
    * 获取价格范围
    * @returns {Object} 价格范围对象
@@ -71,7 +71,7 @@ export class Product {
       range: this.maxPrice - this.minPrice
     };
   }
-  
+
   /**
    * 检查价格是否在有效范围内
    * @param {number} price 要检查的价格
@@ -80,7 +80,7 @@ export class Product {
   isValidPrice(price) {
     return price >= this.minPrice && price <= this.maxPrice;
   }
-  
+
   /**
    * 调整价格到有效范围
    * @param {number} price 原始价格
@@ -169,8 +169,8 @@ function getAvailableLocations(category) {
  */
 export function getAvailableProducts(location, allProducts) {
   if (!location || !allProducts) return [];
-  
-  return allProducts.filter(product => 
+
+  return allProducts.filter(product =>
     product.availableAt.includes(location.id)
   );
 }
@@ -189,7 +189,7 @@ const predefinedProducts = [
     category: ProductCategory.DAILY,
     size: 3,
     icon: 'paper',
-    availableAt: ['second_hand_market', 'commodity_market']
+    availableAt: ['commodity_market']
   },
   {
     id: 102,
@@ -202,7 +202,7 @@ const predefinedProducts = [
     category: ProductCategory.DAILY,
     size: 1,
     icon: 'bottle',
-    availableAt: ['second_hand_market', 'commodity_market']
+    availableAt: ['commodity_market']
   },
   {
     id: 103,
@@ -215,7 +215,7 @@ const predefinedProducts = [
     category: ProductCategory.DAILY,
     size: 1,
     icon: 'hygiene',
-    availableAt: ['second_hand_market', 'commodity_market']
+    availableAt: ['commodity_market']
   },
   {
     id: 104,
@@ -228,7 +228,7 @@ const predefinedProducts = [
     category: ProductCategory.DAILY,
     size: 1,
     icon: 'soap',
-    availableAt: ['second_hand_market', 'commodity_market']
+    availableAt: ['commodity_market']
   },
   {
     id: 105,
@@ -241,36 +241,75 @@ const predefinedProducts = [
     category: ProductCategory.DAILY,
     size: 2,
     icon: 'towel',
-    availableAt: ['second_hand_market', 'commodity_market']
+    availableAt: ['commodity_market']
   },
-  // 新增二手物品
+  // 二手市场特色商品
   {
     id: 106,
-    name: '二手衣物',
-    description: '二手服装，价格便宜但品质一般',
-    basePrice: 40,
-    minPrice: 20,
-    maxPrice: 80,
-    volatility: 3,
-    category: ProductCategory.DAILY,
-    size: 4,
-    icon: 'clothes',
+    name: '二手iPhone',
+    description: '二手苹果手机，性价比高，版本各异',
+    basePrice: 2000,
+    minPrice: 1000,
+    maxPrice: 4000,
+    volatility: 5,
+    category: ProductCategory.ELECTRONICS,
+    size: 1,
+    icon: 'phone',
     availableAt: ['second_hand_market']
   },
   {
     id: 107,
-    name: '二手家具',
-    description: '二手家具，价格实惠',
-    basePrice: 200,
-    minPrice: 100,
-    maxPrice: 500,
-    volatility: 4,
-    category: ProductCategory.DAILY,
-    size: 10,
-    icon: 'furniture',
+    name: '二手笔记本',
+    description: '二手笔记本电脑，价格实惠但配置各异',
+    basePrice: 2500,
+    minPrice: 1200,
+    maxPrice: 5000,
+    volatility: 5,
+    category: ProductCategory.ELECTRONICS,
+    size: 5,
+    icon: 'laptop',
     availableAt: ['second_hand_market']
   },
-  
+  {
+    id: 108,
+    name: '复古相机',
+    description: '胶片相机，有一定收藏价值',
+    basePrice: 500,
+    minPrice: 300,
+    maxPrice: 1200,
+    volatility: 6,
+    category: ProductCategory.ELECTRONICS,
+    size: 3,
+    icon: 'camera',
+    availableAt: ['second_hand_market']
+  },
+  {
+    id: 109,
+    name: '二手游戏机',
+    description: '各类游戏主机，价格实惠',
+    basePrice: 800,
+    minPrice: 500,
+    maxPrice: 1800,
+    volatility: 4,
+    category: ProductCategory.ELECTRONICS,
+    size: 4,
+    icon: 'game',
+    availableAt: ['second_hand_market']
+  },
+  {
+    id: 110,
+    name: '旧书籍',
+    description: '二手书籍，知识的载体，价格便宜',
+    basePrice: 20,
+    minPrice: 5,
+    maxPrice: 50,
+    volatility: 2,
+    category: ProductCategory.DAILY,
+    size: 2,
+    icon: 'book',
+    availableAt: ['second_hand_market']
+  },
+
   // 食品
   {
     id: 201,
@@ -337,7 +376,7 @@ const predefinedProducts = [
     icon: 'fruit',
     availableAt: ['commodity_market']
   },
-  
+
   // 电子产品
   {
     id: 301,
@@ -404,7 +443,7 @@ const predefinedProducts = [
     icon: 'watch',
     availableAt: ['electronics_hub', 'premium_mall'] // 更新可用地点
   },
-  
+
   // 奢侈品
   {
     id: 401,
@@ -458,7 +497,7 @@ const predefinedProducts = [
     icon: 'perfume',
     availableAt: ['premium_mall'] // 更新可用地点
   },
-  
+
   // 收藏品 (501-505)
   {
     id: 501,
@@ -543,4 +582,4 @@ export function getAllProducts() {
 export function getProductById(id) {
   const productData = predefinedProducts.find(p => p.id == id);
   return productData ? createProduct(productData) : null;
-} 
+}

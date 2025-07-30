@@ -59,7 +59,7 @@ export class Location {
   isSpecialProduct(productId) {
     return this.specialProducts.includes(productId);
   }
-  
+
   /**
    * 检查产品是否在此地点可用
    * @param {string|number} productId 产品ID
@@ -79,12 +79,12 @@ export class Location {
    */
   applyPriceModifiers(basePrice, productId) {
     let price = basePrice * this.getPriceFactor();
-    
+
     // 特价商品折扣
     if (this.isSpecialProduct(productId)) {
       price *= 0.85; // 特价商品享受85折
     }
-    
+
     return Math.round(price);
   }
 }
@@ -132,7 +132,7 @@ function getLocationIcon(locationId) {
     'collectors_market': 'collectors.png',
     'commodity_market': 'commodity.png'
   };
-  
+
   return iconMap[locationId] || 'default.png';
 }
 
@@ -150,20 +150,20 @@ const predefinedLocations = [
     icon: 'commodity.png',
     image: 'commodity_market.jpg'
   },
-  
+
   // 2. 二手市场 - 二手物品和低价日用品的集中地
   {
     id: 'second_hand_market',
     name: '二手市场',
-    description: '各类二手物品和低价生活必需品的集散地，价格便宜但品质参差不齐。这里是淘宝和囤积日常用品的好地方。',
+    description: '各类二手商品的集散地，尤其以二手数码产品为特色。这里可以淘到价格实惠的电子产品和各类二手物品，但品质参差不齐。',
     modifiers: { priceFactor: 0.8 },
-    specialProducts: [101, 104, 106, 107], // 特色商品：卫生纸、肥皂和二手物品（生活必需品和二手物品）
-    availableProducts: ['clothes', 'toiletries', 'used_items', 'furniture'],
+    specialProducts: [], // 二手市场不再有特价商品
+    availableProducts: ['used_electronics', 'retro_games', 'collectibles', 'books', 'used_items'],
     eventProbability: 0.3,
     icon: 'second-hand.png',
     image: 'second_hand_market.jpg'
   },
-  
+
   // 3. 高端商城 - 奢侈品和高端商品的销售地点
   {
     id: 'premium_mall',
@@ -176,7 +176,7 @@ const predefinedLocations = [
     icon: 'premium.png',
     image: 'premium_mall.jpg'
   },
-  
+
   // 4. 电子科技城 - 专注于电子产品的交易中心
   {
     id: 'electronics_hub',
@@ -189,7 +189,7 @@ const predefinedLocations = [
     icon: 'electronics.png',
     image: 'electronics_hub.jpg'
   },
-  
+
   // 5. 收藏家市场 - 专注于收藏品和古董的特殊市场
   {
     id: 'black_market',
@@ -220,4 +220,4 @@ export function getAllLocations() {
 export function getLocationById(id) {
   const locationData = predefinedLocations.find(l => l.id === id);
   return locationData ? createLocation(locationData) : null;
-} 
+}

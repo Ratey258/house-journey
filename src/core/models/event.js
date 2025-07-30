@@ -70,7 +70,7 @@ export class Event {
     // 暂时禁用事件图片
     this.imageUrl = null; // imageUrl;
   }
-  
+
   /**
    * 检查事件是否可以在当前游戏状态下触发
    * @param {Object} gameState 游戏状态
@@ -79,51 +79,51 @@ export class Event {
    */
   canTrigger(gameState, triggeredEvents = []) {
     const c = this.conditions;
-    
+
     // 检查是否可重复触发
     if (!this.repeatable && triggeredEvents.includes(this.id)) {
       return false;
     }
-    
+
     // 检查周数限制
     if (c.minWeek !== null && gameState.currentWeek < c.minWeek) {
       return false;
     }
-    
+
     if (c.maxWeek !== null && gameState.currentWeek > c.maxWeek) {
       return false;
     }
-    
+
     // 检查地点限制
     if (c.locations !== null && !c.locations.includes(gameState.currentLocation?.id)) {
       return false;
     }
-    
+
     // 检查金钱限制
     if (c.playerMoney !== null) {
       const money = gameState.player.money;
       if (c.playerMoney.min !== undefined && money < c.playerMoney.min) return false;
       if (c.playerMoney.max !== undefined && money > c.playerMoney.max) return false;
     }
-    
+
     // 检查债务限制
     if (c.playerDebt !== null) {
       const debt = gameState.player.debt;
       if (c.playerDebt.min !== undefined && debt < c.playerDebt.min) return false;
       if (c.playerDebt.max !== undefined && debt > c.playerDebt.max) return false;
     }
-    
+
     // 检查背包物品限制
     if (c.inventoryItems !== null) {
       for (const item of c.inventoryItems) {
         const inventoryItem = gameState.player.inventory.find(i => i.productId === item.productId);
         const quantity = inventoryItem ? inventoryItem.quantity : 0;
-        
+
         if (item.minQuantity !== undefined && quantity < item.minQuantity) return false;
         if (item.maxQuantity !== undefined && quantity > item.maxQuantity) return false;
       }
     }
-    
+
     // 检查属性限制
     if (c.attributes !== null) {
       for (const [attr, limits] of Object.entries(c.attributes)) {
@@ -132,30 +132,30 @@ export class Event {
         if (limits.max !== undefined && value > limits.max) return false;
       }
     }
-    
+
     // 检查需要已触发的事件
     if (c.requiredEvents !== null) {
       for (const eventId of c.requiredEvents) {
         if (!triggeredEvents.includes(eventId)) return false;
       }
     }
-    
+
     // 检查需要未触发的事件
     if (c.excludedEvents !== null) {
       for (const eventId of c.excludedEvents) {
         if (triggeredEvents.includes(eventId)) return false;
       }
     }
-    
+
     // 检查自定义条件
     if (c.customCondition !== null && !c.customCondition(gameState)) {
       return false;
     }
-    
+
     // 应用概率
     return Math.random() <= (c.probability || 1);
   }
-  
+
   /**
    * 获取可用的事件选项
    * @param {Object} gameState 游戏状态
@@ -192,7 +192,7 @@ export class EventOption {
     this.effects = effects;
     this.condition = condition;
   }
-  
+
   /**
    * 检查选项是否可用
    * @param {Object} gameState 游戏状态
@@ -333,7 +333,7 @@ export const createEventEffects = (options) => {
  */
 export const createEventConditions = (options) => {
   return new EventConditions(options);
-}; 
+};
 // 预定义事件列表
 const predefinedEvents = [
   // --- 市场事件 ---
@@ -364,11 +364,11 @@ const predefinedEvents = [
         '趁高价出售相关库存商品',
         '你决定利用这些地区价格上涨的机会出售一些库存商品。',
         createEventEffects({
-          market: { 
+          market: {
             locationModifiers: {
               'premium_mall': 1.2, // 高端商城价格上涨20%
               'electronics_hub': 1.1 // 电子科技城价格上涨10%
-            }, 
+            },
             duration: 1 // 持续1周
           }
         }),
@@ -384,7 +384,7 @@ const predefinedEvents = [
     1.5, // 权重
     '/assets/images/events/market_boom.jpg' // 事件图片
   ),
-  
+
   createEvent(
     'market_crash',
     '局部市场崩盘',
@@ -432,7 +432,7 @@ const predefinedEvents = [
     1.5,
     '/assets/images/events/market_crash.jpg'
   ),
-  
+
   // --- 个人事件 ---
   createEvent(
     'lucky_money',
@@ -450,9 +450,9 @@ const predefinedEvents = [
       createEventOption(
         '据为己有',
         '你决定把钱包里的钱据为己有，获得了2000元，但感到有些愧疚。',
-        createEventEffects({ 
+        createEventEffects({
           money: 2000,
-          attributes: { creditRating: -2, reputation: -2 } 
+          attributes: { creditRating: -2, reputation: -2 }
         })
       )
     ],
@@ -465,7 +465,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/lucky_money.jpg'
   ),
-  
+
   createEvent(
     'health_problem',
     '健康问题',
@@ -474,7 +474,7 @@ const predefinedEvents = [
       createEventOption(
         '立即就医',
         '你选择立即去医院检查治疗，花费了一些医疗费，但迅速恢复了健康。',
-        createEventEffects({ 
+        createEventEffects({
           money: -800,
           attributes: { health: 1 }
         })
@@ -504,7 +504,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/health_problem.jpg'
   ),
-  
+
   // --- 地点事件 ---
   createEvent(
     'market_raid',
@@ -514,7 +514,7 @@ const predefinedEvents = [
       createEventOption(
         '迅速离开',
         '你迅速逃离了现场，虽然没能完成交易，但避免了不必要的麻烦。',
-        createEventEffects({ 
+        createEventEffects({
           forceLocationChange: true,
           targetLocation: 'commodity_market'
         })
@@ -522,16 +522,16 @@ const predefinedEvents = [
       createEventOption(
         '冒险完成交易',
         '你冒险留下来完成交易，获得了低价商品，但差点被执法人员抓住。',
-        createEventEffects({ 
-          market: { 
-            globalPriceModifier: 0.6, 
+        createEventEffects({
+          market: {
+            globalPriceModifier: 0.6,
             duration: 1
           },
           attributes: { businessSkill: 1, risk_tolerance: 1 }
         })
       )
     ],
-    createEventConditions({ 
+    createEventConditions({
       locations: ['black_market'],
       probability: 0.25
     }),
@@ -540,7 +540,7 @@ const predefinedEvents = [
     1.5,
     '/assets/images/events/market_raid.jpg'
   ),
-  
+
   createEvent(
     'celebrity_appearance',
     '名人现身',
@@ -549,10 +549,10 @@ const predefinedEvents = [
       createEventOption(
         '趁机提高售价',
         '你抓住机会在附近设摊，以略高的价格出售商品，赚了一笔。',
-        createEventEffects({ 
+        createEventEffects({
           money: 1500,
-          market: { 
-            globalPriceModifier: 1.2, 
+          market: {
+            globalPriceModifier: 1.2,
             duration: 1
           }
         })
@@ -565,7 +565,7 @@ const predefinedEvents = [
         })
       )
     ],
-    createEventConditions({ 
+    createEventConditions({
       locations: ['premium_mall'],
       probability: 0.2
     }),
@@ -574,7 +574,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/celebrity.jpg'
   ),
-  
+
   // --- 债务相关事件 ---
   createEvent(
     'debt_relief',
@@ -584,7 +584,7 @@ const predefinedEvents = [
       createEventOption(
         '申请参与',
         '你成功申请了债务减免计划，债务减少了20%。',
-        createEventEffects({ 
+        createEventEffects({
           debt: -0.2 // 债务减少20%（负数表示减少）
         })
       ),
@@ -594,7 +594,7 @@ const predefinedEvents = [
         createEventEffects({})
       )
     ],
-    createEventConditions({ 
+    createEventConditions({
       minWeek: 15,
       playerDebt: { min: 5000 }, // 债务超过5000才会触发
       probability: 0.3
@@ -604,7 +604,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/debt_relief.jpg'
   ),
-  
+
   // --- 商品相关事件 ---
   createEvent(
     'electronics_discount',
@@ -615,8 +615,8 @@ const predefinedEvents = [
         '购买电子产品',
         '你趁机购买了一些电子产品，价格比平时便宜很多。',
         createEventEffects({
-          market: { 
-            categoryModifier: 'ELECTRONICS', 
+          market: {
+            categoryModifier: 'ELECTRONICS',
             modifier: 0.7,
             duration: 2
           }
@@ -637,7 +637,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/electronics_sale.jpg'
   ),
-  
+
   createEvent(
     'luxury_tax',
     '奢侈品征税',
@@ -647,8 +647,8 @@ const predefinedEvents = [
         '提前囤货',
         '你决定在税收政策实施前囤积一些奢侈品，以备后续高价出售。',
         createEventEffects({
-          market: { 
-            categoryModifier: 'LUXURY', 
+          market: {
+            categoryModifier: 'LUXURY',
             modifier: 1.1,  // 先小幅上涨
             duration: 1
           },
@@ -659,8 +659,8 @@ const predefinedEvents = [
         '观望市场',
         '你决定等待看看市场如何反应，避免做出冒险决策。',
         createEventEffects({
-          market: { 
-            categoryModifier: 'LUXURY', 
+          market: {
+            categoryModifier: 'LUXURY',
             modifier: 1.3,  // 直接大幅上涨
             duration: 4
           }
@@ -677,7 +677,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/luxury_tax.jpg'
   ),
-  
+
   // 连锁事件：奢侈品税收政策后续
   createEvent(
     'luxury_tax_aftermath',
@@ -689,8 +689,8 @@ const predefinedEvents = [
         '你将之前囤积的奢侈品以高价出售，获得了可观利润。',
         createEventEffects({
           money: 3000,
-          market: { 
-            categoryModifier: 'LUXURY', 
+          market: {
+            categoryModifier: 'LUXURY',
             modifier: 1.4,
             duration: 3
           }
@@ -707,8 +707,8 @@ const predefinedEvents = [
         '继续持有',
         '你认为价格还会进一步上涨，决定继续持有囤积的商品。',
         createEventEffects({
-          market: { 
-            categoryModifier: 'LUXURY', 
+          market: {
+            categoryModifier: 'LUXURY',
             modifier: 1.3,
             duration: 3
           }
@@ -723,7 +723,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/luxury_price_rise.jpg'
   ),
-  
+
   // --- 背包容量相关事件 ---
   createEvent(
     'storage_expansion',
@@ -733,7 +733,7 @@ const predefinedEvents = [
       createEventOption(
         '购买新背包',
         '你花钱购买了一个更大的背包，提升了存储容量。',
-        createEventEffects({ 
+        createEventEffects({
           money: -1500,
           capacity: 20 // 增加20个背包容量
         })
@@ -741,7 +741,7 @@ const predefinedEvents = [
       createEventOption(
         '租用仓库空间',
         '你租了一个小型仓库空间，花费较低但容量提升有限。',
-        createEventEffects({ 
+        createEventEffects({
           money: -500,
           capacity: 10
         })
@@ -763,7 +763,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/storage_expansion.jpg'
   ),
-  
+
   // --- 教程事件 ---
   createEvent(
     'tutorial_trading',
@@ -787,7 +787,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/tutorial.jpg'
   ),
-  
+
   createEvent(
     'tutorial_market',
     '市场解析',
@@ -809,7 +809,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/tutorial_market.jpg'
   ),
-  
+
   createEvent(
     'tutorial_goal',
     '游戏目标',
@@ -831,7 +831,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/tutorial_goal.jpg'
   ),
-  
+
   // --- 新增个人事件 ---
   createEvent(
     'unexpected_inheritance',
@@ -864,7 +864,7 @@ const predefinedEvents = [
     0.8,
     '/assets/images/events/inheritance.jpg'
   ),
-  
+
   createEvent(
     'business_training',
     '商业培训',
@@ -902,7 +902,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/business_training.jpg'
   ),
-  
+
   createEvent(
     'social_networking',
     '社交机会',
@@ -941,7 +941,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/social_networking.jpg'
   ),
-  
+
   createEvent(
     'investment_opportunity',
     '投资机会',
@@ -979,7 +979,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/investment_opportunity.jpg'
   ),
-  
+
   // 投资结果事件（大额）
   createEvent(
     'investment_result_big',
@@ -1004,7 +1004,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/investment_result.jpg'
   ),
-  
+
   // 投资结果事件（小额）
   createEvent(
     'investment_result_small',
@@ -1029,7 +1029,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/investment_result.jpg'
   ),
-  
+
   // --- 新增市场事件 ---
   createEvent(
     'clothing_fashion_trend',
@@ -1076,7 +1076,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/fashion_trend.jpg'
   ),
-  
+
   createEvent(
     'food_shortage',
     '食品短缺',
@@ -1126,7 +1126,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/food_shortage.jpg'
   ),
-  
+
   createEvent(
     'tech_innovation',
     '科技创新',
@@ -1176,7 +1176,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/tech_innovation.jpg'
   ),
-  
+
   createEvent(
     'supply_chain_disruption',
     '供应链中断',
@@ -1219,7 +1219,7 @@ const predefinedEvents = [
     1.2,
     '/assets/images/events/supply_chain.jpg'
   ),
-  
+
   createEvent(
     'supply_chain_recovery',
     '全球供应链逐步恢复',
@@ -1281,7 +1281,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/supply_recovery.jpg'
   ),
-  
+
   createEvent(
     'seasonal_sales',
     '季节性促销',
@@ -1323,7 +1323,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/seasonal_sales.jpg'
   ),
-  
+
   // --- 新增地点特定事件 ---
   createEvent(
     'market_discount',
@@ -1394,7 +1394,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/wholesale_discount.jpg'
   ),
-  
+
   createEvent(
     'mall_event',
     '商城名人活动',
@@ -1428,7 +1428,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/mall_celebrity.jpg'
   ),
-  
+
   createEvent(
     'electronics_expo',
     '电子科技城展销会',
@@ -1476,7 +1476,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/electronics_expo.jpg'
   ),
-  
+
   createEvent(
     'market_inspection',
     '市场检查',
@@ -1508,7 +1508,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/market_inspection.jpg'
   ),
-  
+
   // --- 特殊事件 ---
   createEvent(
     'business_competition',
@@ -1553,7 +1553,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/business_competition.jpg'
   ),
-  
+
   createEvent(
     'market_insider_info',
     '内幕消息',
@@ -1589,7 +1589,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/insider_info.jpg'
   ),
-  
+
   createEvent(
     'insider_info_result',
     '内幕消息结果',
@@ -1600,12 +1600,12 @@ const predefinedEvents = [
         '你满怀期待地查看市场变化。',
         createEventEffects({
           // 70%概率是真消息，30%概率是假消息
-          market: Math.random() > 0.3 ? 
+          market: Math.random() > 0.3 ?
             {
               categoryModifier: ['LUXURY', 'ELECTRONICS', 'CLOTHING'][Math.floor(Math.random() * 3)],
               modifier: 1.8,
               duration: 2
-            } : 
+            } :
             {
               globalPriceModifier: 0.9,
               duration: 1
@@ -1621,7 +1621,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/insider_result.jpg'
   ),
-  
+
   createEvent(
     'insider_info_result_small',
     '内幕消息小规模试水结果',
@@ -1632,12 +1632,12 @@ const predefinedEvents = [
         '你查看小规模投资的结果。',
         createEventEffects({
           // 70%概率是真消息，30%概率是假消息，但影响较小
-          market: Math.random() > 0.3 ? 
+          market: Math.random() > 0.3 ?
             {
               categoryModifier: ['LUXURY', 'ELECTRONICS', 'CLOTHING'][Math.floor(Math.random() * 3)],
               modifier: 1.5,
               duration: 1
-            } : 
+            } :
             {
               globalPriceModifier: 0.95,
               duration: 1
@@ -1653,7 +1653,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/insider_result.jpg'
   ),
-  
+
   // --- 故事事件和游戏后期事件 ---
   createEvent(
     'real_estate_opportunity',
@@ -1692,7 +1692,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/real_estate_opportunity.jpg'
   ),
-  
+
   createEvent(
     'real_estate_inspection',
     '房产考察',
@@ -1721,7 +1721,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/real_estate_inspection.jpg'
   ),
-  
+
   createEvent(
     'real_estate_expert_advice',
     '专家建议',
@@ -1750,7 +1750,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/real_estate_expert.jpg'
   ),
-  
+
   createEvent(
     'housing_market_boom',
     '房市繁荣',
@@ -1794,7 +1794,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/housing_boom.jpg'
   ),
-  
+
   createEvent(
     'housing_market_crash',
     '房市崩盘',
@@ -1831,7 +1831,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/housing_crash.jpg'
   ),
-  
+
   createEvent(
     'business_partner_proposal',
     '商业合作提议',
@@ -1872,7 +1872,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/business_partner.jpg'
   ),
-  
+
   createEvent(
     'business_partnership_result',
     '商业合作结果',
@@ -1901,7 +1901,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/partnership_result.jpg'
   ),
-  
+
   createEvent(
     'business_partnership_small_result',
     '小规模合作结果',
@@ -1930,7 +1930,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/partnership_result.jpg'
   ),
-  
+
   createEvent(
     'final_opportunity',
     '最终机会',
@@ -1967,7 +1967,7 @@ const predefinedEvents = [
     2,
     '/assets/images/events/final_opportunity.jpg'
   ),
-  
+
   createEvent(
     'final_market_surge',
     '最终市场大涨',
@@ -2003,11 +2003,11 @@ const predefinedEvents = [
     1,
     '/assets/images/events/market_surge.jpg'
   ),
-  
+
   // --- 特殊彩蛋事件已移除 ---
 
   // ============ 房产连锁事件系列 ============
-  
+
   // 1. 房产展览会事件链
   createEvent(
     'property_expo',
@@ -2640,7 +2640,7 @@ const predefinedEvents = [
         '你决定投资这个新兴区域的房产项目。',
         createEventEffects({
           money: -30000, // 投资30000元
-          attributes: { 
+          attributes: {
             housingInvestment: 30000, // 记录房产投资
             propertyValue: 30000 // 初始房产价值
           },
@@ -2719,8 +2719,8 @@ const predefinedEvents = [
       createEventOption(
         '查看结果',
         // 随机生成投资结果，70%概率盈利，30%概率亏损
-        Math.random() < 0.7 ? 
-          '你的投资取得了不错的回报，获得了4000元。' : 
+        Math.random() < 0.7 ?
+          '你的投资取得了不错的回报，获得了4000元。' :
           '很遗憾，由于市场波动，你的投资出现了亏损，只收回了2000元。',
         createEventEffects({
           // 70%概率获得4000元(盈利1000)，30%概率获得2000元(亏损1000)
@@ -2736,7 +2736,7 @@ const predefinedEvents = [
     1,
     '/assets/images/events/investment_result.jpg'
   ),
-  
+
   // 供应链中断事件
   createEvent({
     id: 'supply_chain_disruption',
@@ -2745,7 +2745,7 @@ const predefinedEvents = [
     type: EventType.MARKET,
     options: [
       createEventOption(
-        '在大宗市场囤积基本物资', 
+        '在大宗市场囤积基本物资',
         '你预判到基本生活物资将会短缺，决定前往大宗商品交易所囤积必需品。',
         {
           market: {
@@ -2773,7 +2773,7 @@ const predefinedEvents = [
         }
       ),
       createEventOption(
-        '投资受影响商品', 
+        '投资受影响商品',
         '你认为这是投资低价电子产品的好机会，决定前往电子科技城大量购入。',
         {
           market: {
@@ -2797,7 +2797,7 @@ const predefinedEvents = [
         }
       ),
       createEventOption(
-        '寻找黑市稀缺资源', 
+        '寻找黑市稀缺资源',
         '你猜测某些特殊商品可能在黑市变得更加稀缺且价值上升，决定前往地下黑市探索机会。',
         {
           market: {
@@ -2810,8 +2810,10 @@ const predefinedEvents = [
                 '503': 1.9  // 古画价格上涨90%
               },
               'second_hand_market': {
-                '107': 0.7, // 二手物品降价30%（需求下降）
-                '106': 0.75 // 二手物品降价25%
+                '107': 0.7, // 二手笔记本降价30%（需求下降）
+                '106': 0.75, // 二手iPhone降价25%
+                '108': 0.72, // 复古相机降价28%
+                '109': 0.68  // 二手游戏机降价32%
               }
             },
             duration: 3 // 持续3周
@@ -2821,7 +2823,7 @@ const predefinedEvents = [
         }
       ),
       createEventOption(
-        '保持观望', 
+        '保持观望',
         '你决定暂时不介入这次混乱的市场波动，等待形势更加明朗。',
         {
           // 仅记录市场变化，但不采取行动
@@ -2839,7 +2841,7 @@ const predefinedEvents = [
     repeatable: false,   // 重大事件，不可重复触发
     weight: 3           // 较高权重，优先触发
   }),
-  
+
   // 对比事件：地区繁荣与萧条
   createEvent({
     id: 'market_contrast_event',
@@ -2848,7 +2850,7 @@ const predefinedEvents = [
     type: EventType.MARKET,
     options: [
       createEventOption(
-        '分析市场机会', 
+        '分析市场机会',
         '你仔细分析了城市不同区域的发展变化，寻找其中的交易机会。',
         {
           market: {
@@ -2886,7 +2888,7 @@ const storyEvents = [];    // 故事/剧情事件
 function initializeEventLists() {
   // 如果事件列表已经初始化，则跳过
   if (tutorialEvents.length > 0) return;
-  
+
   // 遍历预定义事件数据，按类型分类
   predefinedEvents.forEach(eventData => {
     // 确保事件选项是EventOption实例
@@ -2896,14 +2898,14 @@ function initializeEventLists() {
       }
       return option;
     });
-    
+
     // 创建Event实例
     const event = new Event({
       ...eventData,
       options,
       imageUrl: eventData.imageUrl || (typeof eventData[8] === 'string' ? eventData[8] : null)
     });
-    
+
     // 根据事件类型添加到对应列表
     switch (event.type) {
       case EventType.TUTORIAL:
@@ -2937,33 +2939,33 @@ function initializeEventLists() {
 export function getAllEvents() {
   // 初始化事件列表
   initializeEventLists();
-  
+
   // 从缓存中获取事件，避免重新创建
   if (eventsCache.length > 0) {
     return eventsCache;
   }
-  
+
   // 初始化事件列表
   const events = [];
-  
+
   // 添加教程事件
   events.push(...tutorialEvents);
-  
+
   // 添加随机事件
   events.push(...randomEvents);
-  
+
   // 添加地点特定事件
   events.push(...locationEvents);
-  
+
   // 添加市场事件
   events.push(...marketEvents);
-  
+
   // 添加个人事件
   events.push(...personalEvents);
-  
+
   // 添加故事事件
   events.push(...storyEvents);
-  
+
   // 添加新的地区特定价格事件
   events.push(
     // 地区整体通胀事件
@@ -2974,7 +2976,7 @@ export function getAllEvents() {
       type: EventType.MARKET,
       options: [
         createEventOption(
-          '了解情况', 
+          '了解情况',
           '你记下了这个信息，这可能影响你在电子科技城的交易策略。',
           {
             market: {
@@ -2994,7 +2996,7 @@ export function getAllEvents() {
       repeatable: true,
       weight: 2
     }),
-    
+
     // 地区特定商品价格变化事件
     createEvent({
       id: 'premium_mall_luxury_watch_discount',
@@ -3003,7 +3005,7 @@ export function getAllEvents() {
       type: EventType.MARKET,
       options: [
         createEventOption(
-          '记下信息', 
+          '记下信息',
           '你记下了这个促销信息，可以考虑去高端商城购买手表。',
           {
             market: {
@@ -3025,7 +3027,7 @@ export function getAllEvents() {
       repeatable: true,
       weight: 1
     }),
-    
+
     // 多地区多商品价格变化事件
     createEvent({
       id: 'nationwide_paper_shortage',
@@ -3034,7 +3036,7 @@ export function getAllEvents() {
       type: EventType.MARKET,
       options: [
         createEventOption(
-          '分析影响', 
+          '分析影响',
           '你分析了这次纸张短缺对各个市场的影响，并调整了你的交易策略。',
           {
             market: {
@@ -3059,7 +3061,7 @@ export function getAllEvents() {
       repeatable: true,
       weight: 2
     }),
-    
+
     // 对比事件：地区繁荣与萧条
     createEvent({
       id: 'market_contrast_event',
@@ -3068,7 +3070,7 @@ export function getAllEvents() {
       type: EventType.MARKET,
       options: [
         createEventOption(
-          '分析市场机会', 
+          '分析市场机会',
           '你仔细分析了城市不同区域的发展变化，寻找其中的交易机会。',
           {
             market: {
@@ -3089,7 +3091,7 @@ export function getAllEvents() {
       repeatable: true,
       weight: 2
     }),
-    
+
     // 供应链中断事件
     createEvent({
       id: 'supply_chain_disruption',
@@ -3098,7 +3100,7 @@ export function getAllEvents() {
       type: EventType.MARKET,
       options: [
         createEventOption(
-          '在大宗市场囤积基本物资', 
+          '在大宗市场囤积基本物资',
           '你预判到基本生活物资将会短缺，决定前往大宗商品交易所囤积必需品。',
           {
             market: {
@@ -3126,7 +3128,7 @@ export function getAllEvents() {
           }
         ),
         createEventOption(
-          '投资受影响商品', 
+          '投资受影响商品',
           '你认为这是投资低价电子产品的好机会，决定前往电子科技城大量购入。',
           {
             market: {
@@ -3150,7 +3152,7 @@ export function getAllEvents() {
           }
         ),
         createEventOption(
-          '寻找黑市稀缺资源', 
+          '寻找黑市稀缺资源',
           '你猜测某些特殊商品可能在黑市变得更加稀缺且价值上升，决定前往地下黑市探索机会。',
           {
             market: {
@@ -3174,7 +3176,7 @@ export function getAllEvents() {
           }
         ),
         createEventOption(
-          '保持观望', 
+          '保持观望',
           '你决定暂时不介入这次混乱的市场波动，等待形势更加明朗。',
           {
             // 仅记录市场变化，但不采取行动
@@ -3193,10 +3195,10 @@ export function getAllEvents() {
       weight: 3           // 较高权重，优先触发
     })
   );
-  
+
   // 缓存创建的事件
   eventsCache = events;
-  
+
   return events;
 }
 
@@ -3208,7 +3210,7 @@ export function getAllEvents() {
 export function getEventById(id) {
   const eventData = predefinedEvents.find(e => e.id === id);
   if (!eventData) return null;
-  
+
   // 确保事件选项是EventOption实例
   const options = eventData.options.map(option => {
     if (!(option instanceof EventOption)) {
@@ -3216,7 +3218,7 @@ export function getEventById(id) {
     }
     return option;
   });
-  
+
   // 创建Event实例并确保imageUrl属性被正确传递
   return new Event({
     ...eventData,
