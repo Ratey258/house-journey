@@ -37,7 +37,7 @@
   
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="/icon.ico" type="image/x-icon">
+  <link rel="icon" href="./icon.ico" type="image/x-icon">
   <title>买房记v0.1.1</title>
   <style>
     /* 初始加载动画样式 */
@@ -145,7 +145,36 @@
   <link rel="modulepreload" crossorigin href="./assets/element-plus-c3799c73.js">
   <link rel="stylesheet" href="./assets/element-plus-b9d25494.css">
   <link rel="stylesheet" href="./assets/index-328e6097.css">
-</head>
+
+<script>
+  // 全局错误处理器
+  window.addEventListener('error', function(e) {
+    console.error('全局错误:', e.error || e.message);
+    const appElement = document.getElementById('app');
+    if (appElement && (!appElement.children.length || appElement.innerHTML.trim() === '')) {
+      appElement.innerHTML = '<div style="text-align:center;padding:20px;"><h2>加载出错</h2><p>请尝试刷新页面</p><p>错误信息: ' +
+        (e.message || '未知错误') + '</p><button onclick="localStorage.clear();window.location.reload()">清除缓存并刷新</button></div>';
+    }
+  });
+
+  // 图片错误处理
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      const images = document.querySelectorAll('img');
+      images.forEach(img => {
+        img.onerror = function() {
+          console.error('图片加载失败:', img.src);
+          // 尝试修复路径
+          if (img.src.includes('/resources/')) {
+            const newSrc = img.src.replace('/resources/', './resources/');
+            console.log('尝试修复图片路径:', img.src, '->', newSrc);
+            img.src = newSrc;
+          }
+        };
+      });
+    }, 1000);
+  });
+</script></head>
 <body>
   <!-- 初始加载动画 -->
   <div id="initial-loader">
