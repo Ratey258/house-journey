@@ -1,6 +1,40 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<script>
+  // 预定义xn函数和其他Element Plus函数
+  window.xn = function(e, t) {
+    return function(...l) {
+      return new Promise((n, a) => {
+        Promise.resolve(e(() => t.apply(this, l), {
+          fn: t,
+          thisArg: this,
+          args: l
+        })).then(n).catch(a);
+      });
+    };
+  };
+
+  // 错误处理和加载状态
+  window.addEventListener('error', function(e) {
+    console.error('全局错误:', e.error || e.message);
+    const appElement = document.getElementById('app');
+    if (appElement && (!appElement.children.length || appElement.innerHTML.trim() === '')) {
+      appElement.innerHTML = '<div style="text-align:center;padding:20px;"><h2>加载出错</h2><p>请尝试刷新页面</p><p>' +
+        e.message + '</p><button onclick="localStorage.clear();window.location.reload()">清除缓存并刷新</button></div>';
+    }
+  });
+
+  // 10秒后检查加载状态
+  setTimeout(function() {
+    const appElement = document.getElementById('app');
+    if (appElement && (!appElement.children.length || appElement.innerHTML.trim() === '')) {
+      appElement.innerHTML = '<div style="text-align:center;padding:20px;"><h2>加载超时</h2><p>请尝试刷新页面</p>' +
+        '<button onclick="localStorage.clear();window.location.reload()">清除缓存并刷新</button></div>';
+    }
+  }, 15000);
+</script>
+  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/icon.ico" type="image/x-icon">
@@ -104,11 +138,12 @@
       100% { transform: rotate(360deg); }
     }
   </style>
-  <script type="module" crossorigin src="./assets/main-0adc9c3e.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/ui-a9bb16a6.js">
-  <link rel="modulepreload" crossorigin href="./assets/vendor-3ea32499.js">
-  <link rel="modulepreload" crossorigin href="./assets/stores-6a84416e.js">
-  <link rel="stylesheet" href="./assets/ui-b9d25494.css">
+  <script type="module" crossorigin src="./assets/main-b636c3bf.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/vendor-e7c44fa3.js">
+  <link rel="modulepreload" crossorigin href="./assets/vue-core-cd9800c2.js">
+  <link rel="modulepreload" crossorigin href="./assets/stores-6663fff5.js">
+  <link rel="modulepreload" crossorigin href="./assets/element-plus-c3799c73.js">
+  <link rel="stylesheet" href="./assets/element-plus-b9d25494.css">
   <link rel="stylesheet" href="./assets/index-328e6097.css">
 </head>
 <body>
