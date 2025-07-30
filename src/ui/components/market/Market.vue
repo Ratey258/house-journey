@@ -46,6 +46,7 @@
             <th>{{ $t('market.price') }}</th>
             <th>{{ $t('market.trend') }}</th>
             <th>{{ $t('market.change') }}</th>
+            <th>拥有数量</th>
             <th>{{ $t('market.action') }}</th>
           </tr>
         </thead>
@@ -70,6 +71,9 @@
             </td>
             <td class="price-change" :class="getPriceChangeClass(product.changePercent)">
               {{ formatChange(product.changePercent) }}
+            </td>
+            <td class="owned-quantity">
+              {{ getPlayerProductQuantity(product.id) || 0 }}
             </td>
             <td>
               <div class="action-buttons">
@@ -128,7 +132,7 @@
             </td>
           </tr>
           <tr v-if="availableProducts.length === 0">
-            <td colspan="5" class="no-products">
+            <td colspan="6" class="no-products">
               {{ $t('market.noProducts') }}
             </td>
           </tr>
@@ -156,7 +160,7 @@
             <div class="current-price">
               ¥{{ formatNumber(product.currentPrice) }}
             </div>
-            <div class="trend-price-change">
+                          <div class="trend-price-change">
               <PriceTrendComponent
                 :trend="product.trend"
                 :percent="product.changePercent"
@@ -164,6 +168,9 @@
               <span class="card-price-change" :class="getPriceChangeClass(product.changePercent)">
                 {{ formatChange(product.changePercent) }}
               </span>
+            </div>
+            <div class="owned-quantity-card">
+              拥有: <span>{{ getPlayerProductQuantity(product.id) || 0 }}</span>
             </div>
           </div>
 
@@ -721,10 +728,11 @@ const quickSellMultiple = (product, quantity) => {
 
 .products-table th,
 .products-table td {
-  padding: 1rem;
+  padding: 0.6rem 0.5rem;
   text-align: left;
   box-sizing: border-box;
   transition: all 0.2s ease;
+  vertical-align: middle;
 }
 
 .products-table th {
@@ -752,18 +760,74 @@ const quickSellMultiple = (product, quantity) => {
 
 .products-table td {
   border-bottom: 1px solid #f0f0f0;
-  height: 70px; /* 增加行高 */
+  height: 56px; /* 减小行高 */
 }
 
 /* 设置操作列的宽度 */
-.products-table th:last-child,
-.products-table td:last-child {
-  width: 320px; /* 为操作按钮留出足够空间 */
+.products-table th:nth-child(1) {
+  width: 12%; /* 商品名称 */
+}
+
+.products-table th:nth-child(2) {
+  width: 12%; /* 价格 */
+  text-align: center;
+}
+
+.products-table th:nth-child(3) {
+  width: 12%; /* 趋势 */
+  text-align: center;
+}
+
+.products-table th:nth-child(4) {
+  width: 12%; /* 涨跌 */
+  text-align: center;
+}
+
+.products-table th:nth-child(5) {
+  width: 10%; /* 拥有数量 */
+  text-align: center;
+}
+
+.products-table th:last-child {
+  width: 38%; /* 操作按钮 */
+}
+
+.products-table td:nth-child(2) {
+  text-align: center; /* 价格居中 */
+}
+
+.products-table td:nth-child(3) {
+  text-align: center; /* 趋势居中 */
+}
+
+.products-table td:nth-child(4) {
+  text-align: center; /* 涨跌居中 */
 }
 
 .products-table td:last-child {
-  width: 220px; /* 为操作按钮预留足够空间 */
-  text-align: left; /* 改为左对齐 */
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+}
+
+/* 拥有数量列样式 */
+.owned-quantity {
+  font-weight: 600;
+  text-align: center;
+  color: #3498db;
+  width: 80px;
+}
+
+/* 卡片视图中的拥有数量样式 */
+.owned-quantity-card {
+  margin-top: 5px;
+  font-size: 0.85rem;
+  color: #555;
+  text-align: center;
+}
+
+.owned-quantity-card span {
+  font-weight: 600;
+  color: #3498db;
 }
 
 .special-product {
