@@ -77,7 +77,8 @@ export const useGameCoreStore = defineStore('gameCore', {
      * @returns {boolean} 是否成功进入下一周
      */
     advanceWeek() {
-      if (this.currentWeek < this.maxWeeks && !this.gameOver) {
+      // 允许当前周数等于最大周数，只有超过时才无法继续
+      if (this.currentWeek <= this.maxWeeks && !this.gameOver) {
         this.currentWeek++;
         console.log(`GameCore - 进入第 ${this.currentWeek} 周`);
 
@@ -168,7 +169,8 @@ export const useGameCoreStore = defineStore('gameCore', {
         return true;
       } else {
         // 只有在经典模式下（maxWeeks为52）才设置游戏结束状态
-        if (this.maxWeeks === 52) {
+        // 修改逻辑：currentWeek > maxWeeks 时才设置游戏结束状态
+        if (this.maxWeeks === 52 && this.currentWeek > this.maxWeeks) {
           this.gameOver = true;
         } else {
           // 无尽模式下继续游戏
@@ -284,7 +286,7 @@ export const useGameCoreStore = defineStore('gameCore', {
       if (this.gameOver) return;
 
       // 检查是否达到52周
-      if (this.currentWeek >= this.maxWeeks) {
+      if (this.currentWeek > this.maxWeeks) {
         // 游戏时间限制到达
         this.endGameWithTimeLimit();
         return;
@@ -1045,7 +1047,10 @@ export const useGameCoreStore = defineStore('gameCore', {
         return Math.min(5, (this.currentWeek / 1000) * 100);
       }
       // 经典模式下，正常计算进度
-      return (this.currentWeek / this.maxWeeks) * 100;
+      // 修正计算逻辑，使第一周显示为0%，最后一周(52)显示为约98%，超过52周才显示100%
+      const progress = ((this.currentWeek - 1) / this.maxWeeks) * 100;
+      // 限制在0-100之间
+      return Math.max(0, Math.min(100, progress));
     },
 
     /**
@@ -1065,7 +1070,9 @@ export const useGameCoreStore = defineStore('gameCore', {
       if (this.maxWeeks > 52) {
         return '∞';
       }
-      return this.maxWeeks - this.currentWeek;
+      // 确保第52周显示剩余0周，而不是-1周
+      const remaining = this.maxWeeks - this.currentWeek + 1;
+      return Math.max(0, remaining);
     },
 
     /**

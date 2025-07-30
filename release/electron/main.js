@@ -39,10 +39,10 @@ function createSplashScreen() {
 
   // 加载启动画面
   splashScreen.loadFile(path.join(__dirname, '../resources/splash.html'));
-  
+
   // 启动画面不显示在任务栏
   splashScreen.setSkipTaskbar(true);
-  
+
   // 居中显示
   splashScreen.center();
 }
@@ -53,7 +53,7 @@ function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    title: '买房记 v0.1.0',
+    title: '买房记 v0.1.1',
     show: false, // 先不显示主窗口
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -73,19 +73,19 @@ function createMainWindow() {
     // 打开开发者工具
     mainWindow.webContents.openDevTools();
   }
-  
+
   // 当内容加载完成后
   mainWindow.webContents.on('did-finish-load', () => {
     // 关闭启动画面并显示主窗口
     if (splashScreen && !splashScreen.isDestroyed()) {
       splashScreen.close();
     }
-    
+
     // 在300ms后显示主窗口（给一点时间让渲染进程准备好）
     setTimeout(() => {
       mainWindow.show();
       mainWindow.focus();
-      
+
       // 检查是否应该全屏显示
       const { fullScreen } = store.get('gameSettings');
       if (fullScreen) {
@@ -93,7 +93,7 @@ function createMainWindow() {
       }
     }, 300);
   });
-  
+
   // 设置自动更新
   setupAutoUpdater(mainWindow);
 }
@@ -115,37 +115,37 @@ function createAppMenu() {
       label: '设置',
       submenu: [
         { label: '游戏设置', click: () => mainWindow.webContents.send('menu:show-settings') },
-        { 
-          label: '全屏', 
-          type: 'checkbox', 
+        {
+          label: '全屏',
+          type: 'checkbox',
           checked: store.get('gameSettings.fullScreen'),
           click: (menuItem) => {
             mainWindow.setFullScreen(menuItem.checked);
             store.set('gameSettings.fullScreen', menuItem.checked);
-          } 
+          }
         }
       ]
     },
     {
       label: '帮助',
       submenu: [
-        { 
-          label: '游戏官网', 
-          click: () => shell.openExternal('http://www.housejourney.com') 
+        {
+          label: '游戏官网',
+          click: () => shell.openExternal('http://www.housejourney.com')
         },
-        { 
-          label: '检查更新', 
-          click: () => mainWindow.webContents.send('menu:check-update') 
+        {
+          label: '检查更新',
+          click: () => mainWindow.webContents.send('menu:check-update')
         },
         { type: 'separator' },
-        { 
-          label: '关于', 
-          click: () => mainWindow.webContents.send('menu:about') 
+        {
+          label: '关于',
+          click: () => mainWindow.webContents.send('menu:about')
         }
       ]
     }
   ];
-  
+
   // 开发环境添加开发者工具
   if (!app.isPackaged) {
     template.push({
@@ -159,7 +159,7 @@ function createAppMenu() {
       ]
     });
   }
-  
+
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }
@@ -168,13 +168,13 @@ function createAppMenu() {
 app.whenReady().then(() => {
   // 创建启动画面
   createSplashScreen();
-  
+
   // 设置IPC通信处理器
   setupIpcHandlers();
-  
+
   // 确保存档和日志目录存在
   ensureDirectoriesExist();
-  
+
   // 稍微延迟创建主窗口，让启动画面有时间显示
   setTimeout(() => {
     createMainWindow();
@@ -231,7 +231,7 @@ function setupIpcHandlers() {
     store.set('gameSettings.fullScreen', !isFullScreen);
     return !isFullScreen;
   });
-  
+
   // 错误日志操作
   ipcMain.handle('error:log', handleErrorLog);
   ipcMain.handle('error:get-logs', handleGetErrorLogs);
@@ -245,19 +245,19 @@ function ensureDirectoriesExist() {
   if (!fs.existsSync(saveDir)) {
     fs.mkdirSync(saveDir, { recursive: true });
   }
-  
+
   // 日志目录
   const logDir = path.join(app.getPath('userData'), 'logs');
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
   }
-  
+
   // 缓存目录
   const cacheDir = path.join(app.getPath('userData'), 'cache');
   if (!fs.existsSync(cacheDir)) {
     fs.mkdirSync(cacheDir, { recursive: true });
   }
-  
+
   // 用户数据目录
   const userDataDir = path.join(app.getPath('userData'), 'user_data');
   if (!fs.existsSync(userDataDir)) {
@@ -268,7 +268,7 @@ function ensureDirectoriesExist() {
 // 清除所有存档 (仅开发环境)
 function clearAllSaves() {
   if (app.isPackaged) return;
-  
+
   const saveDir = path.join(app.getPath('userData'), 'saves');
   if (fs.existsSync(saveDir)) {
     const files = fs.readdirSync(saveDir);
@@ -278,7 +278,7 @@ function clearAllSaves() {
       }
     }
   }
-  
+
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('saves:cleared');
   }
@@ -289,7 +289,7 @@ async function handleSaveGame(event, data) {
   try {
     const saveDir = path.join(app.getPath('userData'), 'saves');
     const filePath = path.join(saveDir, `${data.name}.json`);
-    
+
     await fs.promises.writeFile(filePath, JSON.stringify(data.gameState, null, 2));
     return { success: true, path: filePath };
   } catch (error) {
@@ -314,13 +314,13 @@ async function handleLoadGame(event, saveName) {
 async function handleListSaves() {
   try {
     const saveDir = path.join(app.getPath('userData'), 'saves');
-    
+
     // 确保目录存在
     if (!fs.existsSync(saveDir)) {
       fs.mkdirSync(saveDir, { recursive: true });
       return { success: true, saves: [] };
     }
-    
+
     const files = await fs.promises.readdir(saveDir);
     const saves = files
       .filter(file => file.endsWith('.json'))
@@ -333,7 +333,7 @@ async function handleListSaves() {
         };
       })
       .sort((a, b) => b.lastModified - a.lastModified);
-    
+
     return { success: true, saves };
   } catch (error) {
     console.error('List saves error:', error);
@@ -359,19 +359,19 @@ async function handleErrorLog(event, errorInfo) {
     const logDir = path.join(app.getPath('userData'), 'logs');
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const logFile = path.join(logDir, `error-${today}.log`);
-    
+
     // 格式化错误信息
     const logEntry = `[${new Date().toISOString()}] [${errorInfo.severity.toUpperCase()}] [${errorInfo.context}] ${errorInfo.message}\n`;
-    
+
     // 追加到日志文件
     await fs.promises.appendFile(logFile, logEntry);
-    
+
     // 对于严重错误，添加详细信息
     if (errorInfo.severity === 'fatal' || errorInfo.severity === 'error') {
       const detailsEntry = `Details: ${JSON.stringify(errorInfo, null, 2)}\nStack: ${errorInfo.stack || 'No stack trace'}\n\n`;
       await fs.promises.appendFile(logFile, detailsEntry);
     }
-    
+
     return { success: true };
   } catch (error) {
     console.error('Error logging failed:', error);
@@ -385,11 +385,11 @@ async function handleGetErrorLogs(event, date) {
     const logDir = path.join(app.getPath('userData'), 'logs');
     const targetDate = date || new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const logFile = path.join(logDir, `error-${targetDate}.log`);
-    
+
     if (!fs.existsSync(logFile)) {
       return { success: true, logs: [] };
     }
-    
+
     const content = await fs.promises.readFile(logFile, 'utf8');
     const logs = content.split('\n\n')
       .filter(entry => entry.trim())
@@ -397,13 +397,13 @@ async function handleGetErrorLogs(event, date) {
         const lines = entry.split('\n');
         const header = lines[0];
         const details = lines.slice(1).join('\n');
-        
+
         // 解析头部信息
         const timestampMatch = header.match(/\[(.*?)\]/);
         const severityMatch = header.match(/\[(fatal|error|warning|info)\]/i);
         const contextMatch = header.match(/\[([^\[\]]*)\][^\[]*$/);
         const messageMatch = header.match(/\][^\[]*\][^\[]*\]\s*(.*)/);
-        
+
         return {
           timestamp: timestampMatch ? timestampMatch[1] : '',
           severity: severityMatch ? severityMatch[1].toLowerCase() : 'unknown',
@@ -412,7 +412,7 @@ async function handleGetErrorLogs(event, date) {
           details: details
         };
       });
-    
+
     return { success: true, logs };
   } catch (error) {
     console.error('Get error logs failed:', error);
@@ -424,7 +424,7 @@ async function handleGetErrorLogs(event, date) {
 async function handleClearErrorLogs(event, date) {
   try {
     const logDir = path.join(app.getPath('userData'), 'logs');
-    
+
     if (date) {
       // 清除特定日期的日志
       const logFile = path.join(logDir, `error-${date}.log`);
@@ -440,10 +440,10 @@ async function handleClearErrorLogs(event, date) {
         }
       }
     }
-    
+
     return { success: true };
   } catch (error) {
     console.error('Clear error logs failed:', error);
     return { success: false, error: error.message };
   }
-} 
+}

@@ -32,7 +32,7 @@ module.exports = {
 
     // 最大行长度
     'max-len': ['warn', {
-      code: 150,
+      code: 200,
       ignoreComments: true,
       ignoreStrings: true,
       ignoreTemplateLiterals: true

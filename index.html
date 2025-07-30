@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="/icon.ico" type="image/x-icon">
-  <title>买房记v0.1.0</title>
+  <title>买房记v0.1.1</title>
   <style>
     /* 初始加载动画样式 */
     body, html {
@@ -15,7 +15,7 @@
       overflow: hidden;
       font-family: 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     }
-    
+
     #initial-loader {
       position: fixed;
       top: 0;
@@ -29,25 +29,25 @@
       align-items: center;
       z-index: 10000;
     }
-    
+
     .loader-content {
       text-align: center;
       color: #fff;
     }
-    
+
     .loader-title {
       font-size: 28px;
       margin-bottom: 20px;
       color: #4cc9f0;
     }
-    
+
     .loader-spinner {
       width: 80px;
       height: 80px;
       margin: 20px auto;
       position: relative;
     }
-    
+
     .loader-spinner:before,
     .loader-spinner:after {
       content: '';
@@ -60,21 +60,21 @@
       border: 6px solid transparent;
       border-top-color: #4361ee;
     }
-    
+
     .loader-spinner:before {
       z-index: 10;
       animation: spin 1.5s infinite;
     }
-    
+
     .loader-spinner:after {
       border: 6px solid rgba(255, 255, 255, 0.1);
     }
-    
+
     .loader-status {
       margin: 20px 0;
       font-size: 16px;
     }
-    
+
     .loader-progress-container {
       width: 300px;
       height: 10px;
@@ -83,7 +83,7 @@
       overflow: hidden;
       margin: 10px auto;
     }
-    
+
     .loader-progress-bar {
       height: 100%;
       width: 0%;
@@ -91,14 +91,14 @@
       border-radius: 5px;
       transition: width 0.3s ease;
     }
-    
+
     .loader-tip {
       font-style: italic;
       color: #a8dadc;
       margin-top: 20px;
       min-height: 20px;
     }
-    
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -118,13 +118,13 @@
       <div class="loader-tip" id="loader-tip">游戏即将开始，请稍候...</div>
     </div>
   </div>
-  
+
   <!-- 应用挂载点 -->
   <div id="app"></div>
-  
+
   <!-- 加载脚本 -->
   <script type="module" src="/src/main.js"></script>
-  
+
   <!-- 初始加载动画脚本 -->
   <script>
     // 加载提示
@@ -136,18 +136,18 @@
       '加载游戏界面...',
       '游戏即将开始...'
     ];
-    
+
     let currentTip = 0;
     let progress = 0;
     const progressBar = document.getElementById('progress-bar');
     const loaderTip = document.getElementById('loader-tip');
-    
+
     // 轮换提示
     setInterval(() => {
       loaderTip.textContent = tips[currentTip];
       currentTip = (currentTip + 1) % tips.length;
     }, 3000);
-    
+
     // 模拟加载进度
     const progressInterval = setInterval(() => {
       // 缓慢增加进度，最多到80%（剩余20%留给Vue应用加载）
@@ -157,14 +157,14 @@
         progressBar.style.width = progress + '%';
       }
     }, 300);
-    
+
     // 监听Vue应用加载完成事件
     window.addEventListener('app-loaded', () => {
       // 快速完成进度条
       clearInterval(progressInterval);
       progress = 100;
       progressBar.style.width = '100%';
-      
+
       // 延迟后隐藏初始加载动画
       setTimeout(() => {
         const loader = document.getElementById('initial-loader');
@@ -177,7 +177,7 @@
         }
       }, 500);
     });
-    
+
     // 如果Vue应用长时间未加载，也隐藏加载动画
     setTimeout(() => {
       const loader = document.getElementById('initial-loader');
@@ -195,4 +195,4 @@
     }, 15000); // 15秒后强制隐藏
   </script>
 </body>
-</html> 
+</html>

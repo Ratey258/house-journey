@@ -1,6 +1,6 @@
 import { getAllProducts } from '../models/product';
 import { getAllLocations } from '../models/location';
-import { getAllHouses } from '../models/house'; 
+import { getAllHouses } from '../models/house';
 import { getAllEvents } from '../models/event';
 import { createPlayer, createPlayerProduct } from '../models/player';
 import { EventSystem } from './eventSystem';
@@ -40,10 +40,10 @@ export class GameEngine {
     this.products = getAllProducts();
     this.locations = getAllLocations();
     this.houses = getAllHouses();
-    
+
     // 初始化系统
     this.eventSystem = new EventSystem(getAllEvents());
-    
+
     // 游戏状态
     this.state = {
       currentWeek: 1,
@@ -58,7 +58,7 @@ export class GameEngine {
       saveTimestamp: null
     };
   }
-  
+
   /**
    * 创建新游戏
    * @param {string} playerName 玩家名称
@@ -67,22 +67,22 @@ export class GameEngine {
   newGame(playerName, difficulty = 'standard') {
     // 创建玩家
     this.state.player = createPlayer(playerName);
-    
+
     // 设置初始状态
     this.state.currentWeek = 1;
     this.state.gameStarted = true;
     this.state.gamePaused = false;
     this.state.gameOver = false;
-    
+
     // 调整难度
     this.applyDifficulty(difficulty);
-    
+
     // 设置初始地点
     this.changeLocation(this.locations[0].id);
-    
+
     return this.state;
   }
-  
+
   /**
    * 应用游戏难度设置
    * @param {string} difficulty 难度级别
@@ -103,41 +103,39 @@ export class GameEngine {
         break;
     }
   }
-  
+
   /**
    * 进入下一周
    * @returns {boolean} 是否成功进入下一周
    */
   advanceWeek() {
     if (this.state.gameOver) return false;
-    
-    if (this.state.currentWeek < this.state.maxWeeks) {
+    if (this.state.currentWeek <= this.state.maxWeeks) {
       // 周数+1
       this.state.currentWeek++;
-      
       // 更新债务（每周增加0.5%的利息）
       if (this.state.player.debt > 0) {
         const interest = Math.floor(this.state.player.debt * 0.005);
         this.state.player.debt += interest;
       }
-      
+
       // 更新事件系统
       this.eventSystem.updateActiveEvents();
-      
+
       // 更新商品价格
       this.updateProducts();
-      
+
       // 检查游戏结束条件
       this.checkGameEnd();
-      
+
       return true;
     } else {
-      // 达到最大周数，游戏结束
+      // 超过最大周数，游戏结束
       this.state.gameOver = true;
       return false;
     }
   }
-  
+
   /**
    * 切换地点
    * @param {string} locationId 地点ID
@@ -147,33 +145,33 @@ export class GameEngine {
     // 在可用地点中查找
     const location = this.locations.find(loc => loc.id === locationId);
     if (!location) return false;
-    
+
     // 更新当前地点
     this.state.currentLocation = location;
-    
+
     // 添加到已访问地点
     if (!this.state.player.statistics.visitedLocations.includes(locationId)) {
       this.state.player.statistics.visitedLocations.push(locationId);
     }
-    
+
     // 更新该地点的商品
     this.updateProducts();
-    
+
     // 检查是否触发事件
     this.checkForEvents();
-    
+
     return true;
   }
-  
+
   /**
    * 更新当前地点的商品
    */
   updateProducts() {
     if (!this.state.currentLocation) return;
-    
+
     // 获取市场修正因子
     const marketModifiers = this.eventSystem.getActiveMarketModifiers();
-    
+
     // 生成当前地点可用商品及价格
     this.state.marketProducts = generateLocationProducts(
       this.products,
@@ -182,7 +180,7 @@ export class GameEngine {
       marketModifiers
     );
   }
-  
+
   /**
    * 检查是否触发事件
    */
@@ -191,25 +189,25 @@ export class GameEngine {
     if (!this.state.gameStarted || this.state.gamePaused || this.state.gameOver) {
       return;
     }
-    
+
     // 检查是否应触发事件
     const event = this.eventSystem.checkForEvents(this.state);
     if (event) {
       this.state.activeEvent = event;
     }
   }
-  
+
   /**
    * 处理事件选择
    * @param {number} optionIndex 选择的选项索引
    */
   handleEventOption(optionIndex) {
     if (!this.state.activeEvent) return;
-    
+
     // 获取选中的选项
     const option = this.state.activeEvent.options[optionIndex];
     if (!option) return;
-    
+
     // 执行选项效果
     const effects = option.action();
     if (effects) {
@@ -217,21 +215,21 @@ export class GameEngine {
       const updatedState = this.eventSystem.applyEventEffects(this.state, effects);
       Object.assign(this.state, updatedState);
     }
-    
+
     // 清除当前事件
     this.state.activeEvent = null;
-    
+
     // 如果需要强制切换地点，提示用户
     if (this.state.forceLocationChange) {
       // 在实际实现中，可能需要通知UI层
       // 这里简单地重置标志
       this.state.forceLocationChange = false;
     }
-    
+
     // 更新商品价格（反映事件效果）
     this.updateProducts();
   }
-  
+
   /**
    * 购买商品
    * @param {number} productId 商品ID
@@ -242,15 +240,15 @@ export class GameEngine {
     // 找到商品
     const product = this.state.marketProducts.find(p => p.id === productId);
     if (!product) return { success: false, message: '商品不存在' };
-    
+
     // 计算总价
     const totalPrice = product.currentPrice * quantity;
-    
+
     // 检查资金是否足够
     if (this.state.player.money < totalPrice) {
       return { success: false, message: '资金不足' };
     }
-    
+
     // 检查背包容量是否足够
     const currentCapacity = this.state.player.inventory.reduce(
       (sum, item) => sum + item.quantity, 0
@@ -258,22 +256,22 @@ export class GameEngine {
     if (currentCapacity + quantity > this.state.player.capacity) {
       return { success: false, message: '背包已满' };
     }
-    
+
     // 扣减资金
     this.state.player.money -= totalPrice;
-    
+
     // 添加到背包
     const existingProductIndex = this.state.player.inventory.findIndex(
       item => item.productId === productId
     );
-    
+
     if (existingProductIndex !== -1) {
       // 已有该商品，更新数量和平均购买价
       const existingProduct = this.state.player.inventory[existingProductIndex];
       const newTotalQuantity = existingProduct.quantity + quantity;
       const newTotalCost = existingProduct.totalCost + totalPrice;
       const newAveragePrice = Math.floor(newTotalCost / newTotalQuantity);
-      
+
       this.state.player.inventory[existingProductIndex] = {
         ...existingProduct,
         quantity: newTotalQuantity,
@@ -286,16 +284,16 @@ export class GameEngine {
         createPlayerProduct(product, quantity, product.currentPrice)
       );
     }
-    
+
     // 更新交易统计
     this.state.player.statistics.transactionCount++;
-    
-    return { 
-      success: true, 
-      message: `成功购买${quantity}个${product.name}，花费${totalPrice}元` 
+
+    return {
+      success: true,
+      message: `成功购买${quantity}个${product.name}，花费${totalPrice}元`
     };
   }
-  
+
   /**
    * 出售商品
    * @param {number} inventoryIndex 背包中的商品索引
@@ -307,33 +305,33 @@ export class GameEngine {
     if (inventoryIndex < 0 || inventoryIndex >= this.state.player.inventory.length) {
       return { success: false, message: '商品不存在' };
     }
-    
+
     // 获取要出售的商品
     const inventoryItem = this.state.player.inventory[inventoryIndex];
-    
+
     // 检查数量是否足够
     if (inventoryItem.quantity < quantity) {
       return { success: false, message: '商品数量不足' };
     }
-    
+
     // 查找当前市场中的对应商品价格
     const marketProduct = this.state.marketProducts.find(
       p => p.id === inventoryItem.productId
     );
-    
+
     if (!marketProduct) {
       return { success: false, message: '当前地点不收购该商品' };
     }
-    
+
     // 计算交易金额
     const sellPrice = marketProduct.currentPrice * quantity;
-    
+
     // 计算利润
     const profit = sellPrice - (inventoryItem.purchasePrice * quantity);
-    
+
     // 增加资金
     this.state.player.money += sellPrice;
-    
+
     // 更新背包
     if (inventoryItem.quantity === quantity) {
       // 全部出售，从背包中移除
@@ -346,22 +344,22 @@ export class GameEngine {
         totalCost: inventoryItem.totalCost - (inventoryItem.purchasePrice * quantity)
       };
     }
-    
+
     // 更新交易统计
     this.state.player.statistics.transactionCount++;
     this.state.player.statistics.totalProfit += profit;
-    
+
     // 更新历史最高资金记录
     if (this.state.player.money > this.state.player.statistics.maxMoney) {
       this.state.player.statistics.maxMoney = this.state.player.money;
     }
-    
-    return { 
-      success: true, 
-      message: `成功出售${quantity}个${inventoryItem.name}，获得${sellPrice}元${profit > 0 ? '（利润' + profit + '元）' : ''}` 
+
+    return {
+      success: true,
+      message: `成功出售${quantity}个${inventoryItem.name}，获得${sellPrice}元${profit > 0 ? '（利润' + profit + '元）' : ''}`
     };
   }
-  
+
   /**
    * 购买房屋
    * @param {string} houseId 房屋ID
@@ -373,21 +371,21 @@ export class GameEngine {
     if (alreadyPurchased) {
       return { success: false, message: '已拥有该房屋' };
     }
-    
+
     // 找到要购买的房屋
     const house = this.houses.find(h => h.id === houseId);
     if (!house) {
       return { success: false, message: '房屋不存在' };
     }
-    
+
     // 检查资金是否足够
     if (this.state.player.money < house.price) {
       return { success: false, message: '资金不足' };
     }
-    
+
     // 扣减资金
     this.state.player.money -= house.price;
-    
+
     // 添加到已购房产
     this.state.player.purchasedHouses.push({
       houseId: house.id,
@@ -395,16 +393,16 @@ export class GameEngine {
       purchaseWeek: this.state.currentWeek,
       purchasePrice: house.price
     });
-    
+
     // 检查游戏结束条件
     this.checkGameEnd();
-    
-    return { 
-      success: true, 
-      message: `恭喜您成功购买${house.name}！` 
+
+    return {
+      success: true,
+      message: `恭喜您成功购买${house.name}！`
     };
   }
-  
+
   /**
    * 还款
    * @param {number} amount 还款金额
@@ -415,42 +413,42 @@ export class GameEngine {
     if (amount <= 0) {
       return { success: false, message: '还款金额必须大于0' };
     }
-    
+
     // 检查债务是否已还清
     if (this.state.player.debt <= 0) {
       return { success: false, message: '您没有债务需要偿还' };
     }
-    
+
     // 检查资金是否足够
     if (this.state.player.money < amount) {
       return { success: false, message: '资金不足' };
     }
-    
+
     // 计算实际还款金额（不能超过当前债务）
     const actualAmount = Math.min(amount, this.state.player.debt);
-    
+
     // 扣减资金
     this.state.player.money -= actualAmount;
-    
+
     // 减少债务
     this.state.player.debt -= actualAmount;
-    
-    return { 
-      success: true, 
-      message: `成功偿还债务${actualAmount}元${this.state.player.debt === 0 ? '，您已还清所有债务！' : ''}` 
+
+    return {
+      success: true,
+      message: `成功偿还债务${actualAmount}元${this.state.player.debt === 0 ? '，您已还清所有债务！' : ''}`
     };
   }
-  
+
   /**
    * 检查游戏结束条件
    */
   checkGameEnd() {
-    // 检查是否达到最大周数
-    if (this.state.currentWeek >= this.state.maxWeeks) {
+    // 检查是否超过最大周数
+    if (this.state.currentWeek > this.state.maxWeeks) {
       this.state.gameOver = true;
       return;
     }
-    
+
     // 检查是否购买了特定房屋（可选的胜利条件）
     // 如果购买了最高级别房屋，可以提前结束游戏
     const hasMansion = this.state.player.purchasedHouses.some(h => h.houseId === 'mansion');
@@ -459,14 +457,14 @@ export class GameEngine {
       // this.state.earlyVictory = true;
     }
   }
-  
+
   /**
    * 保存游戏状态
    * @returns {Object} 要保存的游戏状态
    */
   getSaveState() {
     return {
-      version: '0.1.0',
+      version: '0.1.1',
       timestamp: Date.now(),
       playerName: this.state.player.name,
       currentWeek: this.state.currentWeek,
@@ -479,14 +477,18 @@ export class GameEngine {
       }
     };
   }
-  
+
   /**
    * 加载游戏状态
-   * @param {Objtry {
+   * @param {Object} saveState - 要加载的游戏状态
+   * @returns {boolean} 是否成功加载
+   */
+  loadSaveState(saveState) {
+    try {
       if (!saveState || !saveState.gameState || !saveState.gameState.player) {
         return false;
       }
-      
+
       // 恢复基本状态
       this.state.currentWeek = saveState.currentWeek;
       this.state.player = saveState.gameState.player;
@@ -494,17 +496,15 @@ export class GameEngine {
       this.state.gameStarted = saveState.gameState.gameStarted;
       this.state.gamePaused = saveState.gameState.gamePaused;
       this.state.gameOver = saveState.gameState.gameOver;
-      
+
       // 更新商品价格
       this.updateProducts();
-      
+
       return true;
     } catch (error) {
-    handleError(error, 'gameLoopService (services)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
-    console.error('Error loading save state:', error);
-      return false;}h (error) {
+      handleError(error, 'gameLoopService (services)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
       console.error('Error loading save state:', error);
       return false;
     }
   }
-} 
+}

@@ -1,11 +1,11 @@
 <template>
   <div class="main-menu">
     <div class="animated-bg"></div>
-    
+
     <div class="menu-container">
       <div class="title-section">
         <h1 class="game-title">买房记</h1>
-        <p class="game-version">v0.1.0</p>
+        <p class="game-version">v0.1.1</p>
       </div>
 
       <div class="menu-buttons">
@@ -131,8 +131,8 @@
         </div>
         <div class="about-content">
           <div class="about-logo">买房记</div>
-          <div class="about-version">版本：v0.1.0</div>
-          
+          <div class="about-version">版本：v0.1.1</div>
+
           <div class="about-description">
             <p>这是一款模拟经营策略游戏，玩家将在游戏中体验市场变化带来的乐趣与挑战。</p>
           </div>
@@ -219,12 +219,12 @@ function initMagicCard() {
       magicCard.style.setProperty('--x', `${x}%`);
       magicCard.style.setProperty('--y', `${y}%`);
     });
-    
+
     // 初始化输入框光效
     const inputContainer = magicCard.querySelector('.input-container');
     if (inputContainer) {
       const shine = inputContainer.querySelector('.input-shine');
-      
+
       inputContainer.addEventListener('mousemove', (e) => {
         const rect = inputContainer.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -233,27 +233,27 @@ function initMagicCard() {
           shine.style.left = `${x - 20}px`;
         }
       });
-      
+
       inputContainer.addEventListener('mouseleave', () => {
         if (shine) {
           shine.style.opacity = '0';
         }
       });
-      
+
       const input = inputContainer.querySelector('input');
       if (input) {
         input.addEventListener('focus', () => {
           inputContainer.style.transform = 'translateY(-2px)';
           inputContainer.style.boxShadow = '0 4px 15px rgba(58, 99, 184, 0.15), 0 0 0 1px rgba(58, 99, 184, 0.3)';
         });
-        
+
         input.addEventListener('blur', () => {
           inputContainer.style.transform = '';
           inputContainer.style.boxShadow = '';
         });
       }
     }
-    
+
     // 选项卡悬停效果增强
     const optionCards = magicCard.querySelectorAll('.menu-option-card');
     optionCards.forEach(card => {
@@ -263,7 +263,7 @@ function initMagicCard() {
           span.style.transform = 'translateY(-2px)';
         }
       });
-      
+
       card.addEventListener('mouseleave', () => {
         if (!card.classList.contains('selected')) {
           const span = card.querySelector('span');
@@ -273,13 +273,13 @@ function initMagicCard() {
         }
       });
     });
-    
+
     // 按钮增强效果
     const buttons = magicCard.querySelectorAll('.game-btn');
     buttons.forEach(button => {
       button.addEventListener('mouseenter', () => {
         button.style.transform = 'translateY(-2px)';
-        
+
         if (button.classList.contains('primary-btn')) {
           const buttonRect = button.getBoundingClientRect();
           button.style.boxShadow = '0 6px 20px rgba(58, 99, 184, 0.3)';
@@ -287,7 +287,7 @@ function initMagicCard() {
           button.style.boxShadow = '0 6px 15px rgba(0, 0, 0, 0.15)';
         }
       });
-      
+
       button.addEventListener('mouseleave', () => {
         button.style.transform = '';
         button.style.boxShadow = '';
@@ -342,7 +342,7 @@ async function startNewGame() {
     gameCore.victoryAchieved = false;
     gameCore.gameResult = null;
     gameCore.notifications = [];
-    
+
     // 根据游戏模式设置周数限制
     if (gameMode.value === 'endless') {
       // 无尽模式，设置一个非常大的数字作为周数限制
@@ -527,7 +527,7 @@ onMounted(() => {
 
 /* 闪烁星星效果 */
 .animated-bg::before {
-  background-image: 
+  background-image:
     radial-gradient(2px 2px at 40px 70px, #fff 100%, transparent),
     radial-gradient(2px 2px at 100px 150px, #fff 100%, transparent),
     radial-gradient(1px 1px at 200px 50px, #fff 100%, transparent),
@@ -542,7 +542,7 @@ onMounted(() => {
 
 /* 流星效果 */
 .animated-bg::after {
-  background-image: 
+  background-image:
     linear-gradient(to bottom right, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
   transform: rotate(-45deg) translate(0, -100%) scale(2);
   animation: meteor 10s ease-in infinite;
@@ -763,7 +763,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 20% 20%, rgba(58, 99, 184, 0.1) 0%, transparent 60%),
     radial-gradient(circle at 80% 80%, rgba(58, 99, 184, 0.08) 0%, transparent 60%);
   z-index: -1;
@@ -774,8 +774,8 @@ onMounted(() => {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), 
-                            rgba(255, 255, 255, 0.3) 0%, 
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%),
+                            rgba(255, 255, 255, 0.3) 0%,
                             transparent 50%);
   opacity: 0;
   transition: opacity 0.3s;

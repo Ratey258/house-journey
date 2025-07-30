@@ -1,7 +1,7 @@
 {
   "name": "house-journey",
-  "version": "0.1.0",
-  "description": "买房记 - 房产投资模拟游戏",
+  "version": "0.1.1",
+  "description": "买房记 - 模拟经营类游戏",
   "author": "春卷",
   "license": "MIT",
   "main": "electron/main.js",

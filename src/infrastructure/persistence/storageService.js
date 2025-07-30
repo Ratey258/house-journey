@@ -17,17 +17,17 @@ import { handleError, ErrorType, ErrorSeverity } from '../utils/errorHandler';
  */
 export function validateSaveData(saveData) {
   const issues = [];
-  
+
   // 基本有效性检查
   if (!saveData || typeof saveData !== 'object') {
     return { isValid: false, issues: ['存档数据无效或已损坏'] };
   }
-  
+
   // 检查版本
   if (!saveData.version) {
     issues.push('缺少版本信息');
   }
-  
+
   // 检查基本结构
   const requiredSections = ['gameCore', 'player', 'market', 'event'];
   for (const section of requiredSections) {
@@ -35,7 +35,7 @@ export function validateSaveData(saveData) {
       issues.push(`缺少${section}部分`);
     }
   }
-  
+
   // 检查游戏核心数据
   if (saveData.gameCore) {
     if (typeof saveData.gameCore.currentWeek !== 'number') {
@@ -48,7 +48,7 @@ export function validateSaveData(saveData) {
       issues.push('游戏周数超过最大周数');
     }
   }
-  
+
   // 检查玩家数据
   if (saveData.player) {
     if (typeof saveData.player.name !== 'string') {
@@ -66,7 +66,7 @@ export function validateSaveData(saveData) {
     if (!Array.isArray(saveData.player.purchasedHouses)) {
       issues.push('房产数据无效');
     }
-    
+
     // 检查玩家统计数据
     if (!saveData.player.statistics || typeof saveData.player.statistics !== 'object') {
       issues.push('玩家统计数据无效');
@@ -80,7 +80,7 @@ export function validateSaveData(saveData) {
       }
     }
   }
-  
+
   // 检查市场数据
   if (saveData.market) {
     if (!Array.isArray(saveData.market.locations)) {
@@ -89,29 +89,29 @@ export function validateSaveData(saveData) {
     if (!saveData.market.productPrices || typeof saveData.market.productPrices !== 'object') {
       issues.push('价格数据无效');
     }
-    
+
     // 检查产品数据完整性
     if (Array.isArray(saveData.market.products)) {
-      const hasDuplicateProducts = saveData.market.products.length !== 
+      const hasDuplicateProducts = saveData.market.products.length !==
         new Set(saveData.market.products).size;
-      
+
       if (hasDuplicateProducts) {
         issues.push('产品数据包含重复项');
       }
     }
   }
-  
+
   // 检查事件数据
   if (saveData.event) {
     if (saveData.event.activeEvent && typeof saveData.event.activeEvent !== 'object') {
       issues.push('活动事件数据无效');
     }
-    
+
     if (!Array.isArray(saveData.event.triggeredEvents)) {
       issues.push('触发事件记录无效');
     }
   }
-  
+
   return {
     isValid: issues.length === 0,
     issues
@@ -128,44 +128,44 @@ export function repairSaveData(saveData, template = null) {
   // 如果saveData完全损坏，使用空对象
   const repairedData = saveData || {};
   let repairLog = [];
-  
+
   // 使用默认模板如果没有提供
   if (!template) {
     template = createDefaultTemplate();
     repairLog.push('使用默认模板数据');
   }
-  
+
   // 确保基本结构存在
-  repairedData.version = repairedData.version || '0.1.0';
+  repairedData.version = repairedData.version || '0.1.1';
   repairedData.timestamp = repairedData.timestamp || new Date().toISOString();
   repairLog.push(`设置版本为: ${repairedData.version}`);
-  
+
   // 确保各部分存在
   repairedData.gameCore = repairedData.gameCore || {};
   repairedData.player = repairedData.player || {};
   repairedData.market = repairedData.market || {};
   repairedData.event = repairedData.event || {};
-  
+
   // 修复游戏核心数据
   repairedData.gameCore.currentWeek = ensureNumber(repairedData.gameCore.currentWeek, 1);
   repairedData.gameCore.maxWeeks = ensureNumber(repairedData.gameCore.maxWeeks, 52);
   repairedData.gameCore.gameStarted = ensureBoolean(repairedData.gameCore.gameStarted, true);
   repairedData.gameCore.gamePaused = ensureBoolean(repairedData.gameCore.gamePaused, false);
   repairedData.gameCore.gameOver = ensureBoolean(repairedData.gameCore.gameOver, false);
-  repairedData.gameCore.notifications = Array.isArray(repairedData.gameCore.notifications) 
-    ? repairedData.gameCore.notifications 
+  repairedData.gameCore.notifications = Array.isArray(repairedData.gameCore.notifications)
+    ? repairedData.gameCore.notifications
     : [];
   repairedData.gameCore.gameGoals = repairedData.gameCore.gameGoals || {
     requiredNetWorth: 400000,
     targetWeeks: 30,
     debtRatio: 0.4
   };
-  
+
   if (repairedData.gameCore.currentWeek > repairedData.gameCore.maxWeeks) {
     repairedData.gameCore.currentWeek = repairedData.gameCore.maxWeeks;
     repairLog.push('修复: 调整当前周数不超过最大周数');
   }
-  
+
   // 修复玩家数据
   repairedData.player.name = repairedData.player.name || '玩家';
   repairedData.player.money = ensureNumber(repairedData.player.money, 5000);
@@ -176,27 +176,27 @@ export function repairSaveData(saveData, template = null) {
   repairedData.player.debt = ensureNumber(repairedData.player.debt, 2000);
   repairedData.player.capacity = ensureNumber(repairedData.player.capacity, 100);
   repairedData.player.inventoryUsed = ensureNumber(repairedData.player.inventoryUsed, 0);
-  repairedData.player.inventory = Array.isArray(repairedData.player.inventory) 
-    ? repairedData.player.inventory 
+  repairedData.player.inventory = Array.isArray(repairedData.player.inventory)
+    ? repairedData.player.inventory
     : [];
   repairedData.player.purchasedHouses = Array.isArray(repairedData.player.purchasedHouses)
     ? repairedData.player.purchasedHouses
     : [];
-  
+
   // 确保库存使用量与实际库存一致
   const calculatedInventoryUsed = repairedData.player.inventory.reduce(
     (total, item) => total + (item.quantity || 0), 0
   );
-  
+
   if (repairedData.player.inventoryUsed !== calculatedInventoryUsed) {
     repairedData.player.inventoryUsed = calculatedInventoryUsed;
     repairLog.push('修复: 调整库存使用量以匹配实际库存');
   }
-  
+
   // 确保玩家统计数据存在
   repairedData.player.statistics = repairedData.player.statistics || {};
   repairedData.player.statistics.weekCount = ensureNumber(
-    repairedData.player.statistics.weekCount, 
+    repairedData.player.statistics.weekCount,
     repairedData.gameCore.currentWeek
   );
   repairedData.player.statistics.transactionCount = ensureNumber(
@@ -206,16 +206,16 @@ export function repairSaveData(saveData, template = null) {
     repairedData.player.statistics.totalProfit, 0
   );
   repairedData.player.statistics.maxMoney = ensureNumber(
-    repairedData.player.statistics.maxMoney, 
+    repairedData.player.statistics.maxMoney,
     Math.max(repairedData.player.money, 5000)
   );
-  
+
   // 如果有房产但没有购房记录，修复购房记录
   if (repairedData.player.purchasedHouses.length > 0 &&
-      (!repairedData.player.statistics.housePurchases || 
+      (!repairedData.player.statistics.housePurchases ||
         repairedData.player.statistics.housePurchases.length === 0)) {
-    
-    repairedData.player.statistics.housePurchases = 
+
+    repairedData.player.statistics.housePurchases =
       repairedData.player.purchasedHouses.map(house => ({
         houseId: house.houseId,
         name: house.name || `${house.level}级房产`,
@@ -223,45 +223,45 @@ export function repairSaveData(saveData, template = null) {
         price: house.purchasePrice,
         week: house.purchaseWeek || repairedData.gameCore.currentWeek
       }));
-    
+
     repairLog.push('修复: 重建房屋购买记录');
   } else if (!repairedData.player.statistics.housePurchases) {
     repairedData.player.statistics.housePurchases = [];
   }
-  
+
   // 确保firstHousePurchaseWeek存在
-  if (repairedData.player.purchasedHouses.length > 0 && 
+  if (repairedData.player.purchasedHouses.length > 0 &&
       repairedData.player.statistics.firstHousePurchaseWeek === null) {
-    
+
     // 找出最早购买的房屋
     const firstHouse = [...repairedData.player.purchasedHouses].sort(
       (a, b) => (a.purchaseWeek || Infinity) - (b.purchaseWeek || Infinity)
     )[0];
-    
-    repairedData.player.statistics.firstHousePurchaseWeek = 
+
+    repairedData.player.statistics.firstHousePurchaseWeek =
       firstHouse.purchaseWeek || Math.max(1, repairedData.gameCore.currentWeek - 1);
-    
+
     repairLog.push('修复: 设置首次购房周数');
   }
-  
+
   // 修复市场数据
   if (!Array.isArray(repairedData.market.locations) || repairedData.market.locations.length === 0) {
     // 如果有模板数据，使用模板的地点数据
-    repairedData.market.locations = template.market && Array.isArray(template.market.locations) 
+    repairedData.market.locations = template.market && Array.isArray(template.market.locations)
       ? [...template.market.locations]
       : [];
-    
+
     if (repairedData.market.locations.length > 0) {
       repairLog.push('修复: 从模板恢复地点数据');
     }
   }
-  
+
   repairedData.market.productPrices = repairedData.market.productPrices || {};
-  
+
   // 确保价格数据有效
   if (template && template.market && template.market.productPrices) {
     let pricesFixed = 0;
-    
+
     for (const key in template.market.productPrices) {
       if (!repairedData.market.productPrices[key]) {
         // 如果缺少某产品的价格数据，从模板复制
@@ -269,20 +269,20 @@ export function repairSaveData(saveData, template = null) {
         pricesFixed++;
       }
     }
-    
+
     if (pricesFixed > 0) {
       repairLog.push(`修复: 从模板恢复${pricesFixed}个产品价格数据`);
     }
   }
-  
+
   // 修复事件数据
   if (!Array.isArray(repairedData.event.triggeredEvents)) {
     repairedData.event.triggeredEvents = [];
     repairLog.push('修复: 初始化触发事件记录');
   }
-  
+
   console.log('存档修复日志:', repairLog);
-  
+
   return {
     data: repairedData,
     repairLog
@@ -351,27 +351,37 @@ function ensureBoolean(value, defaultValue) {
 }
 
 /**
- * 版本兼容处理
- * @param {Object} saveData 存档数据
- * @param {string} currentVersion 当前游戏版本
- * @returns {Object} 处理后的存档数据
+ * 确保存档数据版本兼容性
+ * @param {Object} saveData - 存档数据
+ * @param {string} currentVersion - 当前游戏版本
+ * @returns {Object} 修复后的存档数据
  */
-export function ensureVersionCompatibility(saveData, currentVersion = '0.1.0') {
-  // 如果存档没有版本信息，假设为最早版本
-  const saveVersion = saveData.version || '0.0.1';
-  
-  // 比较版本，如果存档版本低于当前版本，进行数据迁移
-  if (compareVersions(saveVersion, currentVersion) < 0) {
-    console.log(`升级存档数据: ${saveVersion} -> ${currentVersion}`);
-    
-    // 这里可以添加版本之间的迁移逻辑
-    // 例如: if (saveVersion === '0.0.1') { migrateFrom001To010(saveData); }
-    
-    // 更新存档版本
-    saveData.version = currentVersion;
+export function ensureVersionCompatibility(saveData, currentVersion = '0.1.1') {
+  if (!saveData) return null;
+
+  // 为旧版本没有版本号的存档添加版本号
+  if (!saveData.version) {
+    saveData.version = '0.1.0'; // 假设旧版本是0.1.0
   }
-  
-  return saveData;
+
+  // 如果版本一致，无需修复
+  if (saveData.version === currentVersion) {
+    return saveData;
+  }
+
+  // 不同版本间的兼容性处理
+  let repairedData = { ...saveData };
+
+  // 版本0.1.0 -> 0.1.1的兼容处理
+  if (saveData.version === '0.1.0' && currentVersion === '0.1.1') {
+    // 添加可能在新版本中新增的字段，默认值等
+    if (!repairedData.gameState) repairedData.gameState = {};
+    // 其他兼容性处理...
+  }
+
+  // 更新版本号
+  repairedData.version = currentVersion;
+  return repairedData;
 }
 
 /**
@@ -383,15 +393,15 @@ export function ensureVersionCompatibility(saveData, currentVersion = '0.1.0') {
 function compareVersions(a, b) {
   const partsA = a.split('.').map(Number);
   const partsB = b.split('.').map(Number);
-  
+
   for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
     const valueA = i < partsA.length ? partsA[i] : 0;
     const valueB = i < partsB.length ? partsB[i] : 0;
-    
+
     if (valueA > valueB) return 1;
     if (valueA < valueB) return -1;
   }
-  
+
   return 0;
 }
 
@@ -408,7 +418,7 @@ export class StorageService {
   async getData(key) {
     throw new Error('StorageService.getData must be implemented by subclass');
   }
-  
+
   /**
    * 设置数据
    * @param {string} key 存储键
@@ -418,7 +428,7 @@ export class StorageService {
   async setData(key, data) {
     throw new Error('StorageService.setData must be implemented by subclass');
   }
-  
+
   /**
    * 删除数据
    * @param {string} key 存储键
@@ -427,7 +437,7 @@ export class StorageService {
   async removeData(key) {
     throw new Error('StorageService.removeData must be implemented by subclass');
   }
-  
+
   /**
    * 清除所有数据
    * @returns {Promise<boolean>} 操作是否成功
@@ -450,7 +460,7 @@ export class LocalStorageService extends StorageService {
     super();
     this.prefix = prefix;
   }
-  
+
   /**
    * 获取完整存储键
    * @param {string} key 原始键
@@ -459,7 +469,7 @@ export class LocalStorageService extends StorageService {
   getFullKey(key) {
     return `${this.prefix}${key}`;
   }
-  
+
   /**
    * 获取数据
    * @param {string} key 存储键
@@ -475,7 +485,7 @@ export class LocalStorageService extends StorageService {
       throw storageError(`Failed to get data for key ${key}`, { originalError: error.message });
     }
   }
-  
+
   /**
    * 安全序列化数据
    * @param {any} data - 要序列化的数据
@@ -488,17 +498,17 @@ export class LocalStorageService extends StorageService {
       return JSON.stringify(data);
     } catch (error) {
       console.warn('标准序列化失败，尝试手动序列化');
-      
+
       // 创建一个安全的可序列化版本
       if (data === null || data === undefined) {
         return JSON.stringify(null);
       }
-      
+
       // 处理基本类型
       if (typeof data !== 'object') {
         return JSON.stringify(data);
       }
-      
+
       // 处理数组
       if (Array.isArray(data)) {
         const safeArray = [];
@@ -516,7 +526,7 @@ export class LocalStorageService extends StorageService {
         }
         return JSON.stringify(safeArray);
       }
-      
+
       // 处理对象
       const safeObj = {};
       for (const key in data) {
@@ -536,11 +546,11 @@ export class LocalStorageService extends StorageService {
           }
         }
       }
-      
+
       return JSON.stringify(safeObj);
     }
   }
-  
+
   /**
    * 设置数据
    * @param {string} key 存储键
@@ -551,7 +561,7 @@ export class LocalStorageService extends StorageService {
     try {
       console.log(`LocalStorage: 保存数据到 ${key}`);
       const fullKey = this.getFullKey(key);
-      
+
       // 使用安全序列化
       let serializedData;
       try {
@@ -565,7 +575,7 @@ export class LocalStorageService extends StorageService {
           key
         });
       }
-      
+
       localStorage.setItem(fullKey, serializedData);
       return true;
     } catch (error) {
@@ -575,7 +585,7 @@ export class LocalStorageService extends StorageService {
       return false;
     }
   }
-  
+
   /**
    * 删除数据
    * @param {string} key 存储键
@@ -591,7 +601,7 @@ export class LocalStorageService extends StorageService {
       throw storageError(`Failed to remove data for key ${key}`, { originalError: error.message });
     }
   }
-  
+
   /**
    * 清除所有数据
    * @returns {Promise<boolean>} 操作是否成功
@@ -647,7 +657,7 @@ export class ElectronStorageService extends StorageService {
       handleError(error, 'storageService (persistence)', ErrorType.STORAGE, ErrorSeverity.ERROR);
       console.error('初始化ElectronStorageService失败:', error);
     }
-    
+
     return this.isInitialized;
   }
 
@@ -668,11 +678,11 @@ export class ElectronStorageService extends StorageService {
 
       const fullKey = this.prefix + key;
       const config = await window.electronAPI.getConfig();
-      
+
       if (config && config[fullKey] !== undefined) {
         return config[fullKey];
       }
-      
+
       return null;
     } catch (error) {
       handleError(error, 'storageService (persistence)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
@@ -694,22 +704,22 @@ export class ElectronStorageService extends StorageService {
       return JSON.parse(JSON.stringify(data));
     } catch (error) {
       console.warn('标准JSON序列化失败，尝试手动序列化', error);
-      
+
       // 如果JSON序列化失败，进行手动序列化
       if (data === null || data === undefined) {
         return data;
       }
-      
+
       // 处理基本类型
       if (typeof data !== 'object') {
         return data;
       }
-      
+
       // 处理数组
       if (Array.isArray(data)) {
         return data.map(item => this._safeSerialize(item));
       }
-      
+
       // 处理普通对象
       const result = {};
       for (const key in data) {
@@ -742,11 +752,11 @@ export class ElectronStorageService extends StorageService {
   async setData(key, data) {
     try {
       console.log(`正在保存数据 [${key}]...`);
-      
+
       // 首先尝试备用存储，以防主存储失败
       const fallbackSuccess = await this.fallbackStorage.setData(key, data);
       console.log(`备用存储保存${fallbackSuccess ? '成功' : '失败'}`);
-      
+
       if (!this.isInitialized) {
         console.log('ElectronAPI未初始化，仅使用备用存储');
         return fallbackSuccess;
@@ -755,32 +765,32 @@ export class ElectronStorageService extends StorageService {
       if (!window.electronAPI || !window.electronAPI.setConfig) {
         throw new Error('Electron API不可用');
       }
-      
+
       // 安全序列化数据，处理潜在的循环引用
       const safeData = this._safeSerialize(data);
       console.log('数据已安全序列化');
 
       const fullKey = this.prefix + key;
       const config = { [fullKey]: safeData };
-      
+
       await window.electronAPI.setConfig(config);
       console.log(`数据成功保存到 [${key}]`);
       return true;
     } catch (error) {
       handleError(error, 'storageService (persistence)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
       console.error(`设置数据失败 [${key}]:`, error);
-      
+
       // 尝试直接使用文件系统API保存游戏数据
       if (key.includes('Save_') && window.electronAPI && window.electronAPI.saveGame) {
         try {
           console.log('尝试使用saveGame API保存...');
           const saveName = key.replace(this.prefix, '').replace('Save_', '');
-          
+
           const result = await window.electronAPI.saveGame({
             name: saveName,
             gameState: data
           });
-          
+
           if (result && result.success) {
             console.log('使用saveGame API保存成功');
             return true;
@@ -789,7 +799,7 @@ export class ElectronStorageService extends StorageService {
           console.error('saveGame API保存失败', saveGameError);
         }
       }
-      
+
       // 尝试使用备用存储
       return await this.fallbackStorage.setData(key, data);
     }
@@ -812,7 +822,7 @@ export class ElectronStorageService extends StorageService {
 
       const fullKey = this.prefix + key;
       const config = { [fullKey]: undefined };
-      
+
       await window.electronAPI.setConfig(config);
       return true;
     } catch (error) {
@@ -839,7 +849,7 @@ export class ElectronStorageService extends StorageService {
       // 只清除带有前缀的配置项
       const config = await window.electronAPI.getConfig();
       const keysToRemove = Object.keys(config).filter(key => key.startsWith(this.prefix));
-      
+
       if (keysToRemove.length === 0) {
         return true;
       }
@@ -863,4 +873,4 @@ export class ElectronStorageService extends StorageService {
 // 创建默认存储服务实例
 const storageService = new ElectronStorageService();
 
-export default storageService; 
+export default storageService;
