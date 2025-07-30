@@ -43,7 +43,7 @@ jobs:
       - name: 设置Pages
         uses: actions/configure-pages@v4
       - name: 上传构建产物
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
           path: './dist'
       - name: 部署到GitHub Pages
