@@ -3,7 +3,7 @@
  */
 module.exports = {
   appId: 'com.housejourney.app',
-  productName: '买房记v0.1.0',
+  productName: '买房记v0.1.1',
   copyright: 'Copyright © 2025 春卷',
 
   directories: {
@@ -27,11 +27,11 @@ module.exports = {
         arch: ['x64']
       }
     ],
-    artifactName: '买房记v0.1.0.${ext}'
+    artifactName: '买房记v0.1.1.${ext}'
   },
 
   portable: {
-    artifactName: '买房记v0.1.0.exe',
+    artifactName: '买房记v0.1.1.exe',
     requestExecutionLevel: 'user'
   },
 

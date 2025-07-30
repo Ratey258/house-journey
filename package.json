@@ -88,8 +88,8 @@
   "config": {
     "forge": {
       "packagerConfig": {
-        "name": "买房记v0.1.0",
-        "executableName": "买房记v0.1.0",
+        "name": "买房记v0.1.1",
+        "executableName": "买房记v0.1.1",
         "icon": "./ico.ico",
         "asar": true
       },
@@ -97,7 +97,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "买房记v0.1.0",
+            "name": "买房记v0.1.1",
             "setupIcon": "./ico.ico"
           }
         },

@@ -78,7 +78,7 @@ function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    title: '买房记v0.1.0',
+    title: '买房记v0.1.1',
     show: false, // 先不显示主窗口
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -93,8 +93,8 @@ function createMainWindow() {
       sandbox: true,
       allowRunningInsecureContent: false
     },
-    icon: app.isPackaged 
-      ? path.join(path.dirname(app.getPath('exe')), 'icon.ico') 
+    icon: app.isPackaged
+      ? path.join(path.dirname(app.getPath('exe')), 'icon.ico')
       : path.join(__dirname, '../release/icon.ico')
   });
 
