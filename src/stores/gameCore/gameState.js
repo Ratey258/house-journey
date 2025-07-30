@@ -59,7 +59,11 @@ export const useGameCoreStore = defineStore('gameCore', {
           marketStore.updateLocationProducts();
           console.log('GameCore - 市场商品已更新');
         });
+
+        // 重置事件系统并清除所有事件状态
         eventStore.resetEvents();
+        eventStore.activeEvent = null;
+        eventStore.activeEvents = [];
 
         // 保存玩家名称到本地存储
         localStorage.setItem('lastPlayerName', playerName);
@@ -344,8 +348,8 @@ export const useGameCoreStore = defineStore('gameCore', {
         // 完美胜利结果对象
         this.gameResult = {
           reason: 'victoryTimeLimit',
-          week: this.currentWeek,
-          weeksPassed: this.currentWeek,
+          week: this.maxWeeks, // 固定为最大周数
+          weeksPassed: this.maxWeeks, // 固定为最大周数
           score: finalScore, // 直接设置得分
           achievementName: null,
           victoryAchieved: true,
@@ -569,8 +573,8 @@ export const useGameCoreStore = defineStore('gameCore', {
       // 构建完整的游戏结果对象，包含所有可能需要的统计数据
       this.gameResult = {
         reason,
-        week: this.currentWeek,
-        weeksPassed: this.currentWeek,
+        week: reason === 'timeLimit' ? this.maxWeeks : this.currentWeek, // 时间限制时使用最大周数
+        weeksPassed: reason === 'timeLimit' ? this.maxWeeks : this.currentWeek, // 时间限制时使用最大周数
         score: gameScore,
         achievementName,
         victoryAchieved: this.victoryAchieved,

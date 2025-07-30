@@ -21,7 +21,7 @@
         <div class="core-stats">
           <div class="stat-item">
             <div class="stat-label">游戏周数</div>
-            <div class="stat-value">{{ gameStats.weeksPassed || 0 }} / {{ gameState.maxWeeks }}</div>
+            <div class="stat-value">{{ Math.min(gameStats.weeksPassed || 0, gameState.maxWeeks) }} / {{ gameState.maxWeeks }}</div>
           </div>
 
           <div class="stat-item">
@@ -302,7 +302,8 @@ export default {
     getResultDescription() {
       const endReason = this.gameStats.endReason;
       const firstVictoryWeek = this.gameStats.data?.firstVictoryWeek;
-      const currentWeek = this.gameStats.weeksPassed || 0;
+      // 确保周数不超过最大值52
+      const currentWeek = Math.min(this.gameStats.weeksPassed || 0, this.gameState.maxWeeks);
       const finalAssets = this.formatNumber(this.gameStats.finalAssets || 0);
       const totalTrades = this.gameStats.tradeStats?.totalTrades || 0;
       const totalProfit = this.formatNumber(Math.abs(this.gameStats.tradeStats?.totalProfit || 0));
@@ -319,7 +320,7 @@ export default {
                  `最终资产达到 ¥${finalAssets}，完美诠释了"赢家通吃"！`;
 
         case 'timeLimit':
-          return `52周时间已到，你累积了 ¥${finalAssets} 的资产。\n` +
+          return `游戏结束，你在52周内累积了 ¥${finalAssets} 的资产。\n` +
                  `通过 ${totalTrades} 次交易，总计${profitPrefix} ¥${totalProfit}。继续努力，下次一定能实现购房梦！`;
 
         case 'bankruptcy':

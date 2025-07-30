@@ -361,6 +361,12 @@ onMounted(() => {
     console.log('重置游戏结束状态');
     gameCoreStore.gameOver = false;
     showGameOverDialog.value = false;
+
+    // 同时重置事件系统，防止事件重新触发
+    const eventStore = useEventStore();
+    eventStore.resetEvents();
+    eventStore.activeEvent = null;
+    eventStore.activeEvents = [];
   }
 
   // 加载游戏资源
@@ -374,7 +380,10 @@ onMounted(() => {
 
   // 设置定时器，定期检查是否有活跃事件需要显示
   setInterval(() => {
-    checkActiveEvents();
+    // 只在游戏未结束时检查事件
+    if (!gameCoreStore.gameOver) {
+      checkActiveEvents();
+    }
   }, 2000); // 每2秒检查一次
 
   // 添加交易提示事件监听
@@ -483,6 +492,12 @@ const advanceWeek = () => {
 };
 
 const checkActiveEvents = () => {
+  // 如果游戏已结束，不检查事件
+  if (gameCoreStore.gameOver) {
+    console.log('GameView - 游戏已结束，跳过事件检查');
+    return;
+  }
+
   console.log('GameView - 检查活跃事件');
 
   // 检查事件存储中是否有活跃事件
@@ -499,6 +514,12 @@ const checkActiveEvents = () => {
         console.error('GameView - 事件对话框组件未找到');
       }
     });
+    return;
+  }
+
+  // 如果游戏已结束，不检查GameCore中的事件
+  if (gameCoreStore.gameOver) {
+    console.log('GameView - 游戏已结束，跳过GameCore事件检查');
     return;
   }
 
@@ -536,7 +557,7 @@ const checkActiveEvents = () => {
 
         // 显示事件
         try {
-      eventModal.value.showEvent(event);
+          eventModal.value.showEvent(event);
           console.log('GameView - 事件显示请求已发送');
         } catch (error) {
           console.error('GameView - 显示事件时出错:', error);
@@ -666,9 +687,17 @@ const continueFromVictory = () => {
 
 // 重新开始游戏
 const restartGame = () => {
+  // 先重置事件系统
+  const eventStore = useEventStore();
+  eventStore.resetEvents();
+
   // 创建一个新游戏
   gameCoreStore.startNewGame(player.value.name);
   showGameOverDialog.value = false;
+
+  // 清除所有活跃事件
+  eventStore.activeEvent = null;
+  eventStore.activeEvents = [];
 };
 
 // 加载游戏资源
