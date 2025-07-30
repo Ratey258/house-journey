@@ -51,10 +51,20 @@
 
                   <span class="effect-description">
                     <template v-if="effect.type === 'money'">
-                      {{ effect.value > 0 ? '获得金钱: ' : '支出金钱: ' }}{{ Math.abs(effect.value) }}元
+                      <template v-if="effect.isPercentage">
+                        {{ effect.value > 0 ? '获得金钱: ' : '支出金钱: ' }}{{ Math.abs(effect.value) }}元 ({{ effect.percentage }}%)
+                      </template>
+                      <template v-else>
+                        {{ effect.value > 0 ? '获得金钱: ' : '支出金钱: ' }}{{ Math.abs(effect.value) }}元
+                      </template>
                     </template>
                     <template v-else-if="effect.type === 'debt'">
-                      {{ effect.value > 0 ? '增加债务: ' : '减少债务: ' }}{{ Math.abs(effect.value) }}元
+                      <template v-if="effect.isPercentage">
+                        {{ effect.value > 0 ? '增加债务: ' : '减少债务: ' }}{{ Math.abs(effect.value) }}元 ({{ effect.percentage }}%)
+                      </template>
+                      <template v-else>
+                        {{ effect.value > 0 ? '增加债务: ' : '减少债务: ' }}{{ Math.abs(effect.value) }}元
+                      </template>
                     </template>
                     <template v-else-if="effect.type === 'capacity'">
                       背包容量增加: {{ effect.value }}
