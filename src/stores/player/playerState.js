@@ -14,7 +14,7 @@ export const usePlayerStore = defineStore('player', {
     loanPrincipal: 5000, // 添加贷款本金追踪，初始值与debt相同
     capacity: 100,
     inventoryUsed: 0,
-    inventory: [],
+    inventory: [], // 物品库存数组
     purchasedHouses: [],
     initialized: false, // 添加初始化标志
     // 添加银行相关状态
@@ -35,6 +35,33 @@ export const usePlayerStore = defineStore('player', {
 
   actions: {
     /**
+     * 直接添加物品到背包
+     * @param {Object} item - 物品对象
+     */
+    addInventoryItem(item) {
+      console.log('PlayerStore - 直接添加物品:', item);
+
+      // 确保物品有必要的属性
+      if (!item || !item.productId || !item.quantity) {
+        console.error('PlayerStore - 无效的物品对象:', item);
+        return false;
+      }
+
+      // 添加物品到背包
+      this.inventory.push(item);
+
+      // 更新已用容量
+      this.inventoryUsed += item.quantity;
+
+      console.log('PlayerStore - 背包更新后:', {
+        inventoryCount: this.inventory.length,
+        inventoryUsed: this.inventoryUsed
+      });
+
+      return true;
+    },
+
+    /**
      * 初始化玩家
      * @param {string} playerName - 玩家名称
      * @returns {Promise} 初始化完成的Promise
@@ -52,6 +79,12 @@ export const usePlayerStore = defineStore('player', {
           this.capacity = 100;
           this.inventoryUsed = 0;
           this.inventory = [];
+          console.log('PlayerStore - 初始化背包:', {
+            capacity: this.capacity,
+            inventoryUsed: this.inventoryUsed,
+            inventory: this.inventory
+          });
+
           this.purchasedHouses = [];
           this.initialized = true; // 设置初始化标志
           // 初始化银行状态

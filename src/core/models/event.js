@@ -523,12 +523,15 @@ const predefinedEvents = [
         '冒险完成交易',
         '你冒险留下来完成交易，获得了低价商品，但差点被执法人员抓住。',
         createEventEffects({
-          market: {
-            globalPriceModifier: 0.6,
-            duration: 1
-          },
+          money: -2000, // 花费2000元购买低价商品
+          items: [
+            { productId: 502, quantity: 1, price: 1000 }, // 邮票，低于市场价
+            { productId: 505, quantity: 2, price: 500 }   // 纪念币，低于市场价
+          ],
           attributes: { businessSkill: 1, risk_tolerance: 1 }
-        })
+        }),
+        (gameState) => gameState.player.money >= 2000 && // 确保玩家有足够的钱
+                       gameState.player.capacity - gameState.player.inventoryUsed >= 3 // 确保有足够的背包空间
       )
     ],
     createEventConditions({
@@ -548,14 +551,53 @@ const predefinedEvents = [
     [
       createEventOption(
         '趁机提高售价',
-        '你抓住机会在附近设摊，以略高的价格出售商品，赚了一笔。',
+        '你抓住机会在附近设摊，以略高的价格出售奢侈品，赚了一笔。',
         createEventEffects({
-          money: 1500,
+          money: (gameState) => {
+            // 计算玩家库存中的奢侈品总价值
+            const luxuryItems = gameState.player.inventory.filter(item => {
+              const product = gameState.products.find(p => p.id === item.productId);
+              return product && product.category === 'LUXURY';
+            });
+
+            // 如果有奢侈品，则出售一部分
+            if (luxuryItems.length > 0) {
+              // 选择第一个奢侈品出售
+              const itemToSell = luxuryItems[0];
+              const product = gameState.products.find(p => p.id === itemToSell.productId);
+              const sellQuantity = Math.min(itemToSell.quantity, 1); // 最多卖1个
+              const sellPrice = product ? product.basePrice * 1.5 : 1500; // 高于基础价格50%
+
+              // 记录要移除的物品
+              return sellPrice * sellQuantity;
+            }
+
+            // 如果没有奢侈品，返回固定金额
+            return 1500;
+          },
+          items: (gameState) => {
+            // 查找玩家库存中的奢侈品
+            const luxuryItems = gameState.player.inventory.filter(item => {
+              const product = gameState.products.find(p => p.id === item.productId);
+              return product && product.category === 'LUXURY';
+            });
+
+            // 如果有奢侈品，则出售一个
+            if (luxuryItems.length > 0) {
+              return [{ productId: luxuryItems[0].productId, quantity: -1 }]; // 负数表示移除
+            }
+
+            return []; // 没有奢侈品可卖
+          },
           market: {
             globalPriceModifier: 1.2,
             duration: 1
           }
-        })
+        }),
+        (gameState) => {
+          // 检查玩家是否有库存物品
+          return gameState.player.inventoryUsed > 0;
+        }
       ),
       createEventOption(
         '尝试接近名人',
@@ -615,12 +657,20 @@ const predefinedEvents = [
         '购买电子产品',
         '你趁机购买了一些电子产品，价格比平时便宜很多。',
         createEventEffects({
+          money: -3000, // 花费3000元购买电子产品
+          items: [
+            { productId: 301, quantity: 1, price: 1500 }, // 手机，低于市场价
+            { productId: 305, quantity: 1, price: 800 }   // 智能手表，低于市场价
+          ],
           market: {
-            categoryModifier: 'ELECTRONICS',
-            modifier: 0.7,
+            categoryModifiers: {
+              'ELECTRONICS': 0.7 // 电子产品类别价格下降30%
+            },
             duration: 2
           }
-        })
+        }),
+        (gameState) => gameState.player.money >= 3000 && // 确保玩家有足够的钱
+                       gameState.player.capacity - gameState.player.inventoryUsed >= 2 // 确保有足够的背包空间
       ),
       createEventOption(
         '不感兴趣',
@@ -1056,7 +1106,29 @@ const predefinedEvents = [
         '出售现有服装库存',
         '你决定趁机出售手中的服装类商品，获得一定利润。',
         createEventEffects({
-          money: 800
+          money: (gameState) => {
+            // 查找玩家库存中的服装类商品
+            const clothingItems = gameState.player.inventory.filter(item => {
+              const product = gameState.products.find(p => p.id === item.productId);
+              return product && product.category === 'CLOTHING';
+            });
+
+            // 计算总价值
+            let totalValue = 0;
+            clothingItems.forEach(item => {
+              const product = gameState.products.find(p => p.id === item.productId);
+              if (product) {
+                // 以高于购买价的价格出售
+                const sellPrice = Math.max(item.purchasePrice * 1.2, product.basePrice * 1.1);
+                totalValue += sellPrice * Math.min(item.quantity, 1); // 最多卖1件
+              }
+            });
+
+            return totalValue > 0 ? totalValue : 800; // 如果没有计算出价值，则返回默认值
+          },
+          items: [
+            { category: 'CLOTHING', quantity: -1 } // 使用类别来标识要出售的商品类型
+          ]
         }),
         (gameState) => {
           // 检查背包中是否有服装类商品
@@ -1086,9 +1158,14 @@ const predefinedEvents = [
         '大量购入食品',
         '你预计价格会进一步上涨，决定趁现在大量购入食品类商品。',
         createEventEffects({
+          money: -2000, // 花费2000元购买食品
+          items: [
+            { productId: 201, quantity: 5, price: 200 }, // 鸡蛋，低于市场价
+            { productId: 202, quantity: 2, price: 250 }  // 大米，低于市场价
+          ],
           market: {
             categoryModifiers: {
-              'FOOD': 1.4  // 修正格式，categoryModifier改为categoryModifiers对象
+              'FOOD': 1.4  // 食品类别价格上涨40%
             },
             productModifiers: {
               '201': 1.6,  // 鸡蛋价格上涨60%
@@ -1097,7 +1174,9 @@ const predefinedEvents = [
             },
             duration: 4
           }
-        })
+        }),
+        (gameState) => gameState.player.money >= 2000 && // 确保玩家有足够的钱
+                       gameState.player.capacity - gameState.player.inventoryUsed >= 7 // 确保有足够的背包空间(鸡蛋5个，大米2个)
       ),
       createEventOption(
         '寻找替代食品来源',
@@ -1136,9 +1215,14 @@ const predefinedEvents = [
         '投资科技产品',
         '你决定购入一批最新的科技产品，希望能够获得高额利润。',
         createEventEffects({
+          money: -5000, // 花费5000元购买电子产品
+          items: [
+            { productId: 301, quantity: 1, price: 2500 }, // 手机，当前市场价
+            { productId: 305, quantity: 1, price: 1500 }  // 智能手表，当前市场价
+          ],
           market: {
             categoryModifiers: {
-              'ELECTRONICS': 1.25 // 修正格式，categoryModifier改为categoryModifiers对象
+              'ELECTRONICS': 1.25 // 电子产品类别价格上涨25%
             },
             productModifiers: {
               '301': 1.4,   // 手机价格上涨40%
@@ -1150,7 +1234,9 @@ const predefinedEvents = [
             },
             duration: 3
           }
-        })
+        }),
+        (gameState) => gameState.player.money >= 5000 && // 确保玩家有足够的钱
+                       gameState.player.capacity - gameState.player.inventoryUsed >= 2 // 确保有足够的背包空间
       ),
       createEventOption(
         '继续关注传统产品',
@@ -2674,14 +2760,23 @@ const predefinedEvents = [
         '你支付咨询费，获得了一些关于当前市场的专业建议。',
         createEventEffects({
           money: -1000, // 咨询费
-          // 某些商品价格信息会更准确
+          // 实际影响房产价格，而不仅仅是显示价格变化
           market: {
             productModifiers: {
-              'house_a': 1.05, // 特定房产价格微调
-              'house_b': 0.95,
-              'land_a': 1.1
+              'apartment': 1.05, // A型房产价格上涨5%
+              'second_hand': 0.95, // B型房产价格下跌5%
+              'highend': 1.1 // A类土地价格上涨10%
             },
-            duration: 604800 // 一周
+            duration: 1 // 持续1周
+          },
+          // 添加房产信息到玩家属性中
+          attributes: {
+            realEstateInsight: true, // 标记玩家获得了房产洞察力
+            realEstateAdvice: {
+              apartment: '+5%', // 显示给玩家的建议
+              second_hand: '-5%',
+              highend: '+10%'
+            }
           }
         }),
         (gameState) => gameState.player.money >= 1000

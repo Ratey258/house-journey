@@ -849,37 +849,64 @@ export class EventSystem {
 
     // 处理物品效果
     if (effects.items) {
+      // 注意：这里不直接操作库存，而是通过eventItemHandler来处理
+      // 物品处理逻辑已移至src/stores/events/eventItemHandler.js
+      // 在eventState.js中会调用eventItemHandler来处理物品
       effects.items.forEach(item => {
         if (item.quantity > 0) {
-          // 添加物品
-          const product = gameState.products.find(p => p.id === item.productId);
+          // 添加物品 - 在eventState.js中处理
+          // 这里只记录需要添加的物品信息
+          console.log('EventSystem - 处理物品添加:', {
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price || 0,
+            gameStateProducts: gameState.products ? `包含${gameState.products.length}个产品` : '无产品列表'
+          });
+
+          // 尝试将productId转换为数字
+          const productIdNum = Number(item.productId);
+          const productIdStr = String(item.productId);
+
+          // 尝试多种方式查找产品
+          let product = null;
+          if (gameState.products) {
+            // 尝试精确匹配
+            product = gameState.products.find(p => p.id === item.productId);
+
+            // 尝试数字匹配
+            if (!product && !isNaN(productIdNum)) {
+              product = gameState.products.find(p => p.id === productIdNum);
+            }
+
+            // 尝试字符串匹配
+            if (!product) {
+              product = gameState.products.find(p => String(p.id) === productIdStr);
+            }
+          }
+
+          console.log('EventSystem - 找到产品:', product ? {
+            id: product.id,
+            name: product.name,
+            category: product.category
+          } : 'null');
+
           if (product) {
             // 检查背包容量
             const requiredSpace = product.size * item.quantity;
             if (gameState.player.inventoryUsed + requiredSpace <= gameState.player.capacity) {
-              // 添加到背包
-              const existingItem = gameState.player.inventory.find(i =>
-                i.productId === item.productId && i.purchasePrice === (item.price || 0)
-              );
-
-              if (existingItem) {
-                existingItem.quantity += item.quantity;
-              } else {
-                gameState.player.inventory.push({
-                  productId: item.productId,
-                  name: product.name,
-                  quantity: item.quantity,
-                  purchasePrice: item.price || 0,
-                  size: product.size
-                });
-              }
-
-              gameState.player.inventoryUsed += requiredSpace;
+              // 记录需要添加的物品
+              console.log('EventSystem - 添加物品效果:', {
+                type: 'item_add',
+                productId: product.id, // 使用找到的产品ID
+                quantity: item.quantity,
+                price: item.price || 0
+              });
 
               result.appliedEffects.push({
                 type: 'item_add',
-                productId: item.productId,
+                productId: product.id, // 使用找到的产品ID
                 quantity: item.quantity,
+                price: item.price || 0,
                 success: true
               });
             } else {
@@ -901,35 +928,23 @@ export class EventSystem {
             });
           }
         } else if (item.quantity < 0) {
-          // 移除物品
-          const inventoryItem = gameState.player.inventory.find(i => i.productId === item.productId);
-          if (inventoryItem && inventoryItem.quantity >= Math.abs(item.quantity)) {
-            // 移除指定数量
-            const removedQuantity = Math.abs(item.quantity);
-            const spaceFreed = inventoryItem.size * removedQuantity;
-
-            inventoryItem.quantity -= removedQuantity;
-            gameState.player.inventoryUsed -= spaceFreed;
-
-            // 如果数量为0，从背包中移除
-            if (inventoryItem.quantity <= 0) {
-              const index = gameState.player.inventory.indexOf(inventoryItem);
-              gameState.player.inventory.splice(index, 1);
-            }
-
+          // 移除物品 - 在eventState.js中处理
+          // 这里只记录需要移除的物品信息
+          if (item.productId) {
+            // 记录需要移除的物品
             result.appliedEffects.push({
               type: 'item_remove',
               productId: item.productId,
-              quantity: removedQuantity,
+              quantity: Math.abs(item.quantity),
               success: true
             });
-          } else {
-            // 物品不足
-            result.failedEffects.push({
-              type: 'item_remove',
-              productId: item.productId,
+          } else if (item.category) {
+            // 记录需要按类别移除的物品
+            result.appliedEffects.push({
+              type: 'item_remove_category',
+              category: item.category,
               quantity: Math.abs(item.quantity),
-              reason: 'insufficient_items'
+              success: true
             });
           }
         }

@@ -6,7 +6,7 @@
         <!-- 事件标题 -->
         <div class="event-header">
           <div class="event-header-content">
-          <h2 class="event-title">{{ currentEvent?.title || '事件' }}</h2>
+            <h2 class="event-title">{{ currentEvent?.title || '事件' }}</h2>
             <div class="event-icon">{{ getEventIcon(currentEvent?.type) }}</div>
           </div>
         </div>
@@ -34,9 +34,10 @@
               <h3>效果变化</h3>
               <div class="effect-list">
                 <!-- 普通效果项 -->
-                <div v-for="(effect, index) in effectResults.filter(e => e.type !== 'market')"
+                                  <div v-for="(effect, index) in effectResults.filter(e => e.type !== 'market')"
                      :key="`normal-${index}`"
-                     :class="['effect-item', effect.type]">
+                     :class="['effect-item', effect.type]"
+                     :data-error="effect.isError">
                   <span v-if="effect.type === 'money'" class="effect-icon">
                     {{ effect.value > 0 ? '💰' : '💸' }}
                   </span>
@@ -70,13 +71,21 @@
                       背包容量增加: {{ effect.value }}
                     </template>
                     <template v-else-if="effect.type === 'item_add'">
-                      获得物品: {{ effect.productId }} x {{ effect.quantity }}
-                    </template>
-                    <template v-else-if="effect.type === 'item_remove'">
-                      失去物品: {{ effect.productId }} x {{ effect.quantity }}
-                    </template>
+                   获得物品: {{ getProductName(effect.productId) || `商品#${effect.productId}` }} x {{ effect.quantity }}
+               </template>
+            <template v-else-if="effect.type === 'item_remove'">
+              失去物品: {{ getProductName(effect.productId) || `商品#${effect.productId}` }} x {{ effect.quantity }}
+            </template>
                     <template v-else-if="effect.type === 'attribute'">
-                      {{ getAttributeDisplayName(effect.attribute) }}: {{ effect.oldValue }} → {{ effect.newValue }}
+                      <template v-if="effect.attribute === 'realEstateAdvice'">
+                        <div>房产市场建议:</div>
+                        <div v-for="(change, houseId) in effect.newValue" :key="houseId" style="margin-left: 10px;">
+                          {{ getProductName(houseId) }}: {{ change }}
+                        </div>
+                      </template>
+                      <template v-else>
+                        {{ getAttributeDisplayName(effect.attribute) }}: {{ effect.oldValue }} → {{ effect.newValue }}
+                      </template>
                     </template>
                     <template v-else-if="effect.type === 'info'">
                       {{ effect.description || '信息' }}
@@ -122,6 +131,7 @@
 import { ref, onMounted, nextTick, computed } from 'vue';
 import { useEventActions } from '@/stores/events';
 import { useGameCoreStore } from '@/stores/gameCore';
+import { useMarketStore } from '@/stores/market/marketState';
 import eventEmitter from '@/infrastructure/eventEmitter';
 import { handleError, ErrorType, ErrorSeverity } from '@/infrastructure/utils/errorHandler';
 
@@ -219,7 +229,18 @@ const getAttributeDisplayName = (attribute) => {
     luck: "幸运",
     charisma: "魅力",
     intelligence: "智力",
-    stamina: "体力"
+    stamina: "体力",
+    // 房产相关属性
+    realEstateInsight: "房产市场洞察力",
+    realEstateAdvice: "房产投资建议",
+    housingInvestment: "房产投资",
+    propertyValue: "房产价值",
+    hasHouse: "拥有房产",
+    // 商业技能
+    businessSkill: "商业技能",
+    creditRating: "信用评级",
+    risk_tolerance: "风险承受能力",
+    negotiation: "谈判能力"
   };
 
   return attributeNames[attribute] || attribute;
@@ -334,11 +355,39 @@ const getLocationName = (locationId) => {
 
 // 获取产品名称
 const getProductName = (productId) => {
+  // 调试信息
+  console.log('EventModal - 获取产品名称:', productId, '类型:', typeof productId);
+  // 尝试从marketStore中查找产品
+  const marketStore = useMarketStore();
+  if (marketStore.products && marketStore.products.length > 0) {
+    // 尝试多种匹配方式
+    const product = marketStore.products.find(p =>
+      p.id === productId ||
+      p.id === Number(productId) ||
+      String(p.id) === String(productId)
+    );
+
+    if (product) {
+      console.log('EventModal - 从marketStore找到产品:', product.name);
+      return product.name;
+    }
+  }
+
   // 将productId转为字符串，以便统一处理数字和字符串ID
   const id = String(productId);
 
-  // 处理特殊格式的ID，比如house_a, land_a这类
-  if (id.startsWith('house_')) {
+  // 处理房产和土地ID
+  if (id === 'apartment') {
+    return '单身公寓';
+  } else if (id === 'second_hand') {
+    return '二手旧房';
+  } else if (id === 'highend') {
+    return '高档小区';
+  } else if (id === 'villa') {
+    return '现代别墅';
+  } else if (id === 'mansion') {
+    return '私人庄园';
+  } else if (id.startsWith('house_')) {
     const houseType = id.split('_')[1]?.toUpperCase() || '';
     return `${houseType}型房产`;
   } else if (id.startsWith('land_')) {
@@ -418,7 +467,9 @@ const getProductName = (productId) => {
     '505': '纪念币'
   };
 
-  return productMap[id] || `商品(${id})`;
+  const result = productMap[id];
+  console.log(`EventModal - 产品名称查找结果: ${id} => ${result || '未找到'}`);
+  return result || `商品(${id})`;
 };
 
 // 处理背景点击
@@ -529,13 +580,57 @@ const selectOption = (option) => {
       console.log('EventModal - 选项处理结果:', result);
 
       // 处理效果结果
-      if (result && result.appliedEffects) {
-        // 过滤掉不需要显示的效果类型
-        effectResults.value = result.appliedEffects.filter(effect =>
-          effect.type !== 'next_event' &&
-          effect.type !== 'location_change'
-        );
+      if (result) {
+        const allEffects = [];
 
+        // 处理应用成功的效果
+        if (result.appliedEffects) {
+          // 过滤掉不需要显示的效果类型
+          const appliedEffects = result.appliedEffects.filter(effect =>
+            effect.type !== 'next_event' &&
+            effect.type !== 'location_change'
+          );
+
+          // 确保金钱和物品效果显示在前面
+          const moneyEffects = appliedEffects.filter(e => e.type === 'money');
+          const itemEffects = appliedEffects.filter(e => e.type === 'item_add' || e.type === 'item_remove');
+          const otherEffects = appliedEffects.filter(e =>
+            e.type !== 'money' && e.type !== 'item_add' && e.type !== 'item_remove'
+          );
+
+          // 按优先级添加效果
+          allEffects.push(...moneyEffects, ...itemEffects, ...otherEffects);
+        }
+
+        // 处理失败的效果，特别是商品不足的情况
+        if (result.failedEffects) {
+          result.failedEffects.forEach(failedEffect => {
+            if (failedEffect.type === 'item_remove' && failedEffect.reason === 'insufficient_items') {
+              // 添加商品不足的提示
+              allEffects.push({
+                type: 'info',
+                description: `你没有足够的商品(${getProductName(failedEffect.productId)})可出售`,
+                isError: true
+              });
+            } else if (failedEffect.type === 'item_remove' && failedEffect.reason === 'product_not_found') {
+              // 添加没有此类商品的提示
+              allEffects.push({
+                type: 'info',
+                description: `你当前没有${getProductName(failedEffect.productId)}可出售`,
+                isError: true
+              });
+            } else if (failedEffect.type === 'item_remove' && failedEffect.reason === 'category_not_found') {
+              // 添加没有此类别商品的提示
+              allEffects.push({
+                type: 'info',
+                description: `你当前没有此类商品可出售`,
+                isError: true
+              });
+            }
+          });
+        }
+
+        effectResults.value = allEffects;
         console.log('EventModal - 应用的效果:', effectResults.value);
 
         // 去重：确保相同类型的效果不重复显示
@@ -550,6 +645,9 @@ const selectOption = (option) => {
               effectTypes.add(marketEffect);
               uniqueEffects.push(effect);
             }
+          } else if (effect.type === 'info' && effect.isError) {
+            // 错误信息不去重，直接添加
+            uniqueEffects.push(effect);
           } else {
             // 对于其他类型的效果，简单检查类型
             if (!effectTypes.has(effect.type)) {
@@ -1017,6 +1115,12 @@ defineExpose({
 .effect-item.info {
   background-color: #e1f5fe;
   border-left: 4px solid #03a9f4;
+}
+
+.effect-item.info[data-error="true"] {
+  background-color: #fff8e8;
+  border-left: 4px solid #ff9800;
+  color: #e65100;
 }
 
 .effect-item.error {
