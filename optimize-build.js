@@ -27,6 +27,8 @@ export default defineConfig({
     minify: 'esbuild', // 使用更快的minifier
     sourcemap: false, // 禁用sourcemap，减小文件体积
     cssCodeSplit: true,
+    // 确保静态资源被正确复制
+    copyPublicDir: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html')
@@ -151,7 +153,28 @@ try {
   console.error('添加脚本失败:', error);
 }
 
-// 第四步：部署
+// 第四步：复制资源文件
+console.log('\n确保资源文件被正确复制...');
+try {
+  // 确保目标目录存在
+  const resourcesDir = path.join(__dirname, 'dist', 'resources');
+  if (!fs.existsSync(resourcesDir)) {
+    fs.mkdirSync(resourcesDir, { recursive: true });
+  }
+
+  // 复制resources目录
+  const sourceResourcesDir = path.join(__dirname, 'resources');
+  if (fs.existsSync(sourceResourcesDir)) {
+    copyFolderRecursiveSync(sourceResourcesDir, path.join(__dirname, 'dist'));
+    console.log('资源文件复制完成');
+  } else {
+    console.warn('源资源目录不存在:', sourceResourcesDir);
+  }
+} catch (error) {
+  console.error('复制资源文件失败:', error);
+}
+
+// 第五步：部署
 console.log('\n开始部署到GitHub Pages...');
 try {
   execSync('npx gh-pages -d dist', { stdio: 'inherit' });
@@ -161,7 +184,30 @@ try {
   process.exit(1);
 }
 
-// 第五步：清理临时文件
+// 递归复制文件夹的辅助函数
+function copyFolderRecursiveSync(source, targetBase) {
+  const target = path.join(targetBase, path.basename(source));
+
+  // 创建目标文件夹
+  if (!fs.existsSync(target)) {
+    fs.mkdirSync(target, { recursive: true });
+  }
+
+  // 复制文件夹内容
+  if (fs.lstatSync(source).isDirectory()) {
+    const files = fs.readdirSync(source);
+    files.forEach(file => {
+      const curSource = path.join(source, file);
+      if (fs.lstatSync(curSource).isDirectory()) {
+        copyFolderRecursiveSync(curSource, target);
+      } else {
+        fs.copyFileSync(curSource, path.join(target, file));
+      }
+    });
+  }
+}
+
+// 第六步：清理临时文件
 try {
   fs.unlinkSync(tempViteConfigPath);
   console.log('清理了临时文件');

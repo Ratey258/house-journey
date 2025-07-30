@@ -11,16 +11,16 @@
 export function getHouseImagePath(houseId) {
   // 安全检查：如果houseId不是有效值，返回默认图片
   if (!houseId || houseId === 'undefined' || houseId === 'null') {
-    return '/resources/assets/images/house_1.jpeg';
+    return './resources/assets/images/house_1.jpeg';
   }
 
   // 房屋ID与图片的映射关系
   const imageMap = {
-    'apartment': '/resources/assets/images/house_1.jpeg',
-    'second_hand': '/resources/assets/images/house_2.jpeg',
-    'highend': '/resources/assets/images/house_3.jpeg',
-    'villa': '/resources/assets/images/house_4.jpeg',
-    'mansion': '/resources/assets/images/house_5.jpeg'
+    'apartment': './resources/assets/images/house_1.jpeg',
+    'second_hand': './resources/assets/images/house_2.jpeg',
+    'highend': './resources/assets/images/house_3.jpeg',
+    'villa': './resources/assets/images/house_4.jpeg',
+    'mansion': './resources/assets/images/house_5.jpeg'
   };
 
   // 如果是数字ID，使用模运算获取1-5之间的图片
@@ -28,11 +28,11 @@ export function getHouseImagePath(houseId) {
     // 确保使用有效的数值，避免NaN
     const parsedId = parseInt(houseId);
     const imageIndex = parsedId ? Math.max(1, Math.min(5, (parsedId % 5) || 1)) : 1;
-    return `/resources/assets/images/house_${imageIndex}.jpeg`;
+    return `./resources/assets/images/house_${imageIndex}.jpeg`;
   }
 
   // 返回对应的图片路径，如果没有找到则返回默认图片
-  return imageMap[houseId] || '/resources/assets/images/house_1.jpeg';
+  return imageMap[houseId] || './resources/assets/images/house_1.jpeg';
 }
 
 /**
