@@ -1,3 +1,51 @@
+# 依赖和构建输出
 node_modules
 dist
 dist-backup
+build-output
+.pnp
+.pnp.js
+
+# 测试相关
+coverage
+test-results
+diagnose-report.json
+function-test-report.json
+simple-function-test-report.json
+test-report-latest.json
+
+# 编辑器配置
+.vscode
+.idea
+*.sublime-project
+*.sublime-workspace
+
+# 系统文件
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+Thumbs.db
+desktop.ini
+
+# 日志文件
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs
+*.log
+
+# 缓存
+.cache
+.npm
+.eslintcache
+.stylelintcache
+.electron-cache
+
+# 构建临时文件
+*.tgz
+*.tsbuildinfo
+.sourcemaps
+.sass-cache
+out

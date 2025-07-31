@@ -3,19 +3,26 @@ const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
 const { setupAutoUpdater } = require('./updater');
+const pkg = require('../package.json');
 
 // 全局变量
 let mainWindow = null;
 let splashScreen = null;
+const isDevelopment = !app.isPackaged;
+
+// 强化安全性
+app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
+app.commandLine.appendSwitch('disable-site-isolation-trials');
 
 // 解析命令行参数
 const argv = process.argv.slice(1);
 const hashArg = argv.find(arg => arg.startsWith('--hash='));
 const initialHash = hashArg ? hashArg.replace('--hash=', '') : '';
 
-// 初始化配置存储
+// 初始化配置存储，加密存储数据
 const store = new Store({
   name: 'house-journey-config',
+  encryptionKey: 'house-journey-secure-key', // 用于加密敏感数据
   defaults: {
     gameSettings: {
       difficulty: 'standard',
@@ -74,28 +81,42 @@ function createSplashScreen() {
 
 // 创建应用窗口
 function createMainWindow() {
-  // 创建浏览器窗口
-  mainWindow = new BrowserWindow({
+  // 设置窗口的默认大小和全屏状态
+  const windowSettings = store.get('windowSettings') || {
     width: 1280,
     height: 800,
-    title: '买房记v0.1.1',
+    isMaximized: false
+  };
+
+  // 创建浏览器窗口
+  mainWindow = new BrowserWindow({
+    width: windowSettings.width,
+    height: windowSettings.height,
+    title: `买房记 v${pkg.version}`,
     show: false, // 先不显示主窗口
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: true, // 确保开启Web安全
-      // 开发环境使用更宽松的CSP
-      contentSecurityPolicy: !app.isPackaged
+      webSecurity: true,
+      // 严格的内容安全策略
+      contentSecurityPolicy: isDevelopment
         ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss: http: https:;"
-        : "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';",
+        : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';",
       webviewTag: false,
       sandbox: true,
-      allowRunningInsecureContent: false
+      allowRunningInsecureContent: false,
+      disableBlinkFeatures: 'Auxclick',
+      enableRemoteModule: false,
+      navigateOnDragDrop: false,
+      spellcheck: false
     },
-    icon: app.isPackaged
-      ? path.join(path.dirname(app.getPath('exe')), 'icon.ico')
-      : path.join(__dirname, '../release/icon.ico')
+    icon: isDevelopment
+      ? path.join(__dirname, '../resources/logo.png')
+      : path.join(path.dirname(app.getPath('exe')), 'resources/logo.png'),
+    backgroundColor: '#2e2c29',
+    autoHideMenuBar: !isDevelopment, // 生产环境隐藏菜单栏
+    darkTheme: true
   });
 
   // 设置Content-Security-Policy头
@@ -236,7 +257,7 @@ function createAppMenu() {
           label: '全屏',
           type: 'checkbox',
           checked: store.get('gameSettings.fullScreen'),
-          click: (menuItem) => {
+          click: menuItem => {
             mainWindow.setFullScreen(menuItem.checked);
             store.set('gameSettings.fullScreen', menuItem.checked);
           }
@@ -354,7 +375,7 @@ function setupIpcHandlers() {
   ipcMain.handle('app:quit', () => {
     app.quit();
   });
-  ipcMain.handle('app:toggle-fullscreen', (event) => {
+  ipcMain.handle('app:toggle-fullscreen', event => {
     const window = BrowserWindow.fromWebContents(event.sender);
     const isFullScreen = window.isFullScreen();
     window.setFullScreen(!isFullScreen);
@@ -529,16 +550,26 @@ async function handleGetErrorLogs(event, date) {
         const details = lines.slice(1).join('\n');
 
         // 解析头部信息
-        const timestampMatch = header.match(/\[(.*?)\]/);
-        const severityMatch = header.match(/\[(fatal|error|warning|info)\]/i);
-        const contextMatch = header.match(/\[([^\[\]]*)\][^\[]*$/);
-        const messageMatch = header.match(/\][^\[]*\][^\[]*\]\s*(.*)/);
+        // 使用字符串解析代替正则表达式
+        const parts = header.split(']');
+        const timestamp = parts[0].substring(1); // 去除开头的 [
+
+        let severity = 'unknown';
+        if (parts[1]) {
+          severity = parts[1].trim().toLowerCase().substring(1); // 去除开头的 [
+          if (!['fatal', 'error', 'warning', 'info'].includes(severity)) {
+            severity = 'unknown';
+          }
+        }
+
+        const context = parts[2] ? parts[2].trim().substring(1) : ''; // 去除开头的 [
+        const message = parts[3] ? parts[3].trim() : '';
 
         return {
-          timestamp: timestampMatch ? timestampMatch[1] : '',
-          severity: severityMatch ? severityMatch[1].toLowerCase() : 'unknown',
-          context: contextMatch ? contextMatch[1] : '',
-          message: messageMatch ? messageMatch[1] : header,
+          timestamp,
+          severity,
+          context,
+          message: message || header,
           details: details
         };
       });

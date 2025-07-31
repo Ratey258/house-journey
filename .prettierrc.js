@@ -1,12 +1,33 @@
 module.exports = {
+  printWidth: 100,
+  tabWidth: 2,
+  useTabs: false,
   semi: true,
   singleQuote: true,
-  tabWidth: 2,
-  printWidth: 100,
-  trailingComma: 'none',
+  quoteProps: 'as-needed',
+  jsxSingleQuote: false,
+  trailingComma: 'es5',
   bracketSpacing: true,
+  bracketSameLine: false,
   arrowParens: 'avoid',
-  endOfLine: 'auto',
+  proseWrap: 'preserve',
+  htmlWhitespaceSensitivity: 'css',
   vueIndentScriptAndStyle: true,
-  htmlWhitespaceSensitivity: 'strict'
-}; 
+  endOfLine: 'lf',
+  singleAttributePerLine: false,
+  overrides: [
+    {
+      files: '*.vue',
+      options: {
+        parser: 'vue'
+      }
+    },
+    {
+      files: '*.md',
+      options: {
+        parser: 'markdown',
+        proseWrap: 'always'
+      }
+    }
+  ]
+};
