@@ -14,7 +14,7 @@ export const useLocationSystem = () => {
   const getAllLocations = () => {
     return marketStore.locations;
   };
-  
+
   /**
    * 获取当前地点
    * @returns {Object|null} 当前地点
@@ -22,7 +22,7 @@ export const useLocationSystem = () => {
   const getCurrentLocation = () => {
     return marketStore.currentLocation;
   };
-  
+
   /**
    * 移动到指定地点
    * @param {string} locationId - 地点ID
@@ -31,7 +31,7 @@ export const useLocationSystem = () => {
   const moveToLocation = (locationId) => {
     return marketStore.changeLocation(locationId);
   };
-  
+
   /**
    * 获取地点之间的距离
    * @param {string} fromLocationId - 起始地点ID
@@ -41,11 +41,11 @@ export const useLocationSystem = () => {
   const getLocationDistance = (fromLocationId, toLocationId) => {
     const fromLocation = marketStore.locations.find(loc => loc.id === fromLocationId);
     const toLocation = marketStore.locations.find(loc => loc.id === toLocationId);
-    
+
     if (!fromLocation || !toLocation) {
       return -1;
     }
-    
+
     // 简单距离计算示例，实际可以基于地点的坐标或预设的距离矩阵
     if (fromLocation.region === toLocation.region) {
       return 1; // 同区域
@@ -53,7 +53,7 @@ export const useLocationSystem = () => {
       return 2; // 跨区域
     }
   };
-  
+
   /**
    * 获取地点特性
    * @param {string} locationId - 地点ID
@@ -62,7 +62,7 @@ export const useLocationSystem = () => {
   const getLocationFeatures = (locationId) => {
     const location = marketStore.locations.find(loc => loc.id === locationId);
     if (!location) return null;
-    
+
     return {
       name: location.name,
       priceFactor: location.modifiers?.priceFactor || 1,
@@ -72,7 +72,7 @@ export const useLocationSystem = () => {
       description: location.description
     };
   };
-  
+
   /**
    * 检查地点是否有特色商品
    * @param {string} locationId - 地点ID
@@ -82,7 +82,7 @@ export const useLocationSystem = () => {
     const location = marketStore.locations.find(loc => loc.id === locationId);
     return location && location.specialProducts && location.specialProducts.length > 0;
   };
-  
+
   /**
    * 获取推荐地点列表（基于当前库存和市场情况）
    * @param {Array} inventory - 玩家库存
@@ -91,40 +91,40 @@ export const useLocationSystem = () => {
   const getRecommendedLocations = (inventory) => {
     // 创建推荐列表
     const recommendations = [];
-    
+
     // 如果玩家有库存物品，找出可以高价销售的地点
     if (inventory && inventory.length > 0) {
       // 找出库存中拥有的产品ID
       const playerProductIds = [...new Set(inventory.map(item => item.productId))];
-      
+
       // 检查每个地点的价格情况
       marketStore.locations.forEach(location => {
         // 跳过当前地点
         if (marketStore.currentLocation && location.id === marketStore.currentLocation.id) {
           return;
         }
-        
+
         // 检查这个地点的价格是否对玩家有利
         let totalProfit = 0;
         let profitableProducts = 0;
-        
+
         playerProductIds.forEach(productId => {
           const product = marketStore.products.find(p => p.id === productId);
           if (!product) return;
-          
+
           // 如果该地点支持这个产品
           if (location.availableProducts.includes(productId)) {
             // 计算预期价格（考虑地点因子）
             const basePriceData = marketStore.productPrices[productId];
             if (!basePriceData) return;
-            
+
             // 考虑地点价格调整因子
             const locationPriceFactor = location.modifiers?.priceFactor || 1;
             const estimatedPrice = basePriceData.price * locationPriceFactor;
-            
+
             // 找出玩家拥有的这种商品
             const inventoryItems = inventory.filter(item => item.productId === productId);
-            
+
             // 计算潜在利润
             inventoryItems.forEach(item => {
               const potentialProfit = (estimatedPrice - item.purchasePrice) * item.quantity;
@@ -135,7 +135,7 @@ export const useLocationSystem = () => {
             });
           }
         });
-        
+
         // 如果有盈利机会，添加到推荐
         if (profitableProducts > 0) {
           recommendations.push({
@@ -148,7 +148,7 @@ export const useLocationSystem = () => {
         }
       });
     }
-    
+
     // 添加其他推荐原因（如特色商品）
     marketStore.locations.forEach(location => {
       // 跳过当前地点和已推荐的地点
@@ -156,7 +156,7 @@ export const useLocationSystem = () => {
           recommendations.some(r => r.locationId === location.id)) {
         return;
       }
-      
+
       // 如果有特色商品，添加推荐
       if (location.specialProducts && location.specialProducts.length > 0) {
         recommendations.push({
@@ -167,7 +167,7 @@ export const useLocationSystem = () => {
         });
       }
     });
-    
+
     // 按预计利润或特色商品排序
     return recommendations.sort((a, b) => {
       // 首先按预计利润排序
@@ -188,7 +188,7 @@ export const useLocationSystem = () => {
       return 0;
     });
   };
-  
+
   return {
     getAllLocations,
     getCurrentLocation,
@@ -198,4 +198,4 @@ export const useLocationSystem = () => {
     hasSpecialProducts,
     getRecommendedLocations
   };
-}; 
+};

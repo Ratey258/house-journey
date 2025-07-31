@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
-const { setupAutoUpdater } = require('./updater');
+const { setupAutoUpdater } = require('./updater.cjs');
 const pkg = require('../package.json');
 
 // 全局变量
@@ -95,7 +95,7 @@ function createMainWindow() {
     title: `买房记 v${pkg.version}`,
     show: false, // 先不显示主窗口
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: true,

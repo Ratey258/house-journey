@@ -4,7 +4,8 @@
   "description": "买房记 - 模拟经营游戏",
   "author": "春卷",
   "license": "MIT",
-  "main": "electron/main.js",
+  "main": "electron/main.cjs",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/Ratey258/house-journey.git"
@@ -44,12 +45,13 @@
     "prepare-release": "npm run lint:fix && npm run format && npm run security-check && npm run test"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "~5.0.4",
+    "@vitejs/plugin-vue": "^6.0.0",
     "@vue/test-utils": "~2.4.4",
     "c8": "~8.0.1",
     "concurrently": "~8.2.2",
     "electron": "~29.1.0",
     "electron-builder": "~24.13.2",
+    "esbuild": "^0.25.8",
     "eslint": "~8.57.0",
     "eslint-plugin-vue": "~9.21.1",
     "gh-pages": "~6.1.1",
@@ -59,8 +61,8 @@
     "sass": "~1.72.0",
     "tailwindcss": "~3.4.1",
     "terser": "~5.29.0",
-    "vite": "~5.1.4",
-    "vitest": "~1.2.1"
+    "vite": "^5.4.19",
+    "vitest": "^2.0.0"
   },
   "dependencies": {
     "@vueuse/core": "~10.8.0",

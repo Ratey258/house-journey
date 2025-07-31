@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import { resolve } from 'path';
+import * as path from 'path';
+
+// 使用path.resolve替代直接引入的resolve
+const resolve = path.resolve;
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -56,7 +59,9 @@ export default defineConfig(({ mode }) => {
           drop_console: !isDevelopment,
           drop_debugger: !isDevelopment
         }
-      }
+      },
+      // 指定目标浏览器范围，确保兼容性
+      target: ['chrome92', 'safari14', 'edge88', 'firefox90']
     },
     optimizeDeps: {
       include: ['vue', 'vue-router', 'pinia', 'element-plus', 'lodash-es']

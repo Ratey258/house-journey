@@ -5,4 +5,4 @@
 
 export { useMarketStore } from './marketState';
 export { usePriceActions } from './priceActions';
-export { useLocationSystem } from './locationSystem'; 
+export { useLocationSystem } from './locationSystem';
