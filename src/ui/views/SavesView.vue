@@ -145,7 +145,7 @@ async function fetchSaves() {
 
     if (result.success) {
       saves.value = result.saves || [];
-      console.log('已加载存档列表:', saves.value);
+      // 存档列表加载完成
 
       // 获取每个存档的详细信息
       for (const save of saves.value) {
@@ -183,7 +183,7 @@ function startLoadingTips() {
 // 加载存档
 async function loadSave(saveName) {
   try {
-    console.log('尝试加载存档:', saveName);
+    // 开始加载存档
     isLoading.value = true;
     // 启动提示轮播
     startLoadingTips();

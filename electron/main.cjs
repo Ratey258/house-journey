@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, shell, Notification, net, powerMonitor } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const Store = require('electron-store');
 const { setupAutoUpdater } = require('./updater.cjs');
 const pkg = require('../package.json');
@@ -388,6 +389,26 @@ function setupIpcHandlers() {
   ipcMain.handle('error:log', handleErrorLog);
   ipcMain.handle('error:get-logs', handleGetErrorLogs);
   ipcMain.handle('error:clear-logs', handleClearErrorLogs);
+
+  // 桌面端用户体验增强功能
+  // 系统通知
+  ipcMain.handle('notification:show', handleShowNotification);
+
+  // 网络状态检测
+  ipcMain.handle('network:status', handleGetNetworkStatus);
+
+  // 系统信息获取
+  ipcMain.handle('system:info', handleGetSystemInfo);
+
+  // 应用状态管理
+  ipcMain.handle('app:set-badge', handleSetAppBadge);
+  ipcMain.handle('app:clear-badge', handleClearAppBadge);
+
+  // 窗口管理增强
+  ipcMain.handle('window:minimize', handleWindowMinimize);
+  ipcMain.handle('window:maximize', handleWindowMaximize);
+  ipcMain.handle('window:close', handleWindowClose);
+  ipcMain.handle('window:is-maximized', handleWindowIsMaximized);
 }
 
 // 确保目录存在
@@ -606,6 +627,196 @@ async function handleClearErrorLogs(event, date) {
     return { success: true };
   } catch (error) {
     console.error('Clear error logs failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ======== 桌面端用户体验增强功能处理器 ========
+
+// 处理系统通知请求
+async function handleShowNotification(event, { title, body, options = {} }) {
+  try {
+    // 检查通知权限
+    if (!Notification.isSupported()) {
+      throw new Error('System notifications are not supported');
+    }
+
+    // 创建系统通知
+    const notification = new Notification({
+      title: title || '买房记',
+      body: body || '',
+      icon: options.icon || path.join(__dirname, '../resources/logo.png'),
+      silent: options.silent || false,
+      urgency: options.urgency || 'normal', // low, normal, critical
+      timeoutType: options.timeoutType || 'default', // default, never
+      actions: options.actions || []
+    });
+
+    // 添加事件监听
+    notification.on('click', () => {
+      // 点击通知时聚焦到主窗口
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+    });
+
+    notification.show();
+
+    return { success: true, id: notification.id };
+  } catch (error) {
+    console.error('Show notification failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// 处理网络状态检测请求
+async function handleGetNetworkStatus() {
+  try {
+    const isOnline = net.isOnline();
+
+    // 获取更详细的网络信息
+    const networkInfo = {
+      online: isOnline,
+      connectionType: 'unknown',
+      effectiveType: 'unknown'
+    };
+
+    // 尝试检测连接类型（简化版）
+    if (isOnline) {
+      try {
+        // 可以添加更复杂的网络检测逻辑
+        networkInfo.connectionType = 'wifi'; // 简化处理
+        networkInfo.effectiveType = '4g'; // 简化处理
+      } catch (err) {
+        console.warn('Failed to detect connection type:', err);
+      }
+    }
+
+    return { success: true, data: networkInfo };
+  } catch (error) {
+    console.error('Get network status failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// 处理系统信息获取请求
+async function handleGetSystemInfo() {
+  try {
+    const systemInfo = {
+      platform: os.platform(),
+      arch: os.arch(),
+      version: os.version(),
+      release: os.release(),
+      hostname: os.hostname(),
+      cpus: os.cpus().length,
+      totalMemory: os.totalmem(),
+      freeMemory: os.freemem(),
+      uptime: os.uptime(),
+      loadAverage: os.loadavg(),
+
+      // Electron 信息
+      electronVersion: process.versions.electron,
+      chromeVersion: process.versions.chrome,
+      nodeVersion: process.versions.node,
+
+      // 应用信息
+      appVersion: pkg.version,
+      isDevelopment: isDevelopment,
+
+      // 窗口信息
+      windowBounds: mainWindow ? mainWindow.getBounds() : null,
+      isMaximized: mainWindow ? mainWindow.isMaximized() : false,
+      isFullScreen: mainWindow ? mainWindow.isFullScreen() : false
+    };
+
+    return { success: true, data: systemInfo };
+  } catch (error) {
+    console.error('Get system info failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// 处理设置应用徽章请求
+async function handleSetAppBadge(event, count) {
+  try {
+    if (app.setBadgeCount) {
+      app.setBadgeCount(count || 0);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Set app badge failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// 处理清除应用徽章请求
+async function handleClearAppBadge() {
+  try {
+    if (app.setBadgeCount) {
+      app.setBadgeCount(0);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Clear app badge failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// 处理窗口最小化请求
+async function handleWindowMinimize(event) {
+  try {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (window) {
+      window.minimize();
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Window minimize failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// 处理窗口最大化请求
+async function handleWindowMaximize(event) {
+  try {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (window) {
+      if (window.isMaximized()) {
+        window.unmaximize();
+      } else {
+        window.maximize();
+      }
+    }
+    return { success: true, isMaximized: window ? window.isMaximized() : false };
+  } catch (error) {
+    console.error('Window maximize failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// 处理窗口关闭请求
+async function handleWindowClose(event) {
+  try {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (window) {
+      window.close();
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Window close failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// 处理窗口最大化状态检查请求
+async function handleWindowIsMaximized(event) {
+  try {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    const isMaximized = window ? window.isMaximized() : false;
+    return { success: true, data: isMaximized };
+  } catch (error) {
+    console.error('Check window maximized failed:', error);
     return { success: false, error: error.message };
   }
 }

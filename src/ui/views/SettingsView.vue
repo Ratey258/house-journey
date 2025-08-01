@@ -1,12 +1,12 @@
 <template>
   <div class="settings-view">
     <h1>{{ $t('settings.title') }}</h1>
-    
+
     <div class="settings-section">
       <!-- 已有的设置项 -->
       <div class="setting-group">
         <h2>游戏设置</h2>
-        
+
         <div class="setting-item">
           <label for="difficulty">默认难度</label>
           <select id="difficulty" v-model="settings.difficulty" @change="updateSetting('difficulty')">
@@ -15,7 +15,7 @@
             <option value="hard">困难</option>
           </select>
         </div>
-        
+
         <div class="setting-item">
           <label for="autoSaveInterval">自动保存频率</label>
           <select id="autoSaveInterval" v-model="settings.autoSaveInterval" @change="updateSetting('autoSaveInterval')">
@@ -27,7 +27,7 @@
             <option :value="26">每26周（半年）</option>
           </select>
         </div>
-        
+
         <div class="setting-item description" v-if="settings.autoSaveInterval > 0">
           <div class="setting-description">
             <p>
@@ -36,7 +36,7 @@
             </p>
           </div>
         </div>
-        
+
         <div class="setting-item description" v-else>
           <div class="setting-description warning">
             <p>
@@ -45,7 +45,7 @@
             </p>
           </div>
         </div>
-        
+
         <div class="setting-item">
           <label for="textSpeed">文本显示速度</label>
           <select id="textSpeed" v-model="settings.textSpeed" @change="updateSetting('textSpeed')">
@@ -56,41 +56,47 @@
           </select>
         </div>
       </div>
-      
+
       <!-- 添加语言设置部分 -->
       <div class="settings-item">
         <label for="language-select">{{ $t('settings.language') }}</label>
-        <select 
-          id="language-select" 
+        <select
+          id="language-select"
           v-model="settings.language"
           @change="updateLanguage"
         >
-          <option 
-            v-for="lang in supportedLanguages" 
-            :key="lang.code" 
+          <option
+            v-for="lang in supportedLanguages"
+            :key="lang.code"
             :value="lang.code"
           >
             {{ lang.name }}
           </option>
         </select>
       </div>
-      
+
       <!-- 其他设置项 -->
       <div class="setting-group">
         <h2>显示设置</h2>
-        
+
+        <!-- 主题设置 -->
+        <div class="setting-item theme-setting">
+          <label for="theme-toggle">界面主题</label>
+          <ThemeToggle :show-label="false" />
+        </div>
+
         <div class="setting-item checkbox">
           <input type="checkbox" id="soundEnabled" v-model="settings.soundEnabled" @change="updateSetting('soundEnabled')">
           <label for="soundEnabled">启用音效</label>
         </div>
-        
+
         <div class="setting-item checkbox">
           <input type="checkbox" id="fullScreen" v-model="settings.fullScreen" @change="toggleFullScreen">
           <label for="fullScreen">全屏模式</label>
         </div>
       </div>
     </div>
-    
+
     <div class="settings-actions">
       <button @click="resetSettings" class="btn-secondary">
         {{ $t('settings.reset') }}
@@ -108,6 +114,7 @@ import { useRouter } from 'vue-router';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { getSupportedLanguages } from '../../i18n';
 import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler';
+import { ThemeToggle } from '../../ui/components/common';
 
 const router = useRouter();
 const settingsStore = useSettingsStore();
@@ -160,7 +167,7 @@ const toggleFullScreen = async () => {
 // 重置设置
 const resetSettings = async () => {
   await settingsStore.resetSettings();
-  
+
   // 更新本地设置对象
   settings.difficulty = settingsStore.gameSettings.difficulty;
   settings.autoSaveInterval = settingsStore.gameSettings.autoSaveInterval;
@@ -178,7 +185,7 @@ const goBack = () => {
 // 加载设置
 onMounted(async () => {
   await settingsStore.loadSettings();
-  
+
   // 更新本地设置对象
   settings.difficulty = settingsStore.gameSettings.difficulty;
   settings.autoSaveInterval = settingsStore.gameSettings.autoSaveInterval;
@@ -209,13 +216,24 @@ onMounted(async () => {
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 15px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-border-secondary);
 }
 
 .settings-item:last-child {
   border-bottom: none;
   margin-bottom: 0;
   padding-bottom: 0;
+}
+
+.settings-item.theme-setting {
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.settings-item.theme-setting label {
+  flex: 0 0 auto;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 .settings-actions {
@@ -248,4 +266,4 @@ select, input {
   background-color: #f5f5f5;
   border: 1px solid #ccc;
 }
-</style> 
+</style>

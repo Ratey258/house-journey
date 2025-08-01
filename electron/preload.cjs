@@ -30,6 +30,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
   downloadUpdate: () => ipcRenderer.invoke('updater:download'),
   installUpdate: () => ipcRenderer.invoke('updater:install'),
 
+  // 桌面端用户体验增强功能
+  // 系统通知
+  showNotification: (title, body, options = {}) => ipcRenderer.invoke('notification:show', { title, body, options }),
+
+  // 网络状态检测
+  getNetworkStatus: () => ipcRenderer.invoke('network:status'),
+  onNetworkStatusChange: (callback) => {
+    ipcRenderer.on('network:status-changed', (_, status) => callback(status));
+    return () => ipcRenderer.removeAllListeners('network:status-changed');
+  },
+
+  // 系统信息获取
+  getSystemInfo: () => ipcRenderer.invoke('system:info'),
+
+  // 应用状态管理
+  setAppBadge: (count) => ipcRenderer.invoke('app:set-badge', count),
+  clearAppBadge: () => ipcRenderer.invoke('app:clear-badge'),
+
+  // 窗口管理增强
+  minimize: () => ipcRenderer.invoke('window:minimize'),
+  maximize: () => ipcRenderer.invoke('window:maximize'),
+  close: () => ipcRenderer.invoke('window:close'),
+  isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
+
+  // 性能自适应提示
+  onPerformanceHint: (callback) => {
+    ipcRenderer.on('performance:hint', (_, hint) => callback(hint));
+    return () => ipcRenderer.removeAllListeners('performance:hint');
+  },
+
   // 监听事件
   onMenuAction: (callback) => {
     const validMenuActions = [

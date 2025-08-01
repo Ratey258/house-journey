@@ -264,11 +264,7 @@ const eventModal = ref(null);
 const tutorialSystem = ref(null);
 const saveInput = ref(null);
 
-console.log('GameView组件初始化，游戏状态:', {
-  gameStarted: gameCoreStore.gameStarted,
-  currentWeek: gameCoreStore.currentWeek,
-  playerInitialized: playerStore.initialized
-});
+// 组件初始化完成
 
 // 游戏状态
 const activeTab = ref('market');
@@ -307,7 +303,7 @@ const isEndlessMode = computed(() => gameCoreStore.isEndlessMode);
 watch(() => gameCoreStore.gameOver, (newValue) => {
   if (newValue) {
     // 添加详细调试日志
-    console.log('游戏结束 - GameView监听到gameOver变为true');
+    // 游戏结束处理
     console.log('详细游戏结果数据:', {
       gameResult: gameCoreStore.gameResult,
       score: gameCoreStore.gameResult?.score,
@@ -331,7 +327,7 @@ const transactionToastIcon = ref('');
 
 // 组件挂载时
 onMounted(() => {
-  console.log('GameView组件挂载');
+  // 组件挂载
 
   // 初始化加载状态
   isLoading.value = true;
@@ -340,7 +336,7 @@ onMounted(() => {
   // 检查是否为开发模式
   try {
     isDevelopmentMode.value = true; // 默认设为开发模式
-    console.log('GameView - 当前模式: 开发模式');
+    // 开发模式标记
   } catch (error) {
     console.warn('GameView - 无法检测环境模式:', error);
     isDevelopmentMode.value = true; // 默认为开发模式
@@ -348,7 +344,7 @@ onMounted(() => {
 
   // 检查游戏是否已经初始化
   if (!gameCoreStore.gameStarted) {
-    console.log('游戏未初始化，尝试从本地存储获取玩家名称');
+    // 尝试从本地存储获取玩家信息
     const savedPlayerName = localStorage.getItem('lastPlayerName') || '玩家';
     console.log('获取到玩家名称:', savedPlayerName);
 

@@ -15,6 +15,11 @@ import TutorialSystem from './TutorialSystem.vue';
 import TransitionWrapper from './TransitionWrapper.vue';
 import LanguageSelector from './LanguageSelector.vue';
 import GameDialog from './GameDialog.vue';
+import ThemeToggle from './ThemeToggle.vue';
+import DesktopStatusIndicator from './DesktopStatusIndicator.vue';
+import PerformanceDashboard from './PerformanceDashboard.vue';
+import DesktopLayoutPanel from './DesktopLayoutPanel.vue';
+import MemoryManagerPanel from './MemoryManagerPanel.vue';
 
 export {
   ErrorBoundary,
@@ -26,6 +31,11 @@ export {
   Toast,
   TutorialSystem,
   TransitionWrapper,
-  LanguageSelector
+  LanguageSelector,
+  ThemeToggle,
+  DesktopStatusIndicator,
+  PerformanceDashboard,
+  DesktopLayoutPanel,
+  MemoryManagerPanel
 };
 

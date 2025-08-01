@@ -19,7 +19,7 @@ export interface AudioSettings {
 
 export interface UISettings {
   language: string;
-  theme: 'light' | 'dark';
+  theme: 'light' | 'dark' | 'auto';
   uiScale: number; // 0.8-1.2
   animationsEnabled: boolean;
 }
@@ -39,22 +39,22 @@ const defaultSettings: Settings = {
   tutorialEnabled: true,
   autoSave: true,
   autoSaveInterval: 5,
-  
+
   // 音频设置
   soundEnabled: true,
   soundVolume: 0.7,
   musicEnabled: true,
   musicVolume: 0.5,
-  
+
   // UI设置
   language: 'zh-CN',
   theme: 'light',
   uiScale: 1.0,
   animationsEnabled: true,
-  
+
   // 性能设置
   graphicsQuality: 'medium',
-  
+
   // 当前场景
   currentScene: 'menu'
 };
@@ -76,17 +76,17 @@ export const useSettingsStore = defineStore('settings', () => {
   const tutorialEnabled = ref(defaultSettings.tutorialEnabled);
   const autoSave = ref(defaultSettings.autoSave);
   const autoSaveInterval = ref(defaultSettings.autoSaveInterval);
-  
+
   const soundEnabled = ref(defaultSettings.soundEnabled);
   const soundVolume = ref(defaultSettings.soundVolume);
   const musicEnabled = ref(defaultSettings.musicEnabled);
   const musicVolume = ref(defaultSettings.musicVolume);
-  
+
   const language = ref(defaultSettings.language);
   const theme: Ref<Settings['theme']> = ref(defaultSettings.theme);
   const uiScale = ref(defaultSettings.uiScale);
   const animationsEnabled = ref(defaultSettings.animationsEnabled);
-  
+
   const graphicsQuality: Ref<Settings['graphicsQuality']> = ref(defaultSettings.graphicsQuality);
   const currentScene: Ref<Settings['currentScene']> = ref(defaultSettings.currentScene);
 
@@ -109,7 +109,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }));
 
   // Actions
-  
+
   /**
    * 更新单个设置
    */
@@ -188,7 +188,7 @@ export const useSettingsStore = defineStore('settings', () => {
     animationsEnabled.value = defaultSettings.animationsEnabled;
     graphicsQuality.value = defaultSettings.graphicsQuality;
     currentScene.value = defaultSettings.currentScene;
-    
+
     saveSettings();
   }
 
@@ -234,7 +234,7 @@ export const useSettingsStore = defineStore('settings', () => {
    */
   function setCurrentScene(scene: Settings['currentScene']): void {
     currentScene.value = scene;
-    
+
     // 如果有全局音频管理器，播放对应场景的背景音乐
     if (window.gameAudio && musicEnabled.value) {
       window.gameAudio.playBGM(scene);

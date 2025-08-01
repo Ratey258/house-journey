@@ -335,7 +335,7 @@ async function startNewGame() {
     // 确保玩家名有效，否则使用默认名称
     const finalPlayerName = playerName.value.trim() || '玩家';
 
-    console.log('正在开始新游戏，玩家名称:', finalPlayerName, '难度:', difficulty.value, '模式:', gameMode.value);
+    // 开始新游戏
 
     // 延迟一小段时间，让加载界面显示出来
     await new Promise(resolve => setTimeout(resolve, 100));

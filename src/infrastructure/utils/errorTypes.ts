@@ -12,6 +12,8 @@ export enum ErrorType {
   STORAGE = 'storage',         // 存储错误
   GAME_LOGIC = 'gameLogic',    // 游戏逻辑错误
   SYSTEM = 'system',           // 系统错误
+  DATA = 'data',               // 数据错误
+  UI = 'ui',                   // 界面错误
   UNKNOWN = 'unknown'          // 未知错误
 }
 
@@ -72,9 +74,9 @@ export interface ErrorInfo {
  * @returns 增强的错误对象
  */
 export function createError(
-  message: string, 
-  type: ErrorType = ErrorType.UNKNOWN, 
-  severity: ErrorSeverity = ErrorSeverity.ERROR, 
+  message: string,
+  type: ErrorType = ErrorType.UNKNOWN,
+  severity: ErrorSeverity = ErrorSeverity.ERROR,
   metadata: ErrorMetadata = {}
 ): EnhancedError {
   const error = new Error(message) as EnhancedError;

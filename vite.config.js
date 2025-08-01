@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import * as path from 'path';
 import pkg from './package.json';
+import { createHash } from 'crypto';
 
 // 使用path.resolve替代直接引入的resolve
 const resolve = path.resolve;
@@ -106,14 +107,20 @@ export default defineConfig(({ mode }) => {
             return `assets/[name]-[hash].js`;
           },
           assetFileNames: (assetInfo) => {
-            // 分类资源文件
+            // 分类资源文件，优化缓存策略
             if (assetInfo.name?.endsWith('.css')) {
               return 'assets/css/[name]-[hash][extname]';
             }
             if (/\.(png|jpe?g|svg|gif|webp|avif)$/.test(assetInfo.name || '')) {
               return 'assets/images/[name]-[hash][extname]';
             }
-            return 'assets/[name]-[hash][extname]';
+            if (/\.(woff2?|eot|ttf|otf)$/.test(assetInfo.name || '')) {
+              return 'assets/fonts/[name]-[hash][extname]';
+            }
+            if (/\.(mp4|webm|ogg|mp3|wav|flac|aac)$/.test(assetInfo.name || '')) {
+              return 'assets/media/[name]-[hash][extname]';
+            }
+            return 'assets/misc/[name]-[hash][extname]';
           }
         }
       },
@@ -122,11 +129,26 @@ export default defineConfig(({ mode }) => {
       terserOptions: {
         compress: {
           drop_console: !isDevelopment,
-          drop_debugger: !isDevelopment
+          drop_debugger: !isDevelopment,
+          // 额外的压缩优化
+          pure_funcs: !isDevelopment ? ['console.log', 'console.info'] : [],
+          passes: 2, // 多次压缩以获得更好的结果
+        },
+        mangle: {
+          properties: {
+            regex: /^_[a-zA-Z]/  // 私有属性压缩
+          }
         }
       },
       // 使用Vite 7推荐的现代浏览器目标（Baseline Widely Available）
-      target: ['chrome107', 'safari16', 'edge107', 'firefox104']
+      target: ['chrome107', 'safari16', 'edge107', 'firefox104'],
+      // 资源大小限制和优化
+      chunkSizeWarningLimit: 1000, // 1MB chunk警告阈值
+      assetsInlineLimit: 4096, // 4KB以下内联为base64
+      // 实验性特性：CSS代码分割
+      cssCodeSplit: true,
+      // 启用现代化构建特性
+      reportCompressedSize: false // 禁用gzip大小报告以提升构建速度
     },
     optimizeDeps: {
       include: ['vue', 'vue-router', 'pinia', 'element-plus', 'lodash-es'],

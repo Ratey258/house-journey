@@ -34,6 +34,20 @@ interface ToastOptions {
 interface ElectronAPI {
   logError?: (errorInfo: ErrorInfo) => void;
   exportErrorLogs?: (logs: ErrorInfo[]) => Promise<{ success: boolean }>;
+
+  // 桌面端用户体验增强功能
+  showNotification?: (title: string, body: string, options?: any) => Promise<{ success: boolean; id?: string; error?: string }>;
+  getNetworkStatus?: () => Promise<{ success: boolean; data?: any; error?: string }>;
+  getSystemInfo?: () => Promise<{ success: boolean; data?: any; error?: string }>;
+  setAppBadge?: (count: number) => Promise<{ success: boolean; error?: string }>;
+  clearAppBadge?: () => Promise<{ success: boolean; error?: string }>;
+  minimize?: () => Promise<{ success: boolean; error?: string }>;
+  maximize?: () => Promise<{ success: boolean; isMaximized?: boolean; error?: string }>;
+  close?: () => Promise<{ success: boolean; error?: string }>;
+  isMaximized?: () => Promise<{ success: boolean; data?: boolean; error?: string }>;
+  toggleFullscreen?: () => Promise<{ success: boolean; error?: string }>;
+  onNetworkStatusChange?: (callback: (status: any) => void) => () => void;
+  onPerformanceHint?: (callback: (hint: string) => void) => () => void;
 }
 
 declare global {
@@ -66,7 +80,7 @@ async function getUiStore(): Promise<UiStore | null> {
   // 重试次数和延迟
   const maxRetries = 3;
   const retryDelay = 300;
-  
+
   // 重试函数
   const retry = async (attempt = 0): Promise<UiStore | null> => {
     try {
@@ -85,19 +99,19 @@ async function getUiStore(): Promise<UiStore | null> {
       }
     } catch (err) {
       console.error(`Failed to import uiStore (attempt ${attempt + 1}/${maxRetries}):`, err);
-      
+
       // 如果还有重试次数，则延迟后重试
       if (attempt < maxRetries - 1) {
         console.log(`Retrying in ${retryDelay}ms...`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
         return retry(attempt + 1);
       }
-      
+
       // 重试次数用完，返回null
       return null;
     }
   };
-  
+
   return retry();
 }
 
@@ -110,14 +124,14 @@ async function getUiStore(): Promise<UiStore | null> {
  * @returns 错误信息对象
  */
 export function handleError(
-  error: Error | EnhancedError, 
-  context: string, 
-  type: ErrorType = ErrorType.UNKNOWN, 
+  error: Error | EnhancedError,
+  context: string,
+  type: ErrorType = ErrorType.UNKNOWN,
   severity: ErrorSeverity = ErrorSeverity.ERROR
 ): ErrorInfo {
   // 生成唯一ID
   const id = `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+
   // 构建错误信息
   const errorInfo: ErrorInfo = {
     id,
@@ -131,17 +145,17 @@ export function handleError(
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
     url: typeof window !== 'undefined' ? window.location.href : undefined
   };
-  
+
   // 日志记录
   logError(errorInfo);
-  
+
   // 用户通知 - 根据严重程度决定通知方式
   if (severity === ErrorSeverity.FATAL || severity === ErrorSeverity.ERROR) {
     notifyUserWithDialog(errorInfo);
   } else if (severity === ErrorSeverity.WARNING) {
     notifyUserWithToast(errorInfo);
   }
-  
+
   // Electron日志 - 确保错误可追溯
   if (window.electronAPI && window.electronAPI.logError) {
     window.electronAPI.logError(errorInfo);
@@ -149,12 +163,12 @@ export function handleError(
     // 回退到electron-log
     electronLog.error(`[${type}][${context}]`, error);
   }
-  
+
   // 开发环境下控制台输出更多信息
   if (process.env.NODE_ENV !== 'production') {
     console.error(`[${type.toUpperCase()}][${context}]`, error);
   }
-  
+
   return errorInfo;
 }
 
@@ -165,12 +179,12 @@ export function handleError(
 function logError(errorInfo: ErrorInfo): void {
   // 添加到错误日志
   errorLogs.value.unshift(errorInfo);
-  
+
   // 限制日志数量
   if (errorLogs.value.length > MAX_ERROR_LOGS) {
     errorLogs.value = errorLogs.value.slice(0, MAX_ERROR_LOGS);
   }
-  
+
   // 尝试将错误信息保存到本地存储
   try {
     const serializedLogs = JSON.stringify(errorLogs.value);
@@ -211,7 +225,7 @@ export function loadErrorLogs(): Promise<ErrorInfo[]> {
       if (savedLogs) {
         const parsedLogs: ErrorInfo[] = JSON.parse(savedLogs);
         errorLogs.value = parsedLogs;
-        
+
         // 确保不超过最大数量
         if (errorLogs.value.length > MAX_ERROR_LOGS) {
           errorLogs.value = errorLogs.value.slice(0, MAX_ERROR_LOGS);
@@ -237,13 +251,13 @@ function getLocalizedErrorMessage(errorInfo: ErrorInfo): string {
       .toLowerCase()
       .replace(/\s+/g, '_')
       .replace(/[^\w]/g, '')}`;
-    
+
     // 常规错误类型键
     const typeKey = `errors.${errorInfo.type}.default`;
-    
+
     // 通用错误键
     const genericKey = 'errors.generic';
-    
+
     // 按优先级尝试获取本地化消息
     if (i18n.global.te(specificKey)) {
       return i18n.global.t(specificKey);
@@ -318,20 +332,20 @@ async function notifyUserWithToast(errorInfo: ErrorInfo): Promise<void> {
  * @returns 包装后的函数
  */
 export function withErrorHandling<T extends (...args: any[]) => any>(
-  fn: T, 
+  fn: T,
   context: string
 ): (...args: Parameters<T>) => ReturnType<T> | void {
   return (...args: Parameters<T>) => {
     try {
       const result = fn(...args);
-      
+
       // 如果是Promise，添加catch处理
       if (result && typeof result.catch === 'function') {
         return result.catch((error: Error) => {
           handleError(error, context, ErrorType.UNKNOWN, ErrorSeverity.ERROR);
         });
       }
-      
+
       return result;
     } catch (error) {
       handleError(error as Error, context, ErrorType.UNKNOWN, ErrorSeverity.ERROR);
@@ -346,7 +360,7 @@ export function withErrorHandling<T extends (...args: any[]) => any>(
  * @returns 包装后的函数
  */
 export function withGameErrorHandling<T extends (...args: any[]) => any>(
-  fn: T, 
+  fn: T,
   context: string
 ): (...args: Parameters<T>) => ReturnType<T> | void {
   return withErrorHandling(fn, `Game.${context}`);
@@ -368,17 +382,17 @@ export function setupGlobalErrorHandlers(app?: any): void {
       );
     };
   }
-  
+
   // 未捕获的Promise错误
   window.addEventListener('unhandledrejection', event => {
     handleError(
-      event.reason || new Error('未处理的Promise异常'), 
-      'Promise', 
-      ErrorType.SYSTEM, 
+      event.reason || new Error('未处理的Promise异常'),
+      'Promise',
+      ErrorType.SYSTEM,
       ErrorSeverity.ERROR
     );
   });
-  
+
   // 全局JS错误处理
   window.addEventListener('error', event => {
     // 忽略资源加载错误
@@ -391,10 +405,10 @@ export function setupGlobalErrorHandlers(app?: any): void {
       );
     }
   });
-  
+
   // 初始化错误日志
   loadErrorLogs();
-  
+
   // 注册页面关闭前处理
   window.addEventListener('beforeunload', () => {
     clearGameRunningMark();
@@ -433,24 +447,24 @@ export function clearGameRunningMark(): void {
 export function checkGameAbnormalExit(): boolean {
   try {
     const wasRunning = localStorage.getItem(GAME_RUNNING_FLAG) === 'true';
-    
+
     if (!wasRunning) {
       return false;
     }
-    
+
     // 检查最后活动时间
     const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
     if (lastActivity) {
       const lastActiveTime = parseInt(lastActivity, 10);
       const now = Date.now();
-      
+
       // 如果最后活动时间在5分钟内，认为是异常退出
       // 否则可能是用户长时间未操作，浏览器自动关闭
       if (now - lastActiveTime < ACTIVITY_TIMEOUT) {
         return true;
       }
     }
-    
+
     return false;
   } catch (e) {
     console.warn('Failed to check game running flag:', e);

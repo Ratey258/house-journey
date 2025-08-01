@@ -54,14 +54,17 @@
     <!-- 桌面端性能监控指示器 - @vueuse/core 13.6 新特性 -->
     <DesktopPerformanceIndicator />
 
-    <!-- 网络状态指示器 -->
-    <div v-if="!isOnline" class="offline-indicator">
+    <!-- 桌面端状态指示器 - 网络状态、系统信息、性能提示 -->
+    <DesktopStatusIndicator />
+
+    <!-- 网络状态指示器（非Electron环境时显示） -->
+    <div v-if="!isOnline && !isElectron" class="offline-indicator">
       <i class="icon-wifi-off"></i>
       <span>离线模式</span>
     </div>
 
-    <!-- 性能优化提示 -->
-    <div v-if="performanceMetrics.isLowPerformance" class="performance-warning">
+    <!-- 性能优化提示（非Electron环境时显示） -->
+    <div v-if="performanceMetrics.isLowPerformance && !isElectron" class="performance-warning">
       <i class="icon-warning"></i>
       <span>性能优化模式已启用</span>
     </div>
@@ -83,6 +86,7 @@ import AudioManager from './ui/components/common/AudioManager.vue';
 import CssLoader from './ui/components/common/CssLoader.vue';
 import DevToolsManager from './ui/components/common/DevToolsManager.vue';
 import DesktopPerformanceIndicator from './ui/components/common/DesktopPerformanceIndicator.vue';
+import DesktopStatusIndicator from './ui/components/common/DesktopStatusIndicator.vue';
 
 // Store导入 - Pinia 3.0优化版本
 import { useUiStore } from './stores/uiStore';
@@ -93,6 +97,8 @@ import { useEventStore } from './stores/events';
 
 // 新增Composables - @vueuse/core 13.6功能集成
 import { useEnhancedGame, useResponsiveLayout } from './ui/composables/useEnhancedGame';
+import { useTheme } from './ui/composables/useTheme';
+import { useDesktopExperience } from './ui/composables/useDesktopExperience';
 
 // 工具导入
 import { handleError, ErrorType, ErrorSeverity } from '@/infrastructure/utils/errorHandler';
@@ -105,8 +111,7 @@ const router = useRouter();
 // === 增强游戏功能集成 - @vueuse/core 13.6 ===
 const {
   gameSettings,
-  isDark,
-  toggleDark,
+  // isDark, toggleDark 已移至useTheme
   isPageVisible,
   isOnline,
   performanceMetrics,
@@ -114,6 +119,25 @@ const {
   gameVibrate,
   optimizePerformance
 } = useEnhancedGame();
+
+// === 智能主题系统 - 使用新的主题Composable ===
+const {
+  isDark,
+  effectiveTheme,
+  setTheme,
+  toggleTheme,
+  initTheme
+} = useTheme();
+
+// === 桌面端用户体验增强 ===
+const {
+  isElectron,
+  networkStatus,
+  systemInfo,
+  sendGameNotification,
+  setAppBadge,
+  clearAppBadge
+} = useDesktopExperience();
 
 // 响应式布局
 const { isMobile, isTablet, isDesktop, layoutClass } = useResponsiveLayout();
@@ -136,6 +160,12 @@ const loadingProgress = ref(0);
 // === 应用初始化函数 - Vue 3.5 + @vueuse增强版本 ===
 const initializeApp = async () => {
   try {
+    loadingStatus.value = '初始化主题系统...';
+    loadingProgress.value = 5;
+
+    // 初始化主题系统
+    initTheme();
+
     loadingStatus.value = '初始化存储...';
     loadingProgress.value = 10;
 
@@ -198,13 +228,13 @@ const initializeApp = async () => {
 
 // === 回调函数 ===
 const onLoadingComplete = () => {
-  console.log('应用初始化完成');
+  // 应用初始化完成
   isLoading.value = false;
 };
 
 // === 生命周期钩子 - Vue 3.5 ===
 onMounted(() => {
-  console.log('App组件挂载，开始初始化...');
+  // App组件挂载，开始初始化
   initializeApp();
 });
 
