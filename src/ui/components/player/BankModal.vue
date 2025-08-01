@@ -322,7 +322,7 @@ const notification = ref({
 
 // 显示通知
 const showNotification = (type, message, duration = 2500) => {
-  console.log('显示通知:', type, message); // 调试日志
+  // 显示通知
 
   // 立即显示通知
   notification.value = {
@@ -345,7 +345,7 @@ const showNotification = (type, message, duration = 2500) => {
 
 // 隐藏通知
 const hideNotification = () => {
-  console.log('隐藏通知'); // 调试日志
+  // 隐藏通知
   notification.value.show = false;
 
   // 清除超时
@@ -415,14 +415,14 @@ const makeDeposit = () => {
     }, 1000);
 
     // 显示成功通知
-    console.log('存款操作成功，调用showNotification');
+    // 存款操作成功
     showNotification('success', t('bank.depositSuccess'));
 
     // 重置存款金额
     depositAmount.value = 0;
   } else {
     // 显示错误通知
-    console.log('存款操作失败，调用showNotification');
+    // 存款操作失败
     showNotification('error', t('bank.notEnoughMoney'));
   }
 };

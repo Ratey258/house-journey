@@ -49,7 +49,14 @@ const router = createRouter({
 console.log('路由初始化完成');
 
 // 创建Pinia状态管理
+// Pinia 3.0 增强配置
 const pinia = createPinia();
+
+// 开发环境启用Pinia DevTools集成
+if (import.meta.env.DEV) {
+  // Pinia 3.0 自动支持Vue DevTools
+  // 无需额外配置，开发环境下自动启用状态追踪
+}
 
 // 创建Vue应用
 const app = createApp(App);

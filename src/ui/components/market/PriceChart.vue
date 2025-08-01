@@ -1,4 +1,4 @@
-<!-- 
+<!--
   价格图表组件
   使用ECharts展示商品价格趋势
 -->
@@ -13,9 +13,9 @@
         </el-radio-group>
       </div>
     </div>
-    
+
     <div class="chart-wrapper" ref="chartRef"></div>
-    
+
     <div v-if="!mini && showLegend" class="chart-legend">
       <div class="legend-item">
         <span class="color-dot buy"></span>
@@ -75,8 +75,8 @@ const props = defineProps({
   }
 });
 
-// 图表DOM引用
-const chartRef = ref(null);
+// Vue 3.5 新特性：类型安全的模板引用
+const chartRef = useTemplateRef('chartContainer');
 // 图表实例
 let chartInstance = null;
 
@@ -109,29 +109,29 @@ const processedData = computed(() => {
   }
 
   let filteredData = [...props.priceHistory];
-  
+
   // 根据选择的时间范围过滤数据
   if (selectedRange.value !== 'all' && filteredData.length > selectedRange.value) {
     filteredData = filteredData.slice(-selectedRange.value);
   }
-  
+
   // 提取日期和价格
   const dates = filteredData.map(item => item.date);
   const prices = filteredData.map(item => item.price);
-  
+
   return { dates, prices };
 });
 
 // 初始化图表
 const initChart = () => {
   if (!chartRef.value) return;
-  
+
   // 创建图表实例
   chartInstance = echarts.init(chartRef.value, 'buyHouseTheme');
-  
+
   // 更新图表
   updateChart();
-  
+
   // 监听窗口大小变化
   window.addEventListener('resize', handleResize);
 };
@@ -139,9 +139,9 @@ const initChart = () => {
 // 更新图表数据和配置
 const updateChart = () => {
   if (!chartInstance) return;
-  
+
   const { dates, prices } = processedData.value;
-  
+
   // 图表配置
   const option = {
     grid: {
@@ -156,17 +156,17 @@ const updateChart = () => {
       formatter: function(params) {
         const price = params[0].value;
         let result = `${params[0].axisValue}<br/>价格: ${price.toFixed(2)}`;
-        
+
         // 如果有购买价格，显示差价
         if (props.buyPrice !== null) {
           const diff = price - props.buyPrice;
           const diffPercentage = ((diff / props.buyPrice) * 100).toFixed(2);
           const diffColor = diff >= 0 ? '#2ECC71' : '#E74C3C';
           const diffSign = diff >= 0 ? '+' : '';
-          
+
           result += `<br/><span style="color:${diffColor}">差价: ${diffSign}${diff.toFixed(2)} (${diffSign}${diffPercentage}%)</span>`;
         }
-        
+
         return result;
       }
     },
@@ -229,7 +229,7 @@ const updateChart = () => {
       }
     ]
   };
-  
+
   // 如果有购买价格，添加水平参考线
   if (props.buyPrice !== null && !props.mini) {
     option.series.push({
@@ -244,7 +244,7 @@ const updateChart = () => {
       symbol: 'none'
     });
   }
-  
+
   // 设置图表配置
   chartInstance.setOption(option);
 };
@@ -327,4 +327,4 @@ onBeforeUnmount(() => {
 .is-mini .chart-wrapper {
   height: 60px;
 }
-</style> 
+</style>

@@ -150,17 +150,18 @@ interface Props {
   recoveryStrategies?: Array<'retry' | 'reload' | 'fallback' | 'reset'>;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  componentId: 'unknown',
-  fallbackComponent: '',
-  maxRetries: 3,
-  retryDelay: 1000,
-  autoRecover: true,
-  reportErrors: true,
-  showDetails: false,
-  severity: 'warning',
-  recoveryStrategies: () => ['retry', 'reload', 'reset']
-});
+// Vue 3.5 新特性：Props解构默认值（响应式props解构）
+const {
+  componentId = 'unknown',
+  fallbackComponent = '',
+  maxRetries = 3,
+  retryDelay = 1000,
+  autoRecover = true,
+  reportErrors = true,
+  showDetails = false,
+  severity = 'warning',
+  recoveryStrategies = () => ['retry', 'reload', 'reset']
+} = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{

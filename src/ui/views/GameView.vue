@@ -229,7 +229,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useGameCoreStore } from '@/stores/gameCore';
@@ -260,9 +260,10 @@ const eventStore = useEventStore(); // 事件存储
 const settingsStore = useSettingsStore();
 const uiStore = useUiStore();
 const { t } = useI18n();
-const eventModal = ref(null);
-const tutorialSystem = ref(null);
-const saveInput = ref(null);
+// Vue 3.5 新特性：类型安全的模板引用
+const eventModal = useTemplateRef('eventModal');
+const tutorialSystem = useTemplateRef('tutorialSystem');
+const saveInput = useTemplateRef('saveInput');
 
 // 组件初始化完成
 
