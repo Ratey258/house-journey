@@ -1,5 +1,16 @@
 <template>
-  <div id="app">
+  <div
+    id="app"
+    :class="[
+      layoutClass,
+      {
+        'dark-theme': isDark,
+        'offline': !isOnline,
+        'low-performance': performanceMetrics.isLowPerformance
+      }
+    ]"
+    :data-theme="isDark ? 'dark' : 'light'"
+  >
     <!-- 全局CSS加载动画，在Vue应用初始化前显示 -->
     <CssLoader
       v-if="isLoading"
@@ -9,8 +20,18 @@
       @complete="onLoadingComplete"
     />
 
-    <!-- 主应用内容 -->
-    <router-view v-if="!isLoading" />
+    <!-- 主应用内容 - 增强布局适配 -->
+    <router-view
+      v-if="!isLoading"
+      :class="[
+        'main-content',
+        {
+          'mobile-layout': isMobile,
+          'tablet-layout': isTablet,
+          'desktop-layout': isDesktop
+        }
+      ]"
+    />
 
     <!-- 全局错误对话框 -->
     <ErrorDialog />
@@ -29,12 +50,28 @@
 
     <!-- 开发工具管理器 -->
     <DevToolsManager />
+
+    <!-- 网络状态指示器 -->
+    <div v-if="!isOnline" class="offline-indicator">
+      <i class="icon-wifi-off"></i>
+      <span>离线模式</span>
+    </div>
+
+    <!-- 性能优化提示 -->
+    <div v-if="performanceMetrics.isLowPerformance" class="performance-warning">
+      <i class="icon-warning"></i>
+      <span>性能优化模式已启用</span>
+    </div>
   </div>
 </template>
 
-<script>
-import { defineComponent, ref, onMounted, nextTick } from 'vue';
+<script setup>
+// Vue 3.5 + Pinia 3.0 + @vueuse/core 13.6 现代化重构
+import { ref, onMounted, nextTick, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+
+// 组件导入
 import ErrorDialog from './ui/components/common/ErrorDialog.vue';
 import ErrorRecoveryDialog from './ui/components/common/ErrorRecoveryDialog.vue';
 import GameDialog from './ui/components/common/GameDialog.vue';
@@ -42,95 +79,157 @@ import Toast from './ui/components/common/Toast.vue';
 import AudioManager from './ui/components/common/AudioManager.vue';
 import CssLoader from './ui/components/common/CssLoader.vue';
 import DevToolsManager from './ui/components/common/DevToolsManager.vue';
+
+// Store导入 - Pinia 3.0优化版本
 import { useUiStore } from './stores/uiStore';
 import { useGameCoreStore } from './stores/gameCore';
 import { usePlayerStore } from './stores/player';
 import { useMarketStore } from './stores/market';
 import { useEventStore } from './stores/events';
+
+// 新增Composables - @vueuse/core 13.6功能集成
+import { useEnhancedGame, useResponsiveLayout } from './ui/composables/useEnhancedGame';
+
+// 工具导入
 import { handleError, ErrorType, ErrorSeverity } from '@/infrastructure/utils/errorHandler';
 
-export default defineComponent({
-  name: 'App',
-  components: {
-    ErrorDialog,
-    ErrorRecoveryDialog,
-    GameDialog,
-    Toast,
-    AudioManager,
-    CssLoader,
-    DevToolsManager
-  },
-  setup() {
-    const router = useRouter();
-    const isLoading = ref(true);
-    const loadingStatus = ref('初始化游戏环境...');
-    const loadingProgress = ref(0);
+// === Setup Script - Vue 3.5 现代化语法 ===
 
-    // 应用初始化函数
-    const initializeApp = async () => {
-      try {
-        loadingStatus.value = '初始化存储...';
-        loadingProgress.value = 10;
+// 路由
+const router = useRouter();
 
-        // 获取存储实例
-        const uiStore = useUiStore();
-        const gameCoreStore = useGameCoreStore();
-        const playerStore = usePlayerStore();
-        const marketStore = useMarketStore();
-        const eventStore = useEventStore();
+// === 增强游戏功能集成 - @vueuse/core 13.6 ===
+const {
+  gameSettings,
+  isDark,
+  toggleDark,
+  isPageVisible,
+  isOnline,
+  performanceMetrics,
+  sendNotification,
+  gameVibrate,
+  optimizePerformance
+} = useEnhancedGame();
 
-        loadingStatus.value = '加载游戏配置...';
-        loadingProgress.value = 30;
+// 响应式布局
+const { isMobile, isTablet, isDesktop, layoutClass } = useResponsiveLayout();
 
-        // 预加载一些关键数据
-        await new Promise(resolve => setTimeout(resolve, 300));
+// === Store实例 - Pinia 3.0 优化版本 ===
+const uiStore = useUiStore();
+const gameCoreStore = useGameCoreStore();
+const playerStore = usePlayerStore();
+const marketStore = useMarketStore();
+const eventStore = useEventStore();
 
-        loadingStatus.value = '准备游戏界面...';
-        loadingProgress.value = 60;
+// 使用storeToRefs保持响应性 - Pinia 3.0最佳实践
+const { /* 在需要时从stores解构状态 */ } = storeToRefs(uiStore);
 
-        // 等待DOM更新
-        await nextTick();
+// === 加载状态管理 ===
+const isLoading = ref(true);
+const loadingStatus = ref('初始化游戏环境...');
+const loadingProgress = ref(0);
 
-        loadingStatus.value = '完成初始化...';
-        loadingProgress.value = 90;
+// === 应用初始化函数 - Vue 3.5 + @vueuse增强版本 ===
+const initializeApp = async () => {
+  try {
+    loadingStatus.value = '初始化存储...';
+    loadingProgress.value = 10;
 
-        // 再等待一小段时间，确保界面平滑过渡
-        await new Promise(resolve => setTimeout(resolve, 500));
+    // Store实例已在上面定义，无需重复获取
+    loadingStatus.value = '加载游戏配置...';
+    loadingProgress.value = 30;
 
-        loadingStatus.value = '加载完成!';
-        loadingProgress.value = 100;
+    // 性能优化：根据设备性能调整初始化
+    if (performanceMetrics.value.isLowPerformance) {
+      optimizePerformance();
+      await new Promise(resolve => setTimeout(resolve, 100)); // 减少等待时间
+    } else {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
 
-        // 延迟一小段时间后隐藏加载界面
-        setTimeout(() => {
-          isLoading.value = false;
-        }, 500);
-      } catch (error) {
-        handleError(error, 'App (src)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
-        console.error('初始化应用失败:', error);
-        loadingStatus.value = '初始化失败，请刷新页面重试';
-      }
-    };
+    loadingStatus.value = '准备游戏界面...';
+    loadingProgress.value = 60;
 
-    // 加载完成回调
-    const onLoadingComplete = () => {
-      console.log('应用初始化完成');
+    // 等待DOM更新
+    await nextTick();
+
+    loadingStatus.value = '完成初始化...';
+    loadingProgress.value = 90;
+
+    // 在线状态检查
+    if (!isOnline.value) {
+      sendNotification('离线模式', {
+        body: '当前处于离线模式，部分功能可能受限'
+      });
+    }
+
+    // 性能调优的等待时间
+    const waitTime = performanceMetrics.value.isLowPerformance ? 200 : 500;
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+
+    loadingStatus.value = '加载完成!';
+    loadingProgress.value = 100;
+
+    // 触觉反馈
+    gameVibrate([100, 50, 100]);
+
+    // 延迟隐藏加载界面
+    setTimeout(() => {
       isLoading.value = false;
-    };
+      sendNotification('《买房记》', {
+        body: '游戏已就绪，开始您的买房之旅！',
+        silent: true
+      });
+    }, 300);
 
-    // 组件挂载时
-    onMounted(() => {
-      // 初始化应用
-      initializeApp();
-    });
+  } catch (error) {
+    handleError(error, 'App初始化', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
+    console.error('初始化应用失败:', error);
+    loadingStatus.value = '初始化失败，请刷新页面重试';
 
-    return {
-      isLoading,
-      loadingStatus,
-      loadingProgress,
-      onLoadingComplete
-    };
+    // 错误时的触觉反馈
+    gameVibrate([200, 100, 200, 100, 200]);
+  }
+};
+
+// === 回调函数 ===
+const onLoadingComplete = () => {
+  console.log('应用初始化完成');
+  isLoading.value = false;
+};
+
+// === 生命周期钩子 - Vue 3.5 ===
+onMounted(() => {
+  console.log('App组件挂载，开始初始化...');
+  initializeApp();
+});
+
+// === 监听器 - 增强功能 ===
+watch(isPageVisible, (visible) => {
+  if (visible) {
+    console.log('页面重新获得焦点');
+  } else {
+    console.log('页面失去焦点');
   }
 });
+
+watch(isOnline, (online) => {
+  if (online) {
+    console.log('网络连接恢复');
+    sendNotification('网络已连接', { body: '游戏功能已恢复正常' });
+  } else {
+    console.log('网络连接断开');
+    sendNotification('网络已断开', { body: '游戏将在离线模式下运行' });
+  }
+});
+
+// 性能监控
+watch(performanceMetrics, (metrics) => {
+  if (metrics.isLowPerformance) {
+    console.log('检测到低性能环境，启用性能优化');
+    optimizePerformance();
+  }
+}, { deep: true });
 </script>
 
 <style>
@@ -155,6 +254,110 @@ body {
   height: 100vh;
   overflow: hidden;
   position: relative;
+  transition: all 0.3s ease;
+}
+
+/* === 响应式布局增强 - @vueuse/core 13.6 === */
+.layout-mobile {
+  font-size: 14px;
+}
+
+.layout-tablet {
+  font-size: 15px;
+}
+
+.layout-desktop {
+  font-size: 16px;
+}
+
+/* === 主题支持 === */
+[data-theme="dark"] {
+  background-color: #1a1a2e;
+  color: #ffffff;
+}
+
+[data-theme="light"] {
+  background-color: #f5f7fa;
+  color: #2c3e50;
+}
+
+.dark-theme {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+}
+
+/* === 网络状态指示器 === */
+.offline-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #ff6b6b;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: pulse 2s infinite;
+}
+
+.offline-indicator i::before {
+  content: "📶";
+}
+
+/* === 性能优化提示 === */
+.performance-warning {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #ffd93d;
+  color: #333;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideInUp 0.5s ease;
+}
+
+.performance-warning i::before {
+  content: "⚡";
+}
+
+/* === 主内容区域适配 === */
+.main-content {
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.main-content.mobile-layout {
+  padding: 10px;
+}
+
+.main-content.tablet-layout {
+  padding: 15px;
+}
+
+.main-content.desktop-layout {
+  padding: 20px;
+}
+
+/* === 低性能模式优化 === */
+.low-performance * {
+  animation: none !important;
+  transition: none !important;
+}
+
+.low-performance .main-content {
+  will-change: auto;
+  transform: none;
 }
 
 /* 全局加载动画样式 */

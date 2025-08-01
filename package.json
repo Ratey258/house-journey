@@ -1,6 +1,6 @@
 {
   "name": "house-journey",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "买房记 - 模拟经营游戏",
   "author": "春卷",
   "license": "MIT",
@@ -14,7 +14,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "electron:dev": "concurrently \"vite\" \"electron .\"",
+    "electron:dev": "concurrently \"vite\" \"node scripts/start-electron.js\"",
     "electron:build": "vite build && electron-builder --win nsis portable --config electron-builder.js",
     "electron:build:dir": "vite build && electron-builder --dir --config electron-builder.js",
     "electron:build:win": "vite build && electron-builder --win nsis --config electron-builder.js",
@@ -42,7 +42,8 @@
     "audit:error-handling": "node scripts/error-handler-audit.js",
     "fix:error-handling": "node scripts/error-handler-fix.js",
     "security-check": "node scripts/security-check.js",
-    "prepare-release": "npm run lint:fix && npm run format && npm run security-check && npm run test"
+    "sync-version": "node scripts/sync-version.js",
+    "prepare-release": "npm run lint:fix && npm run format && npm run security-check && npm run test && npm run sync-version"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.0",
@@ -65,28 +66,28 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@vueuse/core": "~10.8.0",
+    "@vueuse/core": "^13.6.0",
     "chart.js": "~4.4.2",
     "dayjs": "~1.11.10",
     "echarts": "~5.5.0",
     "electron-log": "~5.1.0",
     "electron-store": "~8.2.0",
     "electron-updater": "~6.2.0",
-    "element-plus": "~2.5.6",
+    "element-plus": "^2.10.4",
     "gsap": "~3.12.5",
     "howler": "~2.2.4",
     "lodash-es": "~4.17.21",
-    "pinia": "~2.1.7",
-    "vue": "~3.4.21",
+    "pinia": "^3.0.3",
+    "vue": "^3.5.18",
     "vue-i18n": "~9.8.0",
-    "vue-router": "~4.3.0",
+    "vue-router": "^4.5.1",
     "vue-virtual-scroller": "~2.0.0-beta.8"
   },
   "config": {
     "forge": {
       "packagerConfig": {
-        "name": "买房记v0.1.1",
-        "executableName": "买房记v0.1.1",
+        "name": "买房记v0.1.4",
+        "executableName": "买房记v0.1.4",
         "icon": "./ico.ico",
         "asar": true
       },
@@ -94,7 +95,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "买房记v0.1.1",
+            "name": "买房记v0.1.4",
             "setupIcon": "./ico.ico"
           }
         },

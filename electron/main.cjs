@@ -147,7 +147,7 @@ function createMainWindow() {
     // 开发环境：连接到Vite开发服务器
     // 尝试多个可能的端口
     const tryLoadDevServer = async () => {
-      const ports = [5174, 5175, 5173]; // 按优先级排序的端口
+      const ports = [5173, 5174, 5175]; // 按优先级排序的端口，5173是Vite默认端口
       let loaded = false;
 
       for (const port of ports) {
@@ -155,12 +155,13 @@ function createMainWindow() {
 
         try {
           console.log(`尝试连接到开发服务器端口: ${port}`);
-          // 设置超时，避免长时间等待
+          // 设置超时，避免长时间等待（5173为主端口，给更长时间）
           const url = `http://127.0.0.1:${port}${initialHash ? '#' + initialHash : ''}`;
           console.log(`加载URL: ${url}`);
           const loadPromise = mainWindow.loadURL(url);
+          const timeout = port === 5173 ? 5000 : 1000; // 5173端口给5秒，其他端口1秒
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('连接超时')), 2000)
+            setTimeout(() => reject(new Error('连接超时')), timeout)
           );
 
           await Promise.race([loadPromise, timeoutPromise]);

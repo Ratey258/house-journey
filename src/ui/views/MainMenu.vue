@@ -5,7 +5,7 @@
     <div class="menu-container">
       <div class="title-section">
         <h1 class="game-title">买房记</h1>
-        <p class="game-version">v0.1.1</p>
+        <p class="game-version">v{{ version }}</p>
       </div>
 
       <div class="menu-buttons">
@@ -131,7 +131,7 @@
         </div>
         <div class="about-content">
           <div class="about-logo">买房记</div>
-          <div class="about-version">版本：v0.1.1</div>
+          <div class="about-version">版本：v{{ version }}</div>
 
           <div class="about-description">
             <p>这是一款模拟经营策略游戏，玩家将在游戏中体验市场变化带来的乐趣与挑战。</p>
@@ -164,6 +164,12 @@ import { usePlayerStore } from '../../stores/player';
 import { useMarketStore } from '../../stores/market';
 import { useEventStore } from '../../stores/events';
 import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler';
+
+// 从全局变量获取版本信息（由Vite构建时自动注入）
+const version = __APP_VERSION__;
+const appName = __APP_NAME__;
+const appDescription = __APP_DESCRIPTION__;
+const appAuthor = __APP_AUTHOR__;
 
 const router = useRouter();
 const gameCore = useGameCoreStore();

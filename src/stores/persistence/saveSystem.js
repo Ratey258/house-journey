@@ -13,7 +13,8 @@ const SAVE_LIST_KEY = 'saveList';
 const SAVE_PREFIX = 'houseJourneySave_';
 const MAX_AUTO_SAVES = 3;
 const AUTO_SAVE_INTERVAL = 5; // 每5周自动保存一次
-const CURRENT_GAME_VERSION = '0.1.1';
+// 从全局变量获取版本号（由Vite构建时自动注入）
+const CURRENT_GAME_VERSION = __APP_VERSION__;
 
 /**
  * 存档系统存储

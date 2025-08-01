@@ -136,7 +136,7 @@ export function repairSaveData(saveData, template = null) {
   }
 
   // 确保基本结构存在
-  repairedData.version = repairedData.version || '0.1.1';
+      repairedData.version = repairedData.version || __APP_VERSION__;
   repairedData.timestamp = repairedData.timestamp || new Date().toISOString();
   repairLog.push(`设置版本为: ${repairedData.version}`);
 
@@ -356,7 +356,7 @@ function ensureBoolean(value, defaultValue) {
  * @param {string} currentVersion - 当前游戏版本
  * @returns {Object} 修复后的存档数据
  */
-export function ensureVersionCompatibility(saveData, currentVersion = '0.1.1') {
+export function ensureVersionCompatibility(saveData, currentVersion = __APP_VERSION__) {
   if (!saveData) return null;
 
   // 为旧版本没有版本号的存档添加版本号
@@ -372,8 +372,8 @@ export function ensureVersionCompatibility(saveData, currentVersion = '0.1.1') {
   // 不同版本间的兼容性处理
   let repairedData = { ...saveData };
 
-  // 版本0.1.0 -> 0.1.1的兼容处理
-  if (saveData.version === '0.1.0' && currentVersion === '0.1.1') {
+  // 版本0.1.0+ -> 当前版本的兼容处理
+  if (['0.1.0', '0.1.1', '0.1.2', '0.1.3'].includes(saveData.version) && currentVersion === __APP_VERSION__) {
     // 添加可能在新版本中新增的字段，默认值等
     if (!repairedData.gameState) repairedData.gameState = {};
     // 其他兼容性处理...

@@ -464,7 +464,7 @@ export class GameEngine {
    */
   getSaveState() {
     return {
-      version: '0.1.1',
+      version: __APP_VERSION__,
       timestamp: Date.now(),
       playerName: this.state.player.name,
       currentWeek: this.state.currentWeek,

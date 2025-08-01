@@ -12,6 +12,12 @@ interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 
+// 全局变量类型声明 - 由Vite构建时自动注入
+declare const __APP_VERSION__: string
+declare const __APP_NAME__: string
+declare const __APP_DESCRIPTION__: string
+declare const __APP_AUTHOR__: string
+
 // Vite 7 现代化模块声明
 declare module '*.vue' {
   import type { DefineComponent } from 'vue'

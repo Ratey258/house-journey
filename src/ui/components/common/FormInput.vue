@@ -1,14 +1,14 @@
-<!-- 
+<!--
   输入框组件
   遵循UI设计规范中的表单控件设计
 -->
 <template>
   <div class="input-wrapper">
-    <label v-if="label" :for="id" class="input-label">{{ label }}</label>
+    <label v-if="label" :for="inputId" class="input-label">{{ label }}</label>
     <div class="input-container" :class="{ 'input-focused': focused }">
       <i v-if="leftIcon" :class="['input-icon', 'left-icon', `icon-${leftIcon}`]"></i>
       <input
-        :id="id"
+        :id="inputId"
         :type="type"
         :value="modelValue"
         :placeholder="placeholder"
@@ -18,10 +18,10 @@
         @input="$emit('update:modelValue', $event.target.value)"
         @focus="handleFocus"
         @blur="handleBlur"
-        ref="inputRef"
+        ref="inputElement"
       >
-      <i 
-        v-if="rightIcon || (clearable && modelValue)" 
+      <i
+        v-if="rightIcon || (clearable && modelValue)"
         :class="['input-icon', 'right-icon', clearable && modelValue ? 'icon-close' : `icon-${rightIcon}`]"
         @click="clearInput"
       ></i>
@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue';
+import { ref, computed, defineProps, defineEmits, useId, useTemplateRef } from 'vue';
 
 const props = defineProps({
   id: String,
@@ -60,8 +60,14 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur', 'clear']);
 
+// Vue 3.5 新特性：使用 useId() 生成 SSR 安全的唯一 ID
+const generatedId = useId();
+const inputId = computed(() => props.id || generatedId);
+
+// Vue 3.5 新特性：使用 useTemplateRef() 替代传统 ref
+const inputRef = useTemplateRef('inputElement');
+
 const focused = ref(false);
-const inputRef = ref(null);
 
 // 获取焦点
 const handleFocus = (event) => {
@@ -198,4 +204,4 @@ const clearInput = () => {
 .icon-close:before {
   content: "✕";
 }
-</style> 
+</style>

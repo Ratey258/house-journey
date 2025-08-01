@@ -3,8 +3,12 @@
  * 用于删除过时的测试文件和脚本文件
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // 项目根目录
 const rootDir = path.resolve(__dirname, '..');
@@ -52,7 +56,7 @@ const dirsToKeep = [
  */
 function deleteFile(filePath) {
   const fullPath = path.join(rootDir, filePath);
-  
+
   try {
     if (fs.existsSync(fullPath)) {
       fs.unlinkSync(fullPath);
@@ -72,18 +76,18 @@ function deleteFile(filePath) {
 function ensureDirectoryWithPlaceholder(dirPath) {
   const fullPath = path.join(rootDir, dirPath);
   const placeholderPath = path.join(fullPath, 'placeholder.txt');
-  
+
   try {
     // 确保目录存在
     if (!fs.existsSync(fullPath)) {
       fs.mkdirSync(fullPath, { recursive: true });
       console.log(`📁 创建目录: ${dirPath}`);
     }
-    
+
     // 添加占位文件
     if (!fs.existsSync(placeholderPath)) {
       fs.writeFileSync(
-        placeholderPath, 
+        placeholderPath,
         `这是一个占位文件，确保${path.basename(dirPath)}目录存在。\n实际发布时，请替换为真实的资源。`,
         'utf8'
       );
@@ -99,21 +103,21 @@ function ensureDirectoryWithPlaceholder(dirPath) {
  */
 function cleanup() {
   console.log('🧹 开始清理过时文件...');
-  
+
   // 删除过时测试文件
   console.log('\n📋 清理过时测试文件:');
   outdatedTestFiles.forEach(deleteFile);
-  
+
   // 删除过时脚本文件
   console.log('\n📋 清理过时脚本文件:');
   outdatedScriptFiles.forEach(deleteFile);
-  
+
   // 确保必要的空目录存在
   console.log('\n📋 确保必要目录存在:');
   dirsToKeep.forEach(ensureDirectoryWithPlaceholder);
-  
+
   console.log('\n✨ 清理完成!');
 }
 
 // 执行清理
-cleanup(); 
+cleanup();

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import * as path from 'path';
+import pkg from './package.json';
 
 // 使用path.resolve替代直接引入的resolve
 const resolve = path.resolve;
@@ -9,8 +10,19 @@ const resolve = path.resolve;
 export default defineConfig(({ mode }) => {
   const isDevelopment = mode === 'development';
 
+  // 设置环境变量供HTML模板使用
+  process.env.VITE_APP_TITLE = `${pkg.name}v${pkg.version}`;
+  process.env.VITE_APP_VERSION = pkg.version;
+
   return {
     plugins: [vue()],
+    // 定义全局变量，自动注入版本号
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version),
+      __APP_NAME__: JSON.stringify(pkg.name),
+      __APP_DESCRIPTION__: JSON.stringify(pkg.description),
+      __APP_AUTHOR__: JSON.stringify(pkg.author),
+    },
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src'),
