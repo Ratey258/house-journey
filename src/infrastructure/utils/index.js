@@ -7,6 +7,9 @@
 export * from './errorHandler';
 export * from './errorTypes';
 
+// 导出智能日志系统
+export * from './smartLogger';
+
 // 导出格式化工具函数
 export * from './formatUtils';
 

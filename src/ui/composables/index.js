@@ -7,3 +7,6 @@
 // 导出市场相关的组合式API
 export { default as useMarket } from './useMarket';
 
+// 导出桌面端性能监控组合式API
+export { useDesktopMonitoring } from './useDesktopMonitoring';
+

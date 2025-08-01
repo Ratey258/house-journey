@@ -1,17 +1,49 @@
 /**
- * 统一错误处理工具
- * 提供全应用范围的错误处理机制
+ * 统一错误处理工具 - TypeScript版本
+ * 提供全应用范围的错误处理机制，包含完整的类型安全
  */
-import { ref } from 'vue';
-import { ErrorType, ErrorSeverity } from './errorTypes';
+import { ref, type Ref } from 'vue';
+import { ErrorType, ErrorSeverity, type ErrorInfo, type ErrorMetadata, type EnhancedError } from './errorTypes';
 import i18n from '../../i18n';
 import electronLog from 'electron-log';
 
 // 重新导出ErrorType和ErrorSeverity，使其他文件可以直接从errorHandler导入
-export { ErrorType, ErrorSeverity };
+export { ErrorType, ErrorSeverity, type ErrorInfo, type ErrorMetadata, type EnhancedError };
+
+// UI Store接口定义
+interface UiStore {
+  showErrorDialog: (error: ErrorDialogOptions) => void;
+  showToast: (toast: ToastOptions) => void;
+}
+
+interface ErrorDialogOptions {
+  title: string;
+  message: string;
+  details?: string;
+  type: string;
+  severity: ErrorSeverity;
+}
+
+interface ToastOptions {
+  type: 'success' | 'warning' | 'error' | 'info';
+  message: string;
+  duration?: number;
+}
+
+// Electron API接口定义
+interface ElectronAPI {
+  logError?: (errorInfo: ErrorInfo) => void;
+  exportErrorLogs?: (logs: ErrorInfo[]) => Promise<{ success: boolean }>;
+}
+
+declare global {
+  interface Window {
+    electronAPI?: ElectronAPI;
+  }
+}
 
 // 错误日志存储
-const errorLogs = ref([]);
+const errorLogs: Ref<ErrorInfo[]> = ref([]);
 const MAX_ERROR_LOGS = 200; // 最大保留日志数量
 
 // 游戏运行状态标记
@@ -20,13 +52,13 @@ const LAST_ACTIVITY_KEY = 'lastGameActivity';
 const ACTIVITY_TIMEOUT = 300000; // 5分钟无操作视为非活动状态
 
 // 缓存uiStore实例
-let cachedUiStore = null;
+let cachedUiStore: UiStore | null = null;
 
 /**
  * 获取UI Store实例
- * @returns {Promise<Object>} UI Store实例
+ * @returns UI Store实例的Promise
  */
-async function getUiStore() {
+async function getUiStore(): Promise<UiStore | null> {
   if (cachedUiStore) {
     return cachedUiStore;
   }
@@ -36,15 +68,15 @@ async function getUiStore() {
   const retryDelay = 300;
   
   // 重试函数
-  const retry = async (attempt = 0) => {
+  const retry = async (attempt = 0): Promise<UiStore | null> => {
     try {
       const module = await import('../../stores/uiStore');
       if (module && typeof module.useUiStore === 'function') {
         const store = module.useUiStore();
         // 验证store是否有效
         if (store && typeof store === 'object') {
-          cachedUiStore = store;
-          return store;
+          cachedUiStore = store as UiStore;
+          return store as UiStore;
         } else {
           throw new Error('Invalid uiStore instance');
         }
@@ -71,22 +103,33 @@ async function getUiStore() {
 
 /**
  * 处理错误
- * @param {Error} error 错误对象
- * @param {string} context 错误上下文
- * @param {string} type 错误类型
- * @param {string} severity 错误严重程度
- * @returns {Object} 错误信息对象
+ * @param error 错误对象
+ * @param context 错误上下文
+ * @param type 错误类型
+ * @param severity 错误严重程度
+ * @returns 错误信息对象
  */
-export function handleError(error, context, type = ErrorType.UNKNOWN, severity = ErrorSeverity.ERROR) {
+export function handleError(
+  error: Error | EnhancedError, 
+  context: string, 
+  type: ErrorType = ErrorType.UNKNOWN, 
+  severity: ErrorSeverity = ErrorSeverity.ERROR
+): ErrorInfo {
+  // 生成唯一ID
+  const id = `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   // 构建错误信息
-  const errorInfo = {
+  const errorInfo: ErrorInfo = {
+    id,
     message: error.message || '未知错误',
     context,
     type,
     severity,
     timestamp: new Date().toISOString(),
     stack: error.stack,
-    metadata: error.metadata || {}
+    metadata: (error as EnhancedError).metadata || {},
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+    url: typeof window !== 'undefined' ? window.location.href : undefined
   };
   
   // 日志记录
@@ -117,9 +160,9 @@ export function handleError(error, context, type = ErrorType.UNKNOWN, severity =
 
 /**
  * 记录错误日志
- * @param {Object} errorInfo 错误信息对象
+ * @param errorInfo 错误信息对象
  */
-function logError(errorInfo) {
+function logError(errorInfo: ErrorInfo): void {
   // 添加到错误日志
   errorLogs.value.unshift(errorInfo);
   
@@ -139,16 +182,16 @@ function logError(errorInfo) {
 
 /**
  * 获取错误日志
- * @returns {Array} 错误日志列表
+ * @returns 错误日志列表
  */
-export function getErrorLogs() {
+export function getErrorLogs(): ErrorInfo[] {
   return [...errorLogs.value];
 }
 
 /**
  * 清除错误日志
  */
-export function clearErrorLogs() {
+export function clearErrorLogs(): void {
   errorLogs.value = [];
   try {
     localStorage.removeItem('errorLogs');
@@ -159,14 +202,14 @@ export function clearErrorLogs() {
 
 /**
  * 加载保存的错误日志
- * @returns {Promise<Array>} 错误日志列表的Promise
+ * @returns 错误日志列表的Promise
  */
-export function loadErrorLogs() {
+export function loadErrorLogs(): Promise<ErrorInfo[]> {
   return new Promise((resolve) => {
     try {
       const savedLogs = localStorage.getItem('errorLogs');
       if (savedLogs) {
-        const parsedLogs = JSON.parse(savedLogs);
+        const parsedLogs: ErrorInfo[] = JSON.parse(savedLogs);
         errorLogs.value = parsedLogs;
         
         // 确保不超过最大数量
@@ -184,10 +227,10 @@ export function loadErrorLogs() {
 
 /**
  * 获取本地化的错误消息
- * @param {Object} errorInfo 错误信息对象
- * @returns {string} 本地化的错误消息
+ * @param errorInfo 错误信息对象
+ * @returns 本地化的错误消息
  */
-function getLocalizedErrorMessage(errorInfo) {
+function getLocalizedErrorMessage(errorInfo: ErrorInfo): string {
   try {
     // 尝试使用错误类型和消息的组合键
     const specificKey = `errors.${errorInfo.type}.specific.${errorInfo.message
@@ -198,208 +241,140 @@ function getLocalizedErrorMessage(errorInfo) {
     // 常规错误类型键
     const typeKey = `errors.${errorInfo.type}.default`;
     
-    // 默认错误信息
-    const defaultMsg = '发生错误';
+    // 通用错误键
+    const genericKey = 'errors.generic';
     
-    // 尝试按优先级获取本地化消息
-    if (i18n.global && i18n.global.te && i18n.global.te(specificKey)) {
+    // 按优先级尝试获取本地化消息
+    if (i18n.global.te(specificKey)) {
       return i18n.global.t(specificKey);
-    } else if (i18n.global && i18n.global.te && i18n.global.te(typeKey)) {
-      return i18n.global.t(typeKey, { message: errorInfo.message });
+    } else if (i18n.global.te(typeKey)) {
+      return i18n.global.t(typeKey);
+    } else if (i18n.global.te(genericKey)) {
+      return i18n.global.t(genericKey);
+    } else {
+      return errorInfo.message;
     }
-    return errorInfo.message || defaultMsg;
-  } catch (e) {
-    console.error('Error getting localized error message:', e);
-    return errorInfo.message || '发生错误';
+  } catch (err) {
+    console.warn('Failed to get localized error message:', err);
+    return errorInfo.message;
   }
 }
 
 /**
- * 弹窗通知用户
- * @param {Object} errorInfo 错误信息对象
+ * 通过对话框通知用户
+ * @param errorInfo 错误信息对象
  */
-async function notifyUserWithDialog(errorInfo) {
+async function notifyUserWithDialog(errorInfo: ErrorInfo): Promise<void> {
   try {
-    // 获取UI Store
     const uiStore = await getUiStore();
-    
-    if (uiStore && typeof uiStore.showErrorDialog === 'function') {
+    if (uiStore && uiStore.showErrorDialog) {
+      const localizedMessage = getLocalizedErrorMessage(errorInfo);
       uiStore.showErrorDialog({
-        title: errorInfo.severity === ErrorSeverity.FATAL ? '严重错误' : '错误',
-        message: getLocalizedErrorMessage(errorInfo),
-        details: process.env.NODE_ENV !== 'production' ? errorInfo.stack : undefined,
-        timestamp: errorInfo.timestamp,
-        context: errorInfo.context
+        title: i18n.global.t('errors.dialog.title'),
+        message: localizedMessage,
+        details: errorInfo.stack,
+        type: errorInfo.type,
+        severity: errorInfo.severity
       });
     } else {
-      // 备用方案
-      console.error('UI Store不可用，使用备用错误提示');
-      alert(getLocalizedErrorMessage(errorInfo));
+      // 回退到浏览器原生对话框
+      const localizedMessage = getLocalizedErrorMessage(errorInfo);
+      alert(`${i18n.global.t('errors.dialog.title')}: ${localizedMessage}`);
     }
-  } catch (e) {
-    console.error('Error showing error dialog:', e);
-    alert(getLocalizedErrorMessage(errorInfo));
+  } catch (err) {
+    console.error('Failed to show error dialog:', err);
+    // 最后的回退
+    alert(`错误: ${errorInfo.message}`);
   }
 }
 
 /**
- * Toast通知用户
- * @param {Object} errorInfo 错误信息对象
+ * 通过Toast通知用户
+ * @param errorInfo 错误信息对象
  */
-async function notifyUserWithToast(errorInfo) {
+async function notifyUserWithToast(errorInfo: ErrorInfo): Promise<void> {
   try {
-    // 获取UI Store
     const uiStore = await getUiStore();
-    
-    if (uiStore && typeof uiStore.showToast === 'function') {
+    if (uiStore && uiStore.showToast) {
+      const localizedMessage = getLocalizedErrorMessage(errorInfo);
       uiStore.showToast({
-        type: 'error',
-        message: getLocalizedErrorMessage(errorInfo),
+        type: errorInfo.severity === ErrorSeverity.WARNING ? 'warning' : 'error',
+        message: localizedMessage,
         duration: 5000
       });
     } else {
-      // 降级到控制台输出
-      console.warn(getLocalizedErrorMessage(errorInfo));
+      // 回退到控制台
+      console.warn(`Toast Notification: ${errorInfo.message}`);
     }
-  } catch (e) {
-    console.warn('Error showing toast:', e);
+  } catch (err) {
+    console.error('Failed to show toast notification:', err);
   }
 }
 
 /**
- * 异步错误处理包装器
- * @param {Function} asyncFn 异步函数
- * @param {string} context 错误上下文
- * @param {string} type 错误类型
- * @param {string} severity 错误严重程度
- * @returns {Promise<any>} 异步函数的结果
+ * 错误包装函数
+ * @param fn 要包装的函数
+ * @param context 错误上下文
+ * @returns 包装后的函数
  */
-export async function withErrorHandling(asyncFn, context, type = ErrorType.UNKNOWN, severity = ErrorSeverity.ERROR) {
-  try {
-    return await asyncFn();
-  } catch (error) {
-    handleError(error, context, type, severity);
-    throw error; // 允许调用方继续处理错误
-  }
-}
-
-/**
- * 专用于游戏核心系统的错误处理
- * @param {Function} asyncFn 异步函数
- * @param {string} context 上下文
- * @returns {Promise<any>} 异步函数的结果
- */
-export async function withGameErrorHandling(asyncFn, context) {
-  try {
-    return await asyncFn();
-  } catch (error) {
-    // 尝试进行游戏状态恢复
+export function withErrorHandling<T extends (...args: any[]) => any>(
+  fn: T, 
+  context: string
+): (...args: Parameters<T>) => ReturnType<T> | void {
+  return (...args: Parameters<T>) => {
     try {
-      const { createEmergencySnapshot } = await import('../persistence/stateSnapshot');
-      const gameStore = await import('../../stores').then(module => module.useGameStore());
+      const result = fn(...args);
       
-      // 创建紧急快照，以便后续恢复
-      createEmergencySnapshot(gameStore);
+      // 如果是Promise，添加catch处理
+      if (result && typeof result.catch === 'function') {
+        return result.catch((error: Error) => {
+          handleError(error, context, ErrorType.UNKNOWN, ErrorSeverity.ERROR);
+        });
+      }
       
-      // 尝试从快照恢复
-      await attemptGameRecovery(gameStore);
-    } catch (recoveryError) {
-      console.error('Failed to recover game state:', recoveryError);
+      return result;
+    } catch (error) {
+      handleError(error as Error, context, ErrorType.UNKNOWN, ErrorSeverity.ERROR);
     }
-    
-    handleError(error, context, ErrorType.GAME_LOGIC, ErrorSeverity.ERROR);
-    throw error;
-  }
+  };
 }
 
 /**
- * 尝试游戏状态恢复
- * @param {Object} gameStore - 游戏状态存储
- * @returns {Promise<boolean>} 是否成功恢复
+ * 游戏专用错误包装函数
+ * @param fn 要包装的函数
+ * @param context 错误上下文
+ * @returns 包装后的函数
  */
-export async function attemptGameRecovery(gameStore) {
-  try {
-    // 导入需要的模块
-    const { loadLatestSnapshot, applySnapshot } = await import('../persistence/stateSnapshot');
-    const { useUiStore } = await import('../../stores/uiStore');
-    
-    // 加载最近的状态快照
-    const snapshot = await loadLatestSnapshot();
-    if (!snapshot) {
-      console.warn('无法恢复游戏状态：找不到快照');
-      return false;
-    }
-    
-    // 如果游戏已结束或未开始，不进行恢复
-    if (gameStore.gameOver || !gameStore.gameStarted) {
-      console.info('游戏未在活动状态，不进行恢复');
-      return false;
-    }
-    
-    // 显示恢复确认对话框
-    const uiStore = useUiStore();
-    return new Promise(resolve => {
-      uiStore.showRecoveryDialog({
-        snapshot,
-        onRecover: async () => {
-          const success = await applySnapshot(gameStore, snapshot);
-          if (success) {
-            uiStore.showToast({
-              type: 'success',
-              message: '游戏状态已成功恢复'
-            });
-          }
-          resolve(success);
-        },
-        onCancel: () => {
-          resolve(false);
-        }
-      });
-    });
-  } catch (error) {
-    console.error('恢复游戏状态时出错:', error);
-    return false;
-  }
+export function withGameErrorHandling<T extends (...args: any[]) => any>(
+  fn: T, 
+  context: string
+): (...args: Parameters<T>) => ReturnType<T> | void {
+  return withErrorHandling(fn, `Game.${context}`);
 }
 
 /**
  * 设置全局错误处理器
- * @param {Vue} app - Vue应用实例
+ * @param app Vue应用实例
  */
-export function setupGlobalErrorHandlers(app) {
-  if (!app || !app.config) {
-    console.warn('无法设置全局错误处理：app实例无效');
-    return;
+export function setupGlobalErrorHandlers(app?: any): void {
+  // Vue错误处理
+  if (app && app.config) {
+    app.config.errorHandler = (err: Error, instance: any, info: string) => {
+      handleError(
+        err,
+        `Vue.${info}`,
+        ErrorType.SYSTEM,
+        ErrorSeverity.ERROR
+      );
+    };
   }
-
-  // 全局Vue错误处理
-  app.config.errorHandler = (err, vm, info) => {
-    // 获取组件名称
-    let componentName = 'Unknown';
-    try {
-      if (vm && vm.$options && vm.$options.name) {
-        componentName = vm.$options.name;
-      } else if (vm && vm.$root) {
-        componentName = 'Root Component';
-      }
-    } catch (e) {
-      componentName = 'Error getting component name';
-    }
-
-    handleError(
-      err, 
-      `Vue组件: ${componentName}`, 
-      ErrorType.COMPONENT, 
-      ErrorSeverity.ERROR
-    );
-  };
   
-  // 全局Promise错误处理
+  // 未捕获的Promise错误
   window.addEventListener('unhandledrejection', event => {
     handleError(
       event.reason || new Error('未处理的Promise异常'), 
       'Promise', 
-      ErrorType.ASYNC, 
+      ErrorType.SYSTEM, 
       ErrorSeverity.ERROR
     );
   });
@@ -411,7 +386,7 @@ export function setupGlobalErrorHandlers(app) {
       handleError(
         event.error,
         '全局异常',
-        ErrorType.RUNTIME,
+        ErrorType.SYSTEM,
         ErrorSeverity.ERROR
       );
     }
@@ -430,7 +405,7 @@ export function setupGlobalErrorHandlers(app) {
  * 标记游戏正在运行
  * 用于检测异常退出
  */
-export function markGameRunning() {
+export function markGameRunning(): void {
   try {
     localStorage.setItem(GAME_RUNNING_FLAG, 'true');
     updateGameActivity();
@@ -443,7 +418,7 @@ export function markGameRunning() {
  * 清除游戏运行标记
  * 在正常退出时调用
  */
-export function clearGameRunningMark() {
+export function clearGameRunningMark(): void {
   try {
     localStorage.removeItem(GAME_RUNNING_FLAG);
   } catch (e) {
@@ -453,9 +428,9 @@ export function clearGameRunningMark() {
 
 /**
  * 检查游戏是否异常退出
- * @returns {boolean} 是否检测到异常退出
+ * @returns 是否检测到异常退出
  */
-export function checkGameAbnormalExit() {
+export function checkGameAbnormalExit(): boolean {
   try {
     const wasRunning = localStorage.getItem(GAME_RUNNING_FLAG) === 'true';
     
@@ -487,7 +462,7 @@ export function checkGameAbnormalExit() {
  * 更新游戏活动时间戳
  * 记录用户最后交互时间
  */
-export function updateGameActivity() {
+export function updateGameActivity(): void {
   try {
     localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
   } catch (e) {
@@ -497,9 +472,9 @@ export function updateGameActivity() {
 
 /**
  * 导出错误日志
- * @returns {Promise<boolean>} 导出结果的Promise
+ * @returns 导出结果的Promise
  */
-export async function exportErrorLogs() {
+export async function exportErrorLogs(): Promise<boolean> {
   return new Promise(async (resolve) => {
     try {
       if (window.electronAPI && window.electronAPI.exportErrorLogs) {
@@ -523,4 +498,4 @@ export async function exportErrorLogs() {
       resolve(false);
     }
   });
-} 
+}

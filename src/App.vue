@@ -51,6 +51,9 @@
     <!-- 开发工具管理器 -->
     <DevToolsManager />
 
+    <!-- 桌面端性能监控指示器 - @vueuse/core 13.6 新特性 -->
+    <DesktopPerformanceIndicator />
+
     <!-- 网络状态指示器 -->
     <div v-if="!isOnline" class="offline-indicator">
       <i class="icon-wifi-off"></i>
@@ -79,6 +82,7 @@ import Toast from './ui/components/common/Toast.vue';
 import AudioManager from './ui/components/common/AudioManager.vue';
 import CssLoader from './ui/components/common/CssLoader.vue';
 import DevToolsManager from './ui/components/common/DevToolsManager.vue';
+import DesktopPerformanceIndicator from './ui/components/common/DesktopPerformanceIndicator.vue';
 
 // Store导入 - Pinia 3.0优化版本
 import { useUiStore } from './stores/uiStore';
