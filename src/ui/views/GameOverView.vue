@@ -191,264 +191,344 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref, computed, onMounted, nextTick, type Ref } from 'vue';
 import { formatNumber } from '@/infrastructure/utils';
 import { useGameCoreStore } from '@/stores/gameCore';
 import { useUiStore } from '@/stores/uiStore';
 
-export default {
-  name: 'GameOverView',
-  props: {
-    gameState: {
-      type: Object,
-      required: true
-    },
-    player: {
-      type: Object,
-      required: true
-    },
-    gameStats: {
-      type: Object,
-      required: true
+// ==================== 类型定义 ====================
+
+interface GameState {
+  maxWeeks: number;
+  [key: string]: any;
+}
+
+interface Player {
+  purchasedHouses: Array<{
+    houseId: string | number;
+    name: string;
+    purchasePrice: number;
+    purchaseDate: string;
+    level?: number;
+    price?: number;
+    purchaseWeek?: number;
+    id?: string | number;
+    imageUrl?: string;
+    image?: string;
+  }>;
+  money: number;
+  debt: number;
+  [key: string]: any;
+}
+
+interface GameStats {
+  endReason: string;
+  canContinue?: boolean;
+  weeksPassed?: number;
+  finalAssets?: number;
+  tradeStats?: {
+    totalTrades: number;
+    totalProfit: number;
+  };
+  purchasedHouse?: {
+    name: string;
+  };
+  data?: {
+    firstVictoryWeek?: number;
+    debt?: number;
+  };
+  score?: {
+    score: number;
+    rank?: string;
+  };
+  scoreDetails?: any;
+  reason?: string;
+  week?: number;
+  [key: string]: any;
+}
+
+interface Achievement {
+  name: string;
+  description: string;
+}
+
+// ==================== Props ====================
+
+interface Props {
+  gameState: GameState;
+  player: Player;
+  gameStats: GameStats;
+}
+
+const props = withDefaults(defineProps<Props>(), {});
+
+// ==================== Emits ====================
+
+const emit = defineEmits<{
+  'return-to-main': [];
+  'restart-game': [];
+  'continue-game': [];
+}>();
+
+// ==================== 响应式状态 ====================
+
+const showDetailedView: Ref<boolean> = ref(false);
+const achievements: Ref<Achievement[]> = ref([]);
+
+// ==================== 计算属性 ====================
+
+const canContinueGame = computed(() => {
+  // 检查是否可以继续游戏（房屋购买胜利）
+  // 增强检查条件，确保在购房胜利情况下显示继续游戏按钮
+  const isHouseVictory = props.gameStats.endReason === 'houseVictory';
+  const hasCanContinueFlag = props.gameStats.canContinue === true;
+  const hasPurchasedHouse = props.player.purchasedHouses && props.player.purchasedHouses.length > 0;
+
+  // 日志输出帮助调试
+  console.log('GameOverView - 继续游戏条件检查:', {
+    isHouseVictory,
+    hasCanContinueFlag,
+    hasPurchasedHouse,
+    endReason: props.gameStats.endReason,
+    playerHouses: props.player.purchasedHouses
+  });
+
+  // 简化判断条件: 只要不是破产或时间限制结束，且有房产就可以继续
+  // 1. 有房产 或 canContinue标记为true
+  // 2. 并且不是破产或时间限制结束
+  return (hasPurchasedHouse || hasCanContinueFlag || isHouseVictory) &&
+         props.gameStats.endReason !== 'bankruptcy';
+});
+
+const resultClass = computed(() => {
+  const endReason = props.gameStats.endReason;
+  if (endReason === 'victory' || endReason === 'houseVictory') {
+    return 'result-house-victory'; // 购房胜利
+  } else if (endReason === 'victoryTimeLimit') {
+    return 'result-game-complete'; // 购房后坚持到最后的完美胜利
+  } else if (endReason === 'bankruptcy') {
+    return 'result-bankruptcy'; // 破产失败
+  } else if (endReason === 'timeLimit') {
+    return 'result-time-expired'; // 时间到失败
+  }
+  return 'result-neutral';
+});
+
+const isVictory = computed(() => {
+  const endReason = props.gameStats.endReason;
+  return endReason === 'victory' ||
+         endReason === 'achievement' ||
+         endReason === 'victoryTimeLimit' ||
+         endReason === 'victoryOther' ||
+         endReason === 'houseVictory';
+});
+
+const isBankruptcy = computed(() => {
+  return props.gameStats.endReason === 'bankruptcy';
+});
+
+const hasAchievements = computed(() => {
+  return achievements.value && achievements.value.length > 0;
+});
+
+const getGameOverTitle = computed(() => {
+  const endReason = props.gameStats.endReason;
+
+  // 预处理多房产情况
+  let titlePrefix = '';
+  const houseCount = props.player.purchasedHouses?.length || 0;
+  const houseName = props.gameStats.purchasedHouse?.name || props.player.purchasedHouses?.[0]?.name || '房产';
+
+  if (houseCount > 1) {
+    titlePrefix = `🏆 购置${houseCount}套房产！`;
+  } else {
+    titlePrefix = `🎉 恭喜购得${houseName}！`;
+  }
+
+  // 根据结束原因返回不同标题
+  switch (endReason) {
+    case 'houseVictory':
+    case 'victory':
+      return titlePrefix;
+    case 'victoryTimeLimit':
+      return '🏆 完美通关！事业有成！';
+    case 'timeLimit':
+      return '⌛ 时间已到，未能实现购房梦';
+    case 'bankruptcy':
+      return '💸 破产清算，游戏结束';
+    case 'playerChoice':
+      return '你选择了结束游戏';
+    default:
+      return '游戏结束';
+  }
+});
+
+const getResultDescription = computed(() => {
+  const endReason = props.gameStats.endReason;
+  const firstVictoryWeek = props.gameStats.data?.firstVictoryWeek;
+  // 确保周数不超过最大值52
+  const currentWeek = Math.min(props.gameStats.weeksPassed || 0, props.gameState.maxWeeks);
+  const finalAssets = formatNumber(props.gameStats.finalAssets || 0);
+  const totalTrades = props.gameStats.tradeStats?.totalTrades || 0;
+  const totalProfit = formatNumber(Math.abs(props.gameStats.tradeStats?.totalProfit || 0));
+  const profitPrefix = (props.gameStats.tradeStats?.totalProfit || 0) >= 0 ? '盈利' : '亏损';
+
+  switch (endReason) {
+    case 'victory':
+    case 'houseVictory':
+      return `恭喜你在第 ${currentWeek} 周成功实现购房梦想！\n` +
+             `通过 ${totalTrades} 次交易，总计${profitPrefix} ¥${totalProfit}。`;
+
+    case 'victoryTimeLimit':
+      return `你用 ${firstVictoryWeek} 周买到了心仪的房子，并继续奋斗到第 ${currentWeek} 周！\n` +
+             `最终资产达到 ¥${finalAssets}，完美诠释了"赢家通吃"！`;
+
+    case 'timeLimit':
+      return `游戏结束，你在52周内累积了 ¥${finalAssets} 的资产。\n` +
+             `通过 ${totalTrades} 次交易，总计${profitPrefix} ¥${totalProfit}。继续努力，下次一定能实现购房梦！`;
+
+    case 'bankruptcy':
+      const debt = formatNumber(props.gameStats.data?.debt || 0);
+      return `很遗憾，由于无力偿还 ¥${debt} 的债务导致破产。\n` +
+             `通过 ${totalTrades} 次交易，总计${profitPrefix} ¥${totalProfit}。吸取教训，东山再起！`;
+
+    case 'playerChoice':
+      return `你在第 ${props.gameStats.weeksPassed || 0} 周选择结束游戏，最终资产达到 ¥${formatNumber(props.gameStats.finalAssets || 0)}。`;
+
+    default:
+      return '游戏结束了，感谢你的游玩！';
+  }
+});
+
+const getBestHouse = computed(() => {
+  if (!props.player.purchasedHouses || props.player.purchasedHouses.length === 0) {
+    return {};
+  }
+  return props.player.purchasedHouses.reduce((best, current) => {
+    if ((current.level || 0) > (best.level || 0)) {
+      return current;
     }
-  },
-  data() {
-    return {
-      showDetailedView: false,
-      achievements: []
+    if ((current.level || 0) === (best.level || 0) && (current.price || 0) > (best.price || 0)) {
+      return current;
+    }
+    return best;
+  }, props.player.purchasedHouses[0]);
+});
+
+const getMostExpensiveHouse = computed(() => {
+  if (!props.player.purchasedHouses || props.player.purchasedHouses.length === 0) {
+    return {};
+  }
+  return props.player.purchasedHouses.reduce((mostExpensive, current) => {
+    return ((current.price || 0) > (mostExpensive.price || 0)) ? current : mostExpensive;
+  }, props.player.purchasedHouses[0]);
+});
+
+const getVictoryBadgeText = computed(() => {
+  if (props.player.purchasedHouses && props.player.purchasedHouses.length > 0) {
+    return props.player.purchasedHouses.length > 1 ? '豪华置业' : '安家置业';
+  }
+  return '游戏通关!';
+});
+
+const getVictoryDescription = computed(() => {
+  const firstHouse = props.player.purchasedHouses && props.player.purchasedHouses.length > 0
+    ? props.player.purchasedHouses[0]
+    : null;
+
+  if (!firstHouse) {
+    return `在${props.gameState.maxWeeks}周游戏中，您成功通关!`;
+  }
+
+  const firstWeek = firstHouse.purchaseWeek || props.gameStats.week;
+  const houseCount = props.player.purchasedHouses.length;
+
+  if (houseCount > 1) {
+    return `在${props.gameState.maxWeeks}周游戏中，您共购买了${houseCount}套房产，首套房产仅用了${firstWeek}周就购得!`;
+  }
+
+  return `在${props.gameState.maxWeeks}周游戏中，您仅用了${firstWeek}周就完成了购房目标!`;
+});
+
+const getScoreRank = computed(() => {
+  if (props.gameStats.score) {
+    if (props.gameStats.score.rank) {
+      return props.gameStats.score.rank;
+    }
+    if (props.gameStats.score.score >= 1000000) {
+      return 'S';
+    }
+    if (props.gameStats.score.score >= 800000) {
+      return 'A';
+    }
+    if (props.gameStats.score.score >= 600000) {
+      return 'B';
+    }
+    if (props.gameStats.score.score >= 400000) {
+      return 'C';
+    }
+    return 'D';
+  }
+  return 'D';
+});
+
+const getFinalScore = computed(() => {
+  if (props.gameStats.score) {
+    if (props.gameStats.score.score) {
+      return props.gameStats.score.score;
+    }
+    if (props.gameStats.finalAssets) {
+      return props.gameStats.finalAssets;
+    }
+    return 0;
+  }
+  return 0;
+});
+
+// ==================== 方法 ====================
+
+/**
+ * 更新得分显示
+ */
+const updateScoreDisplay = (): void => {
+  // 强制刷新得分显示
+  console.log('强制刷新得分显示...');
+  // 如果得分为0但有净资产，尝试基于净资产计算一个默认得分
+  if (getFinalScore.value === 0 && props.gameStats.finalAssets && props.gameStats.finalAssets > 0) {
+    console.log('检测到得分为0但有净资产，尝试计算默认得分');
+    // 直接基于净资产计算得分
+    const calculatedScore = Math.floor(props.gameStats.finalAssets / 500);
+    // 创建完整的得分对象
+    const newScore = {
+      score: calculatedScore,
+      rank: calculateScoreRank(calculatedScore),
+      details: {
+        assetsScore: Math.floor(props.gameStats.finalAssets / 800),
+        timeScore: 0,
+        houseScore: 0,
+        tradeScore: 0,
+        bankScore: 0,
+        totalScore: calculatedScore
+      }
     };
-  },
-  computed: {
-    canContinueGame() {
-      // 检查是否可以继续游戏（房屋购买胜利）
-      // 增强检查条件，确保在购房胜利情况下显示继续游戏按钮
-      const isHouseVictory = this.gameStats.endReason === 'houseVictory';
-      const hasCanContinueFlag = this.gameStats.canContinue === true;
-      const hasPurchasedHouse = this.player.purchasedHouses && this.player.purchasedHouses.length > 0;
+    // 注意：在Setup Script中我们不能直接修改props，这里只是为了兼容原有逻辑
+    // 实际项目中应该通过emit事件通知父组件更新
+    Object.assign(props.gameStats, { score: newScore });
+  }
+};
 
-      // 日志输出帮助调试
-      console.log('GameOverView - 继续游戏条件检查:', {
-        isHouseVictory,
-        hasCanContinueFlag,
-        hasPurchasedHouse,
-        endReason: this.gameStats.endReason,
-        playerHouses: this.player.purchasedHouses
-      });
-
-      // 简化判断条件: 只要不是破产或时间限制结束，且有房产就可以继续
-      // 1. 有房产 或 canContinue标记为true
-      // 2. 并且不是破产或时间限制结束
-      return (hasPurchasedHouse || hasCanContinueFlag || isHouseVictory) &&
-             this.gameStats.endReason !== 'bankruptcy';
-    },
-    resultClass() {
-      const endReason = this.gameStats.endReason;
-      if (endReason === 'victory' || endReason === 'houseVictory') {
-        return 'result-house-victory'; // 购房胜利
-      } else if (endReason === 'victoryTimeLimit') {
-        return 'result-game-complete'; // 购房后坚持到最后的完美胜利
-      } else if (endReason === 'bankruptcy') {
-        return 'result-bankruptcy'; // 破产失败
-      } else if (endReason === 'timeLimit') {
-        return 'result-time-expired'; // 时间到失败
-      }
-      return 'result-neutral';
-    },
-    isVictory() {
-      const endReason = this.gameStats.endReason;
-      return endReason === 'victory' ||
-             endReason === 'achievement' ||
-             endReason === 'victoryTimeLimit' ||
-             endReason === 'victoryOther' ||
-             endReason === 'houseVictory';
-    },
-    isBankruptcy() {
-      return this.gameStats.endReason === 'bankruptcy';
-    },
-    hasAchievements() {
-      return this.achievements && this.achievements.length > 0;
-    },
-    getGameOverTitle() {
-      const endReason = this.gameStats.endReason;
-
-      // 预处理多房产情况
-      let titlePrefix = '';
-      const houseCount = this.player.purchasedHouses?.length || 0;
-      const houseName = this.gameStats.purchasedHouse?.name || this.player.purchasedHouses?.[0]?.name || '房产';
-
-      if (houseCount > 1) {
-        titlePrefix = `🏆 购置${houseCount}套房产！`;
-      } else {
-        titlePrefix = `🎉 恭喜购得${houseName}！`;
-      }
-
-      // 根据结束原因返回不同标题
-      switch (endReason) {
-        case 'houseVictory':
-        case 'victory':
-          return titlePrefix;
-        case 'victoryTimeLimit':
-          return '🏆 完美通关！事业有成！';
-        case 'timeLimit':
-          return '⌛ 时间已到，未能实现购房梦';
-        case 'bankruptcy':
-          return '💸 破产清算，游戏结束';
-        case 'playerChoice':
-          return '你选择了结束游戏';
-        default:
-          return '游戏结束';
-      }
-    },
-    getResultDescription() {
-      const endReason = this.gameStats.endReason;
-      const firstVictoryWeek = this.gameStats.data?.firstVictoryWeek;
-      // 确保周数不超过最大值52
-      const currentWeek = Math.min(this.gameStats.weeksPassed || 0, this.gameState.maxWeeks);
-      const finalAssets = this.formatNumber(this.gameStats.finalAssets || 0);
-      const totalTrades = this.gameStats.tradeStats?.totalTrades || 0;
-      const totalProfit = this.formatNumber(Math.abs(this.gameStats.tradeStats?.totalProfit || 0));
-      const profitPrefix = (this.gameStats.tradeStats?.totalProfit || 0) >= 0 ? '盈利' : '亏损';
-
-      switch (endReason) {
-        case 'victory':
-        case 'houseVictory':
-          return `恭喜你在第 ${currentWeek} 周成功实现购房梦想！\n` +
-                 `通过 ${totalTrades} 次交易，总计${profitPrefix} ¥${totalProfit}。`;
-
-        case 'victoryTimeLimit':
-          return `你用 ${firstVictoryWeek} 周买到了心仪的房子，并继续奋斗到第 ${currentWeek} 周！\n` +
-                 `最终资产达到 ¥${finalAssets}，完美诠释了"赢家通吃"！`;
-
-        case 'timeLimit':
-          return `游戏结束，你在52周内累积了 ¥${finalAssets} 的资产。\n` +
-                 `通过 ${totalTrades} 次交易，总计${profitPrefix} ¥${totalProfit}。继续努力，下次一定能实现购房梦！`;
-
-        case 'bankruptcy':
-          const debt = this.formatNumber(this.gameStats.data?.debt || 0);
-          return `很遗憾，由于无力偿还 ¥${debt} 的债务导致破产。\n` +
-                 `通过 ${totalTrades} 次交易，总计${profitPrefix} ¥${totalProfit}。吸取教训，东山再起！`;
-
-        case 'playerChoice':
-          return `你在第 ${this.gameStats.weeksPassed || 0} 周选择结束游戏，最终资产达到 ¥${this.formatNumber(this.gameStats.finalAssets || 0)}。`;
-
-        default:
-          return '游戏结束了，感谢你的游玩！';
-      }
-    },
-    getBestHouse() {
-      if (!this.player.purchasedHouses || this.player.purchasedHouses.length === 0) {
-        return {};
-      }
-      return this.player.purchasedHouses.reduce((best, current) => {
-        if (current.level > best.level) {
-          return current;
-        }
-        if (current.level === best.level && current.price > best.price) {
-          return current;
-        }
-        return best;
-      }, this.player.purchasedHouses[0]);
-    },
-    getMostExpensiveHouse() {
-      if (!this.player.purchasedHouses || this.player.purchasedHouses.length === 0) {
-        return {};
-      }
-      return this.player.purchasedHouses.reduce((mostExpensive, current) => {
-        return (current.price > mostExpensive.price) ? current : mostExpensive;
-      }, this.player.purchasedHouses[0]);
-    },
-    getVictoryBadgeText() {
-      if (this.player.purchasedHouses && this.player.purchasedHouses.length > 0) {
-        return this.player.purchasedHouses.length > 1 ? '豪华置业' : '安家置业';
-      }
-      return '游戏通关!';
-    },
-    getVictoryDescription() {
-      const firstHouse = this.player.purchasedHouses && this.player.purchasedHouses.length > 0
-        ? this.player.purchasedHouses[0]
-        : null;
-
-      if (!firstHouse) {
-        return `在${this.gameState.maxWeeks}周游戏中，您成功通关!`;
-      }
-
-      const firstWeek = firstHouse.purchaseWeek || this.gameStats.week;
-      const houseCount = this.player.purchasedHouses.length;
-
-      if (houseCount > 1) {
-        return `在${this.gameState.maxWeeks}周游戏中，您共购买了${houseCount}套房产，首套房产仅用了${firstWeek}周就购得!`;
-      }
-
-      return `在${this.gameState.maxWeeks}周游戏中，您仅用了${firstWeek}周就完成了购房目标!`;
-    },
-    getScoreRank() {
-      if (this.gameStats.score) {
-        if (this.gameStats.score.rank) {
-          return this.gameStats.score.rank;
-        }
-        if (this.gameStats.score.score >= 1000000) {
-          return 'S';
-        }
-        if (this.gameStats.score.score >= 800000) {
-          return 'A';
-        }
-        if (this.gameStats.score.score >= 600000) {
-          return 'B';
-        }
-        if (this.gameStats.score.score >= 400000) {
-          return 'C';
-        }
-        return 'D';
-      }
-      return 'D';
-    },
-    getFinalScore() {
-      if (this.gameStats.score) {
-        if (this.gameStats.score.score) {
-          return this.gameStats.score.score;
-        }
-        if (this.gameStats.finalAssets) {
-          return this.gameStats.finalAssets;
-        }
-        return 0;
-      }
-      return 0;
-    }
-  },
-  mounted() {
-    // 加载成就数据
-    this.loadAchievements();
-
-    // 添加动画效果
-    this.$nextTick(() => {
-      this.animateScoreElements();
-    });
-
-    // 添加调试日志
-    console.log('GameOverView mounted - 原始游戏统计数据对象:', this.gameStats);
-    console.log('GameOverView mounted - 游戏得分数据:', {
-      score: this.gameStats.score,
-      scoreDetails: this.gameStats.scoreDetails,
-      endReason: this.gameStats.endReason,
-      finalAssets: this.gameStats.finalAssets,
-      reason: this.gameStats.reason
-    });
-
-    // 查看得分格式问题
-    if (this.gameStats.score !== undefined) {
-      console.log('得分格式检查:', {
-        scoreType: typeof this.gameStats.score,
-        isNumber: !isNaN(this.gameStats.score),
-        stringValue: String(this.gameStats.score)
-      });
-    }
-
-    // 延迟执行一次强制刷新，确保得分显示正确
-    setTimeout(() => {
-      this.updateScoreDisplay();
-    }, 100);
-  },
-  methods: {
+/**
+ * 计算得分等级
+ */
+const calculateScoreRank = (score: number): string => {
+  if (score >= 1000000) return 'S';
+  if (score >= 800000) return 'A';
+  if (score >= 600000) return 'B';
+  if (score >= 400000) return 'C';
+  if (score >= 200000) return 'D';
+  return 'D';
+};
     updateScoreDisplay() {
       // 强制刷新得分显示
       console.log('强制刷新得分显示...');

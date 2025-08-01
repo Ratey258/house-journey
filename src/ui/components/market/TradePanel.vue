@@ -229,61 +229,91 @@
   </div>
 </template>
 
-<script>
-import { ref, computed } from 'vue';
+<script setup lang="ts">
+import { ref, computed, type Ref } from 'vue';
 import { useGameStore } from '../../../stores';
 import { PriceTrend, getTrendDescription } from '../../../core/services/priceSystem';
 import { formatNumber, formatPercentChange } from '@/infrastructure/utils';
 
-export default {
-  name: 'TradePanel',
-  props: {
-    product: {
-      type: Object,
-      required: true
-    }
-  },
-  setup(props, { emit }) {
-    const gameStore = useGameStore();
+// ==================== 类型定义 ====================
 
-    // 响应式状态
-    const activeTab = ref('buy');
-    const buyQuantity = ref(1);
-    const sellQuantity = ref(1);
+interface Product {
+  id: string | number;
+  name: string;
+  currentPrice: number;
+  trend: PriceTrend;
+  changePercent: number;
+  isSpecial?: boolean;
+}
 
-    // 计算属性
-    const player = computed(() => gameStore.player);
-    const priceHistory = computed(() => gameStore.getProductPriceHistory(props.product.id) || []);
+interface TransactionEvent {
+  type: 'buy' | 'sell';
+  productId: string | number;
+  quantity: number;
+  price: number;
+}
 
-    const maxBuyQuantity = computed(() => {
-      const maxByMoney = Math.floor(player.value.money / props.product.currentPrice);
-      const maxByCapacity = player.value.capacity - player.value.inventoryUsed;
-      return Math.max(0, Math.min(maxByMoney, maxByCapacity));
-    });
+// ==================== Props ====================
 
-    const buyTotalCost = computed(() => {
-      return props.product.currentPrice * buyQuantity.value;
-    });
+interface Props {
+  product: Product;
+}
 
-    const ownedItem = computed(() => {
-      return player.value.inventory.find(item => item.productId === props.product.id);
-    });
+const props = withDefaults(defineProps<Props>(), {});
 
-    const ownedQuantity = computed(() => {
-      return ownedItem.value ? ownedItem.value.quantity : 0;
-    });
+// ==================== Emits ====================
 
-    const canSell = computed(() => {
-      return ownedQuantity.value > 0;
-    });
+const emit = defineEmits<{
+  'transaction-complete': [event: TransactionEvent];
+  'close': [];
+}>();
 
-    const canBuy = computed(() => {
-      return maxBuyQuantity.value > 0;
-    });
+// ==================== Composables ====================
 
-    const sellTotalIncome = computed(() => {
-      return props.product.currentPrice * sellQuantity.value;
-    });
+const gameStore = useGameStore();
+
+// ==================== 响应式状态 ====================
+
+const activeTab: Ref<'buy' | 'sell'> = ref('buy');
+const buyQuantity: Ref<number> = ref(1);
+const sellQuantity: Ref<number> = ref(1);
+
+// ==================== 计算属性 ====================
+
+const player = computed(() => gameStore.player);
+const priceHistory = computed(() => gameStore.getProductPriceHistory(props.product.id) || []);
+
+const maxBuyQuantity = computed(() => {
+  const maxByMoney = Math.floor(player.value.money / props.product.currentPrice);
+  const maxByCapacity = player.value.capacity - player.value.inventoryUsed;
+  return Math.max(0, Math.min(maxByMoney, maxByCapacity));
+});
+
+const buyTotalCost = computed(() => {
+  return props.product.currentPrice * buyQuantity.value;
+});
+
+const ownedItem = computed(() => {
+  return player.value.inventory.find(item => item.productId === props.product.id);
+});
+
+const ownedQuantity = computed(() => {
+  return ownedItem.value ? ownedItem.value.quantity : 0;
+});
+
+const canSell = computed(() => {
+  return ownedQuantity.value > 0;
+});
+
+const canBuy = computed(() => {
+  return maxBuyQuantity.value > 0;
+});
+
+const sellTotalIncome = computed(() => {
+  return props.product.currentPrice * sellQuantity.value;
+});
+
+// ==================== 方法 ====================
 
     // 方法
     const formatChange = (percent) => {

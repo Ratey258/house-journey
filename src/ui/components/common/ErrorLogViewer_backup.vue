@@ -11,7 +11,7 @@
         </button>
       </div>
     </div>
-
+    
     <div class="error-log-filters">
       <div class="filter-group">
         <label>{{ $t('system.severity') }}:</label>
@@ -23,7 +23,7 @@
           <option value="info">{{ $t('errors.severity.info') }}</option>
         </select>
       </div>
-
+      
       <div class="filter-group">
         <label>{{ $t('system.type') }}:</label>
         <select v-model="filterType">
@@ -36,21 +36,21 @@
           <option value="unknown">{{ $t('system.errorType.unknown') }}</option>
         </select>
       </div>
-
+      
       <div class="filter-group">
         <label>{{ $t('system.search') }}:</label>
         <input type="text" v-model="searchQuery" placeholder="搜索错误消息..." />
       </div>
     </div>
-
+    
     <div class="error-log-stats">
       {{ $t('system.showing') }}: {{ filteredLogs.length }} / {{ logs.length }} {{ $t('system.logs') }}
     </div>
-
+    
     <div class="error-log-list" v-if="filteredLogs.length > 0">
-      <div
-        v-for="(log, index) in filteredLogs"
-        :key="index"
+      <div 
+        v-for="(log, index) in filteredLogs" 
+        :key="index" 
         class="error-log-item"
         :class="getSeverityClass(log.severity)"
         @click="toggleDetails(index)"
@@ -69,13 +69,13 @@
             {{ expandedLog === index ? '▼' : '▶' }}
           </div>
         </div>
-
+        
         <div v-if="expandedLog === index" class="error-details">
           <div v-if="log.metadata && Object.keys(log.metadata).length > 0" class="error-metadata">
             <h4>{{ $t('system.metadata') }}:</h4>
             <pre>{{ JSON.stringify(log.metadata, null, 2) }}</pre>
           </div>
-
+          
           <div v-if="log.stack" class="error-stack">
             <h4>{{ $t('system.stackTrace') }}:</h4>
             <pre>{{ log.stack }}</pre>
@@ -83,149 +83,118 @@
         </div>
       </div>
     </div>
-
+    
     <div v-else class="error-log-empty">
       {{ $t('system.noLogsFound') }}
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted, type Ref } from 'vue';
+<script>
+import { ref, computed } from 'vue';
 import { loadErrorLogs, clearErrorLogs, exportErrorLogs } from '@/infrastructure/utils/errorHandler';
 import { formatDate } from '@/infrastructure/utils';
 
-// ==================== 类型定义 ====================
-
-interface ErrorLog {
-  timestamp: string | number | Date;
-  severity: 'fatal' | 'error' | 'warning' | 'info';
-  type: 'validation' | 'network' | 'storage' | 'gameLogic' | 'system' | 'unknown';
-  message: string;
-  context?: string;
-  metadata?: Record<string, any>;
-  stack?: string;
-}
-
-type SeverityFilter = 'all' | 'fatal' | 'error' | 'warning' | 'info';
-type TypeFilter = 'all' | 'validation' | 'network' | 'storage' | 'gameLogic' | 'system' | 'unknown';
-
-// ==================== 响应式状态 ====================
-
-// 错误日志数据
-const logs: Ref<ErrorLog[]> = ref([]);
-const expandedLog: Ref<number | null> = ref(null);
-
-// 筛选条件
-const filterSeverity: Ref<SeverityFilter> = ref('all');
-const filterType: Ref<TypeFilter> = ref('all');
-const searchQuery: Ref<string> = ref('');
-
-// ==================== 计算属性 ====================
-
-// 筛选日志
-const filteredLogs = computed(() => {
-  return logs.value.filter(log => {
-    // 按严重程度筛选
-    if (filterSeverity.value !== 'all' && log.severity !== filterSeverity.value) {
-      return false;
+export default {
+  name: 'ErrorLogViewer',
+  setup() {
+    // 错误日志数据
+    const logs = ref([]);
+    const expandedLog = ref(null);
+    
+    // 筛选条件
+    const filterSeverity = ref('all');
+    const filterType = ref('all');
+    const searchQuery = ref('');
+    
+    // 加载日志
+    async function loadLogs() {
+      logs.value = await loadErrorLogs();
     }
-
-    // 按类型筛选
-    if (filterType.value !== 'all' && log.type !== filterType.value) {
-      return false;
+    
+    // 筛选日志
+    const filteredLogs = computed(() => {
+      return logs.value.filter(log => {
+        // 按严重程度筛选
+        if (filterSeverity.value !== 'all' && log.severity !== filterSeverity.value) {
+          return false;
+        }
+        
+        // 按类型筛选
+        if (filterType.value !== 'all' && log.type !== filterType.value) {
+          return false;
+        }
+        
+        // 搜索查询
+        if (searchQuery.value) {
+          const query = searchQuery.value.toLowerCase();
+          return (
+            (log.message && log.message.toLowerCase().includes(query)) || 
+            (log.context && log.context.toLowerCase().includes(query))
+          );
+        }
+        
+        return true;
+      });
+    });
+    
+    // 根据严重程度获取CSS类
+    function getSeverityClass(severity) {
+      switch (severity) {
+        case 'fatal': return 'severity-fatal';
+        case 'error': return 'severity-error';
+        case 'warning': return 'severity-warning';
+        case 'info': return 'severity-info';
+        default: return '';
+      }
     }
-
-    // 搜索查询
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase();
-      return (
-        (log.message && log.message.toLowerCase().includes(query)) ||
-        (log.context && log.context.toLowerCase().includes(query))
-      );
+    
+    // 切换详情显示
+    function toggleDetails(index) {
+      if (expandedLog.value === index) {
+        expandedLog.value = null;
+      } else {
+        expandedLog.value = index;
+      }
     }
-
-    return true;
-  });
-});
-
-// ==================== 方法 ====================
-
-/**
- * 加载错误日志
- */
-const loadLogs = async (): Promise<void> => {
-  try {
-    logs.value = await loadErrorLogs();
-  } catch (error) {
-    console.error('加载错误日志失败:', error);
-    logs.value = [];
+    
+    // 导出日志
+    async function exportLogs() {
+      const result = await exportErrorLogs();
+      if (result) {
+        alert('错误日志导出成功');
+      } else {
+        alert('错误日志导出失败');
+      }
+    }
+    
+    // 清空日志
+    function clearLogs() {
+      if (confirm('确定要清空所有错误日志吗？')) {
+        clearErrorLogs();
+        logs.value = [];
+        expandedLog.value = null;
+      }
+    }
+    
+    // 初始加载
+    loadLogs();
+    
+    return {
+      logs,
+      filteredLogs,
+      expandedLog,
+      filterSeverity,
+      filterType,
+      searchQuery,
+      formatDate,
+      getSeverityClass,
+      toggleDetails,
+      exportLogs,
+      clearLogs
+    };
   }
 };
-
-/**
- * 根据严重程度获取CSS类
- */
-const getSeverityClass = (severity: string): string => {
-  switch (severity) {
-    case 'fatal': return 'severity-fatal';
-    case 'error': return 'severity-error';
-    case 'warning': return 'severity-warning';
-    case 'info': return 'severity-info';
-    default: return '';
-  }
-};
-
-/**
- * 切换详情显示
- */
-const toggleDetails = (index: number): void => {
-  if (expandedLog.value === index) {
-    expandedLog.value = null;
-  } else {
-    expandedLog.value = index;
-  }
-};
-
-/**
- * 导出错误日志
- */
-const exportLogs = async (): Promise<void> => {
-  try {
-    const result = await exportErrorLogs();
-    if (result) {
-      alert('错误日志导出成功');
-    } else {
-      alert('错误日志导出失败');
-    }
-  } catch (error) {
-    console.error('导出错误日志失败:', error);
-    alert('错误日志导出失败');
-  }
-};
-
-/**
- * 清空错误日志
- */
-const clearLogs = (): void => {
-  if (confirm('确定要清空所有错误日志吗？')) {
-    try {
-      clearErrorLogs();
-      logs.value = [];
-      expandedLog.value = null;
-    } catch (error) {
-      console.error('清空错误日志失败:', error);
-      alert('清空错误日志失败');
-    }
-  }
-};
-
-// ==================== 生命周期 ====================
-
-// 组件挂载时加载日志
-onMounted(() => {
-  loadLogs();
-});
 </script>
 
 <style scoped>
@@ -434,4 +403,4 @@ onMounted(() => {
   background-color: #f4f4f5;
   color: #909399;
 }
-</style>
+</style> 

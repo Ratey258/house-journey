@@ -3,7 +3,7 @@
     <div class="dialog-backdrop" @click="cancelIfAllowed"></div>
     <div class="dialog-content">
       <h2>{{ title || defaultTitle }}</h2>
-      
+
       <div class="recovery-info" v-if="snapshot">
         <div class="info-row">
           <span class="label">{{ $t('recovery.date') }}:</span>
@@ -22,12 +22,12 @@
           <span class="value">{{ formatMoney(snapshot.player.money) }}</span>
         </div>
       </div>
-      
+
       <div class="message">
         <p v-if="message">{{ message }}</p>
         <p v-else>{{ $t('recovery.defaultMessage') }}</p>
       </div>
-      
+
       <div class="button-group">
         <button class="btn-recover" @click="handleRecover">{{ $t('recovery.recover') }}</button>
         <button class="btn-cancel" v-if="allowCancel" @click="handleCancel">{{ $t('recovery.cancel') }}</button>
@@ -36,65 +36,88 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { formatDate, formatCurrency } from '@/infrastructure/utils';
 
-export default {
-  name: 'ErrorRecoveryDialog',
-  props: {
-    show: {
-      type: Boolean,
-      default: false
-    },
-    snapshot: {
-      type: Object,
-      default: null
-    },
-    message: {
-      type: String,
-      default: ''
-    },
-    title: {
-      type: String,
-      default: ''
-    },
-    allowCancel: {
-      type: Boolean,
-      default: true
-    }
-  },
-  
-  emits: ['recover', 'cancel'],
-  
-  computed: {
-    defaultTitle() {
-      return this.$t('recovery.title', '游戏恢复');
-    }
-  },
-  
-  methods: {
-    // 格式化金额
-    formatMoney(amount) {
-      if (amount === undefined) return '';
-      return formatCurrency(amount);
-    },
-    
-    // 恢复操作
-    handleRecover() {
-      this.$emit('recover');
-    },
-    
-    // 取消操作
-    handleCancel() {
-      this.$emit('cancel');
-    },
-    
-    // 点击背景时取消
-    cancelIfAllowed() {
-      if (this.allowCancel) {
-        this.handleCancel();
-      }
-    }
+// ==================== 类型定义 ====================
+
+interface Snapshot {
+  timestamp: string | number | Date;
+  currentWeek: number;
+  player?: {
+    name?: string;
+    money?: number;
+  };
+  [key: string]: any;
+}
+
+// ==================== Props ====================
+
+interface Props {
+  show?: boolean;
+  snapshot?: Snapshot | null;
+  message?: string;
+  title?: string;
+  allowCancel?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  show: false,
+  snapshot: null,
+  message: '',
+  title: '',
+  allowCancel: true
+});
+
+// ==================== Emits ====================
+
+const emit = defineEmits<{
+  recover: [];
+  cancel: [];
+}>();
+
+// ==================== Composables ====================
+
+const { t } = useI18n();
+
+// ==================== 计算属性 ====================
+
+const defaultTitle = computed(() => {
+  return t('recovery.title', '游戏恢复');
+});
+
+// ==================== 方法 ====================
+
+/**
+ * 格式化金额
+ */
+const formatMoney = (amount: number | undefined): string => {
+  if (amount === undefined) return '';
+  return formatCurrency(amount);
+};
+
+/**
+ * 恢复操作
+ */
+const handleRecover = (): void => {
+  emit('recover');
+};
+
+/**
+ * 取消操作
+ */
+const handleCancel = (): void => {
+  emit('cancel');
+};
+
+/**
+ * 点击背景时取消
+ */
+const cancelIfAllowed = (): void => {
+  if (props.allowCancel) {
+    handleCancel();
   }
 };
 </script>
@@ -209,4 +232,4 @@ h2 {
 .btn-cancel:hover {
   background-color: #e0e0e0;
 }
-</style> 
+</style>
