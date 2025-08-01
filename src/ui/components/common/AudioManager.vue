@@ -11,28 +11,32 @@
 <script setup>
 import { ref, provide, onMounted, watch } from 'vue';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useSmartLogger } from '@/infrastructure/utils/smartLogger';
 
 // 获取设置存储
 const settingsStore = useSettingsStore();
+
+// 初始化智能日志系统
+const { ui } = useSmartLogger();
 
 // 创建音频管理对象（仅提供模拟接口，不实际加载音频）
 const audio = ref({
   sounds: {},
   load: (id, path) => {
-    console.log(`模拟加载音效: ${id}, 路径: ${path}（音频功能已禁用）`);
+    ui.debug(`模拟加载音效: ${id}`, { path, disabled: true }, 'audio-load');
     audio.value.sounds[id] = {
       id,
       path,
       volume: (vol) => {
-        console.log(`模拟设置音效 ${id} 音量: ${vol}`);
+        ui.debug(`模拟设置音效音量: ${id}`, { volume: vol, disabled: true }, 'audio-volume');
         return audio.value.sounds[id];
       },
       play: () => {
-        console.log(`模拟播放音效: ${id}（音频功能已禁用）`);
+        ui.debug(`模拟播放音效: ${id}`, { disabled: true }, 'audio-play-method');
         return audio.value.sounds[id];
       },
       stop: () => {
-        console.log(`模拟停止音效: ${id}（音频功能已禁用）`);
+        ui.debug(`模拟停止音效: ${id}`, { disabled: true }, 'audio-stop-method');
         return audio.value.sounds[id];
       }
     };
@@ -40,15 +44,15 @@ const audio = ref({
     return audio.value.sounds[id];
   },
   play: (id) => {
-    console.log(`模拟播放音效: ${id}（音频功能已禁用）`);
+    ui.debug(`模拟播放音效: ${id}`, { disabled: true }, 'audio-play-global');
     return null;
   },
   stop: (id) => {
-    console.log(`模拟停止音效: ${id}（音频功能已禁用）`);
+    ui.debug(`模拟停止音效: ${id}`, { disabled: true }, 'audio-stop-global');
     return null;
   },
   setVolume: (volume) => {
-    console.log(`模拟设置全局音量: ${volume}（音频功能已禁用）`);
+    ui.debug('模拟设置全局音量', { volume, disabled: true }, 'audio-global-volume');
   }
 });
 
@@ -57,43 +61,43 @@ provide('audio', audio.value);
 
 // 初始化音频系统（仅提供模拟接口）
 onMounted(() => {
-  console.log('AudioManager初始化（音频功能已禁用）');
+  ui.info('AudioManager初始化', { disabled: true }, 'audio-manager-init');
 });
 
 // 监听音量变化（仅记录日志）
 watch(() => settingsStore.soundVolume, (newVolume) => {
-  console.log(`音效音量变化: ${newVolume}（音频功能已禁用）`);
+  ui.debug('音效音量变化', { volume: newVolume, disabled: true }, 'sound-volume-change');
 });
 
 watch(() => settingsStore.musicVolume, (newVolume) => {
-  console.log(`音乐音量变化: ${newVolume}（音频功能已禁用）`);
+  ui.debug('音乐音量变化', { volume: newVolume, disabled: true }, 'music-volume-change');
 });
 
 // 导出接口
 defineExpose({
   playSound: (id) => {
-    console.log(`模拟播放音效: ${id}（音频功能已禁用）`);
+    ui.debug(`模拟播放音效: ${id}`, { disabled: true }, 'play-sound-expose');
   },
   stopSound: (id) => {
-    console.log(`模拟停止音效: ${id}（音频功能已禁用）`);
+    ui.debug(`模拟停止音效: ${id}`, { disabled: true }, 'stop-sound-expose');
   },
   playBackgroundMusic: (id) => {
-    console.log(`模拟播放背景音乐: ${id}（音频功能已禁用）`);
+    ui.debug(`模拟播放背景音乐: ${id}`, { disabled: true }, 'play-background-music');
   },
   stopBackgroundMusic: () => {
-    console.log(`模拟停止背景音乐（音频功能已禁用）`);
+    ui.debug('模拟停止背景音乐', { disabled: true }, 'stop-background-music');
   },
   setMusicVolume: (volume) => {
-    console.log(`模拟设置背景音乐音量: ${volume}（音频功能已禁用）`);
+    ui.debug('模拟设置背景音乐音量', { volume, disabled: true }, 'set-music-volume');
   },
   setSoundVolume: (volume) => {
-    console.log(`模拟设置音效音量: ${volume}（音频功能已禁用）`);
+    ui.debug('模拟设置音效音量', { volume, disabled: true }, 'set-sound-volume');
   },
   pauseAll: () => {
-    console.log(`模拟暂停所有音频（音频功能已禁用）`);
+    ui.debug('模拟暂停所有音频', { disabled: true }, 'pause-all-audio');
   },
   resumeAll: () => {
-    console.log(`模拟恢复所有音频（音频功能已禁用）`);
+    ui.debug('模拟恢复所有音频', { disabled: true }, 'resume-all-audio');
   }
 });
 </script>

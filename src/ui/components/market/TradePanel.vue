@@ -232,8 +232,27 @@
 <script setup lang="ts">
 import { ref, computed, type Ref } from 'vue';
 import { useGameStore } from '../../../stores';
-import { PriceTrend, getTrendDescription } from '../../../core/services/priceSystem';
+import { PriceTrend } from '../../../core/services/priceSystem';
 import { formatNumber, formatPercentChange } from '@/infrastructure/utils';
+
+// ==================== 趋势辅助函数 ====================
+
+/**
+ * 获取趋势描述
+ */
+const getTrendDescription = (trend: PriceTrend): string => {
+  const descriptions: Record<PriceTrend, string> = {
+    [PriceTrend.RISING_STRONG]: '强势上涨',
+    [PriceTrend.RISING]: '上涨',
+    [PriceTrend.STABLE_HIGH]: '高位稳定',
+    [PriceTrend.STABLE]: '稳定',
+    [PriceTrend.STABLE_LOW]: '低位稳定',
+    [PriceTrend.FALLING]: '下跌',
+    [PriceTrend.FALLING_STRONG]: '强势下跌',
+    [PriceTrend.VOLATILE]: '波动'
+  };
+  return descriptions[trend] || '未知';
+};
 
 // ==================== 类型定义 ====================
 
@@ -468,43 +487,6 @@ const sellTotalIncome = computed(() => {
     const close = () => {
       emit('close');
     };
-
-    return {
-      activeTab,
-      buyQuantity,
-      sellQuantity,
-      player,
-      priceHistory,
-      maxBuyQuantity,
-      buyTotalCost,
-      ownedItem,
-      ownedQuantity,
-      canSell,
-      canBuy,
-      sellTotalIncome,
-      formatNumber,
-      formatChange,
-      getTrendText,
-      getTrendIcon,
-      getTrendClass,
-      getChangeClass,
-      getProductImage,
-      getBarHeight,
-      getBarColor,
-      getProfitClass,
-      getProfitText,
-      incrementBuyQuantity,
-      decrementBuyQuantity,
-      setBuyQuantity,
-      incrementSellQuantity,
-      decrementSellQuantity,
-      setSellQuantity,
-      executeBuy,
-      executeSell,
-      close
-    };
-  }
-};
 </script>
 
 <style scoped>

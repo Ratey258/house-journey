@@ -111,10 +111,14 @@ import { useUiStore } from '@/stores/uiStore';
 import { useSaveStore } from '@/stores/persistence';
 import { formatDate, formatNumber, formatCurrency } from '@/infrastructure/utils';
 import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler';
+import { useSmartLogger } from '@/infrastructure/utils/smartLogger';
 
 const router = useRouter();
 const gameStore = useGameStore();
 const uiStore = useUiStore();
+
+// 初始化智能日志系统
+const { game, storage } = useSmartLogger();
 
 // 响应式状态
 const saves = ref([]);
@@ -200,11 +204,11 @@ async function loadSave(saveName) {
 
     // 先尝试直接使用Electron API加载存档
     try {
-      console.log('使用Electron API加载存档:', saveName);
+      storage.load('使用Electron API加载存档', { saveName }, 'electron-load-save');
       const electronResult = await window.electronAPI.loadGame(saveName);
 
       if (electronResult && electronResult.success && electronResult.gameState) {
-        console.log('存档从Electron加载成功，数据:', electronResult.gameState);
+        storage.load('存档从Electron加载成功', { hasGameState: !!electronResult.gameState }, 'electron-load-success');
 
         // 创建保存系统
         const saveStore = useSaveStore();
@@ -240,7 +244,7 @@ async function loadSave(saveName) {
       throw new Error('找不到存档信息，无法加载');
     }
 
-    console.log('找到存档信息:', saveInfo);
+    storage.load('找到存档信息', { saveId: saveInfo.id, saveName: saveInfo.name }, 'save-info-found');
 
     // 使用ID调用loadGame方法
     const result = await savesStore.loadGame(saveInfo.id);
@@ -393,7 +397,7 @@ async function fetchSaveDetails(saveName) {
         locationName
       };
 
-      console.log(`加载存档 ${saveName} 详情:`, saveDetails.value[saveName]);
+      storage.load(`加载存档详情: ${saveName}`, saveDetails.value[saveName], 'save-details-loaded');
     } else {
       console.warn(`无法获取存档 ${saveName} 的详情:`, result.error || '未知错误');
     }

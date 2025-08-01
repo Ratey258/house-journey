@@ -37,15 +37,8 @@ export interface EventState {
   eventSystem: EventSystem | null;
 }
 
-// EventEmitter接口定义（临时解决方案）
-interface EventEmitterInterface {
-  on(eventName: string, listener: Function): Function;
-  off(eventName: string, listener: Function): void;
-  emit(eventName: string, ...args: any[]): void;
-}
-
-// 临时导入eventEmitter
-const eventEmitter = require('../../infrastructure/eventEmitter').default as EventEmitterInterface;
+// 导入TypeScript版本的EventEmitter
+import eventEmitter from '@/infrastructure/eventEmitter';
 
 // ==================== Store定义 ====================
 

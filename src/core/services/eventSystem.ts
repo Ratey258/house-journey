@@ -5,18 +5,8 @@
 import { EventType, Event, EventOption, GameState } from '../models/event';
 import { getGameConfig, getGamePhaseMultipliers } from './gameConfigService';
 
-// EventEmitter类型声明
-interface EventEmitterInterface {
-  on(eventName: string, listener: Function): Function;
-  off(eventName: string, listener: Function): void;
-  emit(eventName: string, ...args: any[]): void;
-  once(eventName: string, listener: Function): Function;
-  removeAllListeners(eventName?: string): void;
-  clearEvent(eventName: string): void;
-}
-
-// 临时导入eventEmitter，后续会转换为TypeScript
-const eventEmitter = require('@/infrastructure/eventEmitter').default as EventEmitterInterface;
+// 导入TypeScript版本的EventEmitter
+import eventEmitter, { type EventListener, type UnsubscribeFunction } from '@/infrastructure/eventEmitter';
 
 // ==================== 类型定义 ====================
 

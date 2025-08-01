@@ -195,114 +195,226 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'GameStatsDetail',
-  props: {
-    show: {
-      type: Boolean,
-      default: false
-    },
-    gameStats: {
-      type: Object,
-      required: true
-    },
-    player: {
-      type: Object,
-      required: true
-    },
-    gameState: {
-      type: Object,
-      required: true
-    }
-  },
-  data() {
-    return {
-      activeTab: 'trades',
-      tabs: [
-        { id: 'trades', name: '交易统计' },
-        { id: 'locations', name: '地点统计' },
-        { id: 'events', name: '事件统计' },
-        { id: 'assets', name: '资产统计' }
-      ]
-    };
-  },
-  methods: {
-    close() {
-      this.$emit('close');
-    },
-    formatNumber(num) {
-      if (num === undefined || num === null) return '0';
-      return num.toLocaleString('zh-CN');
-    },
-    getLocationName(locationId) {
-      // 这里应该从游戏状态中获取地点名称
-      const location = this.gameStats.locationStats.find(loc => loc.locationId === locationId);
-      return location ? location.locationName : '未知地点';
-    },
-    getProductName(productId) {
-      // 这里应该从游戏状态中获取商品名称
-      // 简单实现，实际应该从商品列表中查找
-      return productId || '未知商品';
-    },
-    getEventTypeIcon(type) {
-      // 根据事件类型返回对应的图标
-      const icons = {
-        'random': '🎲',
-        'story': '📖',
-        'location': '🏙️',
-        'market': '📊',
-        'personal': '👤',
-        'tutorial': '📝'
-      };
-      return icons[type] || '❓';
-    },
-    getEventTypeName(type) {
-      // 根据事件类型返回对应的名称
-      const names = {
-        'random': '随机事件',
-        'story': '故事事件',
-        'location': '地点事件',
-        'market': '市场事件',
-        'personal': '个人事件',
-        'tutorial': '教程事件'
-      };
-      return names[type] || '未知类型';
-    },
-    getLocationBarWidth(visitCount) {
-      if (!this.gameStats.locationStats || this.gameStats.locationStats.length === 0) return '0%';
-      
-      const maxVisits = Math.max(...this.gameStats.locationStats.map(loc => loc.visitCount));
-      if (maxVisits === 0) return '0%';
-      
-      return `${(visitCount / maxVisits * 100).toFixed(0)}%`;
-    },
-    getProfitBarWidth(profit) {
-      // 计算利润条的宽度
-      const maxProfit = 10000; // 设置一个合理的最大值
-      const percentage = Math.min(Math.abs(profit) / maxProfit * 100, 100);
-      return `${percentage.toFixed(0)}%`;
-    },
-    getInventoryValue() {
-      // 计算库存总价值
-      return this.player.inventory.reduce((sum, item) => {
-        return sum + (this.getCurrentPrice(item.productId) * item.quantity);
-      }, 0);
-    },
-    getHousesValue() {
-      // 计算房产总价值
-      return this.player.purchasedHouses.reduce((sum, house) => {
-        return sum + house.purchasePrice;
-      }, 0);
-    },
-    getCurrentPrice(productId) {
-      // 获取商品当前价格
-      // 简单实现，实际应该从商品价格列表中查找
-      const item = this.player.inventory.find(i => i.productId === productId);
-      return item ? item.purchasePrice : 0;
-    }
-  }
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+
+// ==================== 类型定义 ====================
+
+/**
+ * 游戏统计数据接口
+ */
+interface GameStats {
+  tradeStats: {
+    totalTrades: number;
+    totalProfit: number;
+    averageProfit: number;
+  };
+  locationStats: Array<{
+    locationId: string;
+    locationName: string;
+    visitCount: number;
+  }>;
+  eventStats: {
+    totalEvents: number;
+    positiveOutcomes: number;
+    negativeOutcomes: number;
+  };
+  finalMoney: number;
+  finalAssets: number;
 }
+
+/**
+ * 玩家数据接口
+ */
+interface Player {
+  debt: number;
+  inventory: Array<{
+    productId: string;
+    quantity: number;
+    purchasePrice: number;
+  }>;
+  purchasedHouses: Array<{
+    purchasePrice: number;
+  }>;
+  statistics?: {
+    productProfits: Record<string, number>;
+    locationProfits: Record<string, number>;
+    eventTypes: Record<string, number>;
+    importantEvents: Array<{
+      week: number;
+      title: string;
+      description: string;
+    }>;
+  };
+}
+
+/**
+ * 游戏状态接口
+ */
+interface GameState {
+  [key: string]: any;
+}
+
+/**
+ * 标签页接口
+ */
+interface Tab {
+  id: string;
+  name: string;
+}
+
+/**
+ * Props接口
+ */
+interface Props {
+  show?: boolean;
+  gameStats: GameStats;
+  player: Player;
+  gameState: GameState;
+}
+
+// ==================== Props ====================
+
+const props = withDefaults(defineProps<Props>(), {
+  show: false
+});
+
+// ==================== Emits ====================
+
+const emit = defineEmits<{
+  'close': [];
+}>();
+
+// ==================== 响应式状态 ====================
+
+/**
+ * 当前激活的标签页
+ */
+const activeTab = ref<string>('trades');
+
+/**
+ * 标签页配置
+ */
+const tabs = ref<Tab[]>([
+  { id: 'trades', name: '交易统计' },
+  { id: 'locations', name: '地点统计' },
+  { id: 'events', name: '事件统计' },
+  { id: 'assets', name: '资产统计' }
+]);
+
+// ==================== 方法 ====================
+
+/**
+ * 关闭模态框
+ */
+const close = (): void => {
+  emit('close');
+};
+
+/**
+ * 格式化数字
+ */
+const formatNumber = (num: number | undefined | null): string => {
+  if (num === undefined || num === null) return '0';
+  return num.toLocaleString('zh-CN');
+};
+
+/**
+ * 获取地点名称
+ */
+const getLocationName = (locationId: string): string => {
+  const location = props.gameStats.locationStats.find(loc => loc.locationId === locationId);
+  return location ? location.locationName : '未知地点';
+};
+
+/**
+ * 获取商品名称
+ */
+const getProductName = (productId: string): string => {
+  // 这里应该从游戏状态中获取商品名称
+  // 简单实现，实际应该从商品列表中查找
+  return productId || '未知商品';
+};
+
+/**
+ * 获取事件类型图标
+ */
+const getEventTypeIcon = (type: string): string => {
+  const icons: Record<string, string> = {
+    'random': '🎲',
+    'story': '📖',
+    'location': '🏙️',
+    'market': '📊',
+    'personal': '👤',
+    'tutorial': '📝'
+  };
+  return icons[type] || '❓';
+};
+
+/**
+ * 获取事件类型名称
+ */
+const getEventTypeName = (type: string): string => {
+  const names: Record<string, string> = {
+    'random': '随机事件',
+    'story': '故事事件',
+    'location': '地点事件',
+    'market': '市场事件',
+    'personal': '个人事件',
+    'tutorial': '教程事件'
+  };
+  return names[type] || '未知类型';
+};
+
+/**
+ * 获取地点访问频率条宽度
+ */
+const getLocationBarWidth = (visitCount: number): string => {
+  if (!props.gameStats.locationStats || props.gameStats.locationStats.length === 0) return '0%';
+  
+  const maxVisits = Math.max(...props.gameStats.locationStats.map(loc => loc.visitCount));
+  if (maxVisits === 0) return '0%';
+  
+  return `${(visitCount / maxVisits * 100).toFixed(0)}%`;
+};
+
+/**
+ * 获取利润条宽度
+ */
+const getProfitBarWidth = (profit: number): string => {
+  // 计算利润条的宽度
+  const maxProfit = 10000; // 设置一个合理的最大值
+  const percentage = Math.min(Math.abs(profit) / maxProfit * 100, 100);
+  return `${percentage.toFixed(0)}%`;
+};
+
+/**
+ * 获取库存总价值
+ */
+const getInventoryValue = (): number => {
+  return props.player.inventory.reduce((sum, item) => {
+    return sum + (getCurrentPrice(item.productId) * item.quantity);
+  }, 0);
+};
+
+/**
+ * 获取房产总价值
+ */
+const getHousesValue = (): number => {
+  return props.player.purchasedHouses.reduce((sum, house) => {
+    return sum + house.purchasePrice;
+  }, 0);
+};
+
+/**
+ * 获取商品当前价格
+ */
+const getCurrentPrice = (productId: string): number => {
+  // 获取商品当前价格
+  // 简单实现，实际应该从商品价格列表中查找
+  const item = props.player.inventory.find(i => i.productId === productId);
+  return item ? item.purchasePrice : 0;
+};
 </script>
 
 <style scoped>
