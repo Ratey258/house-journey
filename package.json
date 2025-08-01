@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:analyze": "vite build --mode analyze && npx vite-bundle-analyzer dist",
     "preview": "vite preview",
     "electron:dev": "concurrently \"vite\" \"node scripts/start-electron.js\"",
     "electron:build": "vite build && electron-builder --win nsis portable --config electron-builder.js",

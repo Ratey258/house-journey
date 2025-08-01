@@ -241,15 +241,19 @@ import { useEventStore } from '@/stores/events';
 import { useSaveStore } from '@/stores/persistence';
 import eventEmitter from '@/infrastructure/eventEmitter';
 
-// 导入组件
+// Vue 3.5 性能优化：组件异步加载策略
+// 核心游戏组件 - 立即加载（用户立即可见）
 import PlayerInfo from '@/ui/components/player/PlayerInfo.vue';
 import Market from '@/ui/components/market/Market.vue';
-import Inventory from '@/ui/components/player/Inventory.vue';
-import HouseMarket from '@/ui/components/market/HouseMarket.vue';
-import EventModal from '@/ui/components/common/EventModal.vue';
-import GameOverView from '@/ui/views/GameOverView.vue';
-import TutorialSystem from '@/ui/components/common/TutorialSystem.vue';
-import GameLoader from '@/ui/components/common/GameLoader.vue';
+
+// 功能扩展组件 - 异步加载（延迟加载）
+import { defineAsyncComponent } from 'vue';
+const Inventory = defineAsyncComponent(() => import('@/ui/components/player/Inventory.vue'));
+const HouseMarket = defineAsyncComponent(() => import('@/ui/components/market/HouseMarket.vue'));
+const EventModal = defineAsyncComponent(() => import('@/ui/components/common/EventModal.vue'));
+const GameOverView = defineAsyncComponent(() => import('@/ui/views/GameOverView.vue'));
+const TutorialSystem = defineAsyncComponent(() => import('@/ui/components/common/TutorialSystem.vue'));
+const GameLoader = defineAsyncComponent(() => import('@/ui/components/common/GameLoader.vue'));
 import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler'; // 导入GameLoader组件
 
 const router = useRouter();

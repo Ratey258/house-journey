@@ -77,16 +77,20 @@ import { ref, onMounted, nextTick, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 
-// 组件导入
+// Vue 3.5 性能优化：组件异步加载
+// 核心UI组件 - 立即加载
 import ErrorDialog from './ui/components/common/ErrorDialog.vue';
 import ErrorRecoveryDialog from './ui/components/common/ErrorRecoveryDialog.vue';
 import GameDialog from './ui/components/common/GameDialog.vue';
 import Toast from './ui/components/common/Toast.vue';
-import AudioManager from './ui/components/common/AudioManager.vue';
 import CssLoader from './ui/components/common/CssLoader.vue';
-import DevToolsManager from './ui/components/common/DevToolsManager.vue';
-import DesktopPerformanceIndicator from './ui/components/common/DesktopPerformanceIndicator.vue';
-import DesktopStatusIndicator from './ui/components/common/DesktopStatusIndicator.vue';
+
+// 功能增强组件 - 异步加载
+import { defineAsyncComponent } from 'vue';
+const AudioManager = defineAsyncComponent(() => import('./ui/components/common/AudioManager.vue'));
+const DevToolsManager = defineAsyncComponent(() => import('./ui/components/common/DevToolsManager.vue'));
+const DesktopPerformanceIndicator = defineAsyncComponent(() => import('./ui/components/common/DesktopPerformanceIndicator.vue'));
+const DesktopStatusIndicator = defineAsyncComponent(() => import('./ui/components/common/DesktopStatusIndicator.vue'));
 
 // Store导入 - Pinia 3.0优化版本
 import { useUiStore } from './stores/uiStore';

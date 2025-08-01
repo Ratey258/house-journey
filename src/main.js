@@ -17,14 +17,15 @@ import { initSnapshotSystem } from './infrastructure/persistence/stateSnapshot';
 // 导入第三方库配置
 import { setupThirdParty } from './plugins/thirdParty';
 
-// 导入视图
-import MainMenu from './ui/views/MainMenu.vue';
-import GameView from './ui/views/GameView.vue';
-import SettingsView from './ui/views/SettingsView.vue';
-import SavesView from './ui/views/SavesView.vue';
-import DevToolsView from './ui/views/DevToolsView.vue';
-import GameOverView from './ui/views/GameOverView.vue';
-import LoadingTest from './ui/views/LoadingTest.vue'; // 导入测试页面
+// Vue 3.5 性能优化：视图懒加载
+// 使用动态导入实现路由级代码分割
+const MainMenu = () => import('./ui/views/MainMenu.vue');
+const GameView = () => import('./ui/views/GameView.vue');
+const SettingsView = () => import('./ui/views/SettingsView.vue');
+const SavesView = () => import('./ui/views/SavesView.vue');
+const DevToolsView = () => import('./ui/views/DevToolsView.vue');
+const GameOverView = () => import('./ui/views/GameOverView.vue');
+const LoadingTest = () => import('./ui/views/LoadingTest.vue');
 
 // 添加调试信息
 console.log('应用初始化开始');
