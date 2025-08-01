@@ -1,6 +1,6 @@
 # 《买房记》- 模拟经营类游戏
 
-![版本](https://img.shields.io/badge/版本-0.1.1-blue)
+![版本](https://img.shields.io/badge/版本-0.1.3-blue)
 ![平台](https://img.shields.io/badge/平台-Windows-brightgreen)
 ![开发框架](https://img.shields.io/badge/框架-Vue_3_+_Electron-orange)
 
@@ -50,13 +50,48 @@
 
 ## 🛠️ 开发技术
 
-- **前端框架**: Vue 3 + Vite
+- **前端框架**: Vue 3 + Vite 7
 - **桌面应用**: Electron
 - **状态管理**: Pinia
 - **UI设计**: 自定义组件
 - **国际化**: vue-i18n
 
 ## 📝 更新日志
+
+### v0.1.3 (2025.8.1)：Vite 7 架构升级与现代化改造
+
+#### 核心构建工具升级
+- **Vite升级至7.0.6**：享受最新的构建性能和开发体验
+- **Vitest升级至3.2.4**：更好的测试性能和Vite 7兼容性
+- **@vitejs/plugin-vue保持6.0.1**：Vue 3完美集成支持
+
+#### 现代化浏览器支持
+- **浏览器目标升级**：采用Baseline Widely Available标准
+  - Chrome 92 → 107
+  - Safari 14 → 16  
+  - Edge 88 → 107
+  - Firefox 90 → 104
+- **更好的性能**：利用现代浏览器特性，减少polyfill负担
+
+#### 开发体验提升
+- **更快的构建速度**：Vite 7的性能优化带来更快的构建体验
+- **改进的HMR**：热模块替换更加稳定快速
+- **Environment API准备**：为未来的SSR扩展做好准备
+
+#### 项目配置优化
+- **移除已弃用功能**：清理了所有Vite 7不再支持的配置
+- **配置现代化**：使用最新的Vite配置最佳实践
+- **构建输出优化**：更好的chunk分割和资源管理
+
+#### Vite 7新特性集成
+- **智能代码分割**：按功能模块自动分割代码，优化加载性能
+- **资源分类打包**：CSS和图片按类型分目录存放，便于管理
+- **依赖预构建优化**：holdUntilCrawlEnd提升冷启动性能
+- **JSON处理增强**：启用auto stringify和named exports
+- **开发服务器预热**：预加载核心模块，提升开发体验
+- **HMR错误覆盖**：更好的错误显示和调试体验
+- **CSS代码分割**：启用CSS模块化和开发时sourcemap
+- **ESBuild优化**：移除legal comments，减小构建体积
 
 ### v0.1.2 (2025.7.31)：项目架构与性能优化
 
