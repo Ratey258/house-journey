@@ -5,7 +5,15 @@
 import { ref, type Ref } from 'vue';
 import { ErrorType, ErrorSeverity, type ErrorInfo, type ErrorMetadata, type EnhancedError } from './errorTypes';
 import i18n from '../../i18n';
-import electronLog from 'electron-log';
+// 动态导入electron-log，避免在浏览器环境中出错
+let electronLog: any = null;
+if (typeof window !== 'undefined' && window.require) {
+  try {
+    electronLog = window.require('electron-log');
+  } catch (e) {
+    // 在浏览器环境中electron-log不可用，这是正常的
+  }
+}
 
 // 重新导出ErrorType和ErrorSeverity，使其他文件可以直接从errorHandler导入
 export { ErrorType, ErrorSeverity, type ErrorInfo, type ErrorMetadata, type EnhancedError };

@@ -227,11 +227,11 @@ export const usePlayerStore = defineStore('player', () => {
   /**
    * 更新金钱 - 安全版本
    */
-  const updateMoney = (amount: number): void => {
+  const updateMoney = (amount: number): boolean => {
     const newAmount = money.value + amount;
     if (newAmount < 0) {
       console.warn('PlayerStore - 资金不足，无法扣除');
-      return;
+      return false;
     }
 
     money.value = newAmount;
@@ -240,6 +240,8 @@ export const usePlayerStore = defineStore('player', () => {
     if (amount > 0) {
       statistics.totalProfit += amount;
     }
+    
+    return true;
   };
 
   /**
@@ -343,6 +345,49 @@ export const usePlayerStore = defineStore('player', () => {
   };
 
   /**
+   * 更新库存使用量
+   */
+  const updateInventoryUsed = (amount: number): void => {
+    inventoryUsed.value += amount;
+  };
+
+  /**
+   * 设置库存使用量
+   */
+  const setInventoryUsed = (value: number): void => {
+    inventoryUsed.value = value;
+  };
+
+  /**
+   * 清空库存
+   */
+  const clearInventory = (): void => {
+    inventory.value = [];
+    inventoryUsed.value = 0;
+  };
+
+  /**
+   * 强制更新库存（触发响应式更新）
+   */
+  const forceUpdateInventory = (): void => {
+    inventory.value = [...inventory.value];
+  };
+
+  /**
+   * 更新交易计数
+   */
+  const incrementTransactionCount = (): void => {
+    statistics.transactionCount += 1;
+  };
+
+  /**
+   * 更新总利润
+   */
+  const updateTotalProfit = (profit: number): void => {
+    statistics.totalProfit += profit;
+  };
+
+  /**
    * 重置玩家数据
    */
   const resetPlayer = (): void => {
@@ -352,7 +397,7 @@ export const usePlayerStore = defineStore('player', () => {
   // === 返回 store 接口 - Pinia 3.0 完整类型支持 ===
   return {
     // 状态
-    name: readonly(name),
+    name,
     money: readonly(money),
     debt: readonly(debt),
     loanPrincipal: readonly(loanPrincipal),
@@ -392,6 +437,12 @@ export const usePlayerStore = defineStore('player', () => {
     purchaseHouse,
     processWeeklyInterest,
     incrementWeek,
+    updateInventoryUsed,
+    setInventoryUsed,
+    clearInventory,
+    forceUpdateInventory,
+    incrementTransactionCount,
+    updateTotalProfit,
     resetPlayer
   };
 });

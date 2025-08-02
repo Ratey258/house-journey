@@ -353,8 +353,16 @@ onMounted(() => {
     const savedPlayerName = localStorage.getItem('lastPlayerName') || '玩家';
     console.log('获取到玩家名称:', savedPlayerName);
 
-    // 设置玩家名称
-    playerStore.name = savedPlayerName;
+    // 设置玩家名称 - 安全检查
+    const currentName = typeof playerStore.name === 'object' && 'value' in playerStore.name 
+      ? playerStore.name.value 
+      : playerStore.name;
+    
+    if (!currentName && savedPlayerName) {
+      if (typeof playerStore.name === 'object' && 'value' in playerStore.name) {
+        playerStore.name.value = savedPlayerName;
+      }
+    }
   }
 
   // 确保游戏不会在初始状态下显示为结束

@@ -113,6 +113,22 @@ setupThirdParty(app);
 // 设置全局错误处理
 setupGlobalErrorHandlers(app);
 
+// 增强的Vue错误处理
+app.config.errorHandler = (err, instance, info) => {
+  console.error('Vue错误捕获:', err, info);
+  handleError(
+    err as Error,
+    `Vue.${info}`,
+    ErrorType.SYSTEM,
+    ErrorSeverity.ERROR
+  );
+};
+
+// 增强的全局Promise错误处理
+app.config.warnHandler = (msg, instance, trace) => {
+  console.warn('Vue警告:', msg, trace);
+};
+
 game.info('第三方库和错误处理设置完成', {}, 'third-party-setup');
 
 // ==================== Pinia存储初始化 ====================
@@ -144,7 +160,9 @@ game.info('第三方库和错误处理设置完成', {}, 'third-party-setup');
     handleError(error as Error, 'main.pinitaInit', ErrorType.SYSTEM, ErrorSeverity.ERROR);
     console.error('Pinia存储预初始化失败:', error);
   }
-})();
+})().catch(error => {
+  console.error('Pinia初始化Promise失败:', error);
+});
 
 // 验证关键资源是否可访问
 function validateCriticalResources(): void {
@@ -238,7 +256,9 @@ function validateCriticalResources(): void {
     handleError(error, 'main.checkAbnormalExit', ErrorType.SYSTEM, ErrorSeverity.ERROR);
     console.error('检查异常退出时出错:', error);
   }
-})();
+})().catch(error => {
+  console.error('异常退出检查Promise失败:', error);
+});
 
 // 标记游戏已启动
 markGameRunning();

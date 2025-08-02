@@ -224,6 +224,8 @@ function setupErrorMonitoring(): void {
   // 监控Promise未捕获的reject
   window.addEventListener('unhandledrejection', (event) => {
     console.error('🚨 未捕获的Promise错误:', event.reason);
+    // 阻止默认的错误处理，避免在控制台中重复显示
+    event.preventDefault();
   });
 
   console.log('✅ 错误监控初始化完成');

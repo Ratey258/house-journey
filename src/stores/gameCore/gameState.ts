@@ -159,9 +159,15 @@ export const useGameCoreStore = defineStore('gameCore', () => {
       // 等待玩家初始化完成
       await playerStore.initializePlayer(playerName);
 
-      // 确保名称已被设置
-      if (!playerStore.name && playerName) {
-        playerStore.name = playerName;
+      // 确保名称已被设置 - Pinia会自动处理ref
+      const currentName = typeof playerStore.name === 'object' && 'value' in playerStore.name 
+        ? playerStore.name.value 
+        : playerStore.name;
+      
+      if (!currentName && playerName) {
+        if (typeof playerStore.name === 'object' && 'value' in playerStore.name) {
+          playerStore.name.value = playerName;
+        }
       }
 
       // 初始化市场
@@ -180,13 +186,6 @@ export const useGameCoreStore = defineStore('gameCore', () => {
         playerName,
         netWorth: playerStore.netWorth,
         location: marketStore.currentLocation?.name
-      });
-
-      addNotification({
-        type: 'success',
-        title: '游戏开始',
-        message: `欢迎 ${playerName}！开始你的买房之旅吧！`,
-        duration: 3000
       });
 
     } catch (error) {

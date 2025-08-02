@@ -184,8 +184,8 @@ export const usePlayerStats = () => {
    * @param profit 交易利润
    */
   const recordTransaction = (profit: number): void => {
-    playerStore.statistics.transactionCount++;
-    playerStore.statistics.totalProfit += profit;
+    playerStore.incrementTransactionCount();
+    playerStore.updateTotalProfit(profit);
   };
   
   // ==================== 返回服务接口 ====================

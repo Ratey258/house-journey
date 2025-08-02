@@ -247,12 +247,15 @@ export const useMarketStore = defineStore('market', () => {
     const newPrices: Record<string, PriceInfo> = {};
 
     products.value.forEach(product => {
+      // 确保使用字符串类型的ID作为键
+      const productId = String(product.id);
+      
       // 初始价格设置在最低价和最高价之间的随机值
       const initialPrice = Math.floor(
         Math.random() * (product.maxPrice - product.minPrice) + product.minPrice
       );
 
-      newPrices[product.id] = {
+      newPrices[productId] = {
         price: initialPrice,
         trend: PriceTrend.STABLE,
         history: [initialPrice],
@@ -441,7 +444,21 @@ export const useMarketStore = defineStore('market', () => {
       return;
     }
 
-    availableProducts.value = currentLocationProducts.value;
+    // 获取当前地点的商品并添加价格信息
+    const locationProducts = currentLocationProducts.value.map(product => {
+      const productId = String(product.id);
+      const priceInfo = productPrices.value[productId];
+      
+      return {
+        ...product,
+        currentPrice: priceInfo?.price || product.basePrice || 0,
+        trend: priceInfo?.trend || 'stable',
+        changePercent: priceInfo?.changePercent || 0,
+        isSpecial: currentLocation.value?.specialProducts?.includes(product.id) || false
+      };
+    });
+
+    availableProducts.value = locationProducts;
 
     logger.debug('更新地点商品', {
       location: currentLocation.value.name,

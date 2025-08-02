@@ -143,7 +143,7 @@ export const usePriceActions = () => {
       const newPriceData = newPrices[productId];
       
       // 确保有前一个价格用于计算变化百分比
-      const prevPrice = prevPriceData.price || products.find(p => p.id === Number(productId))?.basePrice || 0;
+      const prevPrice = prevPriceData.price || products.find(p => String(p.id) === productId)?.basePrice || 0;
       
       // 强制价格波动 - 更加夸张的波动，且偏向下跌
       if (forceFluctuation) {
@@ -176,7 +176,7 @@ export const usePriceActions = () => {
       // 确保changePercent不为0
       if (newPriceData.changePercent === 0 && prevPrice > 0) {
         // 获取商品的原始基础价格
-        const basePrice = products.find(p => p.id === Number(productId))?.basePrice || prevPrice;
+        const basePrice = products.find(p => String(p.id) === productId)?.basePrice || prevPrice;
         // 基于原始基础价格计算变化百分比
         newPriceData.changePercent = ((newPriceData.price - basePrice) / basePrice) * 100;
         newPriceData.changePercent = parseFloat(newPriceData.changePercent.toFixed(1));
@@ -192,7 +192,7 @@ export const usePriceActions = () => {
         history: [...(prevPriceData.history || []), newPriceData.price].slice(-20) // 保留最近20周
       };
       
-      const product = products.find(p => p.id === Number(productId));
+      const product = products.find(p => String(p.id) === productId);
       if (product) {
         console.log(`商品 ${product.name}(ID:${productId}) 价格更新 - 基础价格: ${product.basePrice}, 当前价格: ${newPriceData.price}, 历史: [${marketStore.productPrices[productId].history.join(', ')}]`);
         

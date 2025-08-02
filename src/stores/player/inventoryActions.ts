@@ -185,7 +185,7 @@ export const useInventoryActions = () => {
 
     // 更新已用容量
     const oldInventoryUsed = playerStore.inventoryUsed;
-    playerStore.inventoryUsed += totalSpace;
+    playerStore.updateInventoryUsed(totalSpace);
 
     console.log(`InventoryActions - 更新背包容量: ${oldInventoryUsed} -> ${playerStore.inventoryUsed}`);
     console.log('InventoryActions - 当前背包物品:', playerStore.inventory.map(item => ({
@@ -203,10 +203,7 @@ export const useInventoryActions = () => {
     });
 
     // 强制触发更新
-    if (Array.isArray(playerStore.inventory)) {
-      // 创建一个新数组，确保引用变化
-      playerStore.inventory = [...playerStore.inventory];
-    }
+    playerStore.forceUpdateInventory();
 
     return { success: true };
   };
@@ -242,7 +239,7 @@ export const useInventoryActions = () => {
     }
 
     // 更新容量
-    playerStore.inventoryUsed -= spaceFreed;
+    playerStore.updateInventoryUsed(-spaceFreed);
 
     return {
       success: true,
@@ -285,8 +282,7 @@ export const useInventoryActions = () => {
    * 清空库存
    */
   const clearInventory = (): void => {
-    playerStore.inventory = [];
-    playerStore.inventoryUsed = 0;
+    playerStore.clearInventory();
   };
 
   // ==================== 返回服务接口 ====================

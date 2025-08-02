@@ -301,7 +301,7 @@ const viewMode = ref('table'); // 默认使用表格视图
 
 // 格式化价格变化
 const formatChange = (changePercent) => {
-  if (changePercent === 0) return '0%';
+  if (changePercent === undefined || changePercent === null || changePercent === 0) return '0.0%';
   const prefix = changePercent > 0 ? '+' : '';
   return `${prefix}${changePercent.toFixed(1)}%`;
 };

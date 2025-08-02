@@ -167,8 +167,11 @@ export const useGameStore = defineStore('gameCompat', (): GameStore => {
     }
 
     // 执行交易
-    player.money -= totalCost;
-    player.statistics.transactionCount += 1;
+    const moneySuccess = player.updateMoney(-totalCost);
+    if (!moneySuccess) {
+      return { success: false, message: '资金扣除失败' };
+    }
+    player.incrementTransactionCount();
 
     return { success: true };
   }
@@ -204,8 +207,11 @@ export const useGameStore = defineStore('gameCompat', (): GameStore => {
     }
     
     // 执行销售
-    player.money += totalIncome;
-    player.statistics.transactionCount += 1;
+    const moneySuccess = player.updateMoney(totalIncome);
+    if (!moneySuccess) {
+      return { success: false, message: '收入添加失败' };
+    }
+    player.incrementTransactionCount();
 
     return {
       success: true,
@@ -255,14 +261,10 @@ export const useGameStore = defineStore('gameCompat', (): GameStore => {
     }
 
     // 执行购买
-    player.money -= house.price;
-    player.purchasedHouses = player.purchasedHouses || [];
-    player.purchasedHouses.push({
-      ...house,
-      purchasePrice: house.price,
-      purchaseDate: new Date().toISOString(),
-      purchaseWeek: gameCore.currentWeek
-    });
+    const success = player.purchaseHouse(house);
+    if (!success) {
+      return { success: false, message: '购买失败' };
+    }
 
     return { success: true };
   }
@@ -301,12 +303,9 @@ export const useGameStore = defineStore('gameCompat', (): GameStore => {
     }
 
     // 执行偿还
-    player.money -= actualRepayAmount;
-    player.debt -= actualRepayAmount;
-
-    // 确保债务不为负数
-    if (player.debt < 0) {
-      player.debt = 0;
+    const success = player.repayLoan(actualRepayAmount);
+    if (!success) {
+      return { success: false, message: '偿还失败' };
     }
 
     return {
@@ -343,8 +342,11 @@ export const useGameStore = defineStore('gameCompat', (): GameStore => {
       return addResult;
     }
 
-    player.money -= totalCost;
-    player.statistics.transactionCount += 1;
+    const moneySuccess = player.updateMoney(-totalCost);
+    if (!moneySuccess) {
+      return { success: false, message: '资金扣除失败' };
+    }
+    player.incrementTransactionCount();
 
     return { success: true };
   }

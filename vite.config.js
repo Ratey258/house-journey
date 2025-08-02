@@ -31,24 +31,27 @@ export default defineConfig(({ mode }) => {
     },
     base: './',
     server: {
-      port: 5173,
+      port: 5174,
       strictPort: false,
       host: '127.0.0.1',
-      // Vite 7 改进的HMR配置
+      // 改进的HMR配置，避免连接问题
       hmr: {
         protocol: 'ws',
-        host: 'localhost',
-        port: 5173,
-        overlay: true // 显示错误覆盖层
+        host: '127.0.0.1',
+        port: 5174,
+        overlay: {
+          warnings: false,
+          errors: true
+        }
       },
       watch: {
-        usePolling: true,
-        // Vite 7 优化：更好的文件监听
-        ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**']
+        usePolling: false, // 禁用轮询以提高性能
+        // 优化文件监听
+        ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/.vscode/**']
       },
       // 开发体验优化
-      open: false, // 可设置为true自动打开浏览器
-      cors: true,  // 启用CORS
+      open: false,
+      cors: true,
       // 预加载模块以提升性能
       warmup: {
         clientFiles: [
@@ -56,6 +59,11 @@ export default defineConfig(({ mode }) => {
           './src/App.vue',
           './src/stores/index.ts'
         ]
+      },
+      // 添加错误处理
+      middlewareMode: false,
+      fs: {
+        strict: false
       }
     },
     build: {
