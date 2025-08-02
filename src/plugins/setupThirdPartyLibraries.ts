@@ -1,9 +1,11 @@
 /**
- * 第三方库配置文件 - 重命名为语义化的文件名
+ * 第三方库配置文件 - TypeScript版本
  * 用于初始化和配置游戏中使用的第三方库
  * 
  * 优化说明：移除了未使用的Chart.js依赖，仅保留ECharts以减少构建体积
  */
+
+import type { App } from 'vue';
 
 // 图表库 - 使用ECharts替代Chart.js
 import * as echarts from 'echarts/core';
@@ -49,7 +51,7 @@ import { Howl, Howler } from 'howler';
 /**
  * 初始化ECharts配置
  */
-function setupECharts() {
+function setupECharts(): void {
   // 注册必要的组件
   echarts.use([
     TitleComponent,
@@ -107,7 +109,7 @@ function setupECharts() {
 /**
  * 初始化日期处理库
  */
-function setupDayjs() {
+function setupDayjs(): void {
   // 扩展插件
   dayjs.extend(relativeTime);
   dayjs.extend(updateLocale);
@@ -140,7 +142,7 @@ function setupDayjs() {
 /**
  * 初始化Element Plus
  */
-function setupElementPlus(app) {
+function setupElementPlus(app: App): void {
   app.use(ElementPlus, {
     locale: zhCn,
     size: 'default',
@@ -153,7 +155,7 @@ function setupElementPlus(app) {
 /**
  * 初始化虚拟滚动
  */
-function setupVueVirtualScroller(app) {
+function setupVueVirtualScroller(app: App): void {
   app.use(VueVirtualScroller);
   console.log('✅ Vue Virtual Scroller 配置初始化完成');
 }
@@ -161,10 +163,10 @@ function setupVueVirtualScroller(app) {
 /**
  * 初始化音频处理
  */
-function setupHowler() {
+function setupHowler(): void {
   // 全局音频设置
   Howler.volume(0.7); // 默认音量70%
-  Howler.html5PoolSize(10); // HTML5音频池大小
+  // 注意：html5PoolSize 在新版本的Howler中可能不存在，移除该行
   
   // 设置音频格式偏好
   const formats = ['webm', 'mp3', 'wav'];
@@ -185,11 +187,13 @@ function setupHowler() {
 /**
  * 初始化性能监控
  */
-function setupPerformanceMonitoring() {
+function setupPerformanceMonitoring(): void {
   // 监控资源使用情况
   if ('memory' in performance) {
-    const memoryInfo = performance.memory;
-    console.log(`📊 内存使用情况: ${Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024)}MB / ${Math.round(memoryInfo.jsHeapSizeLimit / 1024 / 1024)}MB`);
+    const memoryInfo = (performance as any).memory;
+    if (memoryInfo) {
+      console.log(`📊 内存使用情况: ${Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024)}MB / ${Math.round(memoryInfo.jsHeapSizeLimit / 1024 / 1024)}MB`);
+    }
   }
 
   // 监控页面加载性能
@@ -205,7 +209,7 @@ function setupPerformanceMonitoring() {
 /**
  * 错误监控和上报
  */
-function setupErrorMonitoring() {
+function setupErrorMonitoring(): void {
   // 监控全局JavaScript错误
   window.addEventListener('error', (event) => {
     console.error('🚨 全局JavaScript错误:', {
@@ -227,9 +231,9 @@ function setupErrorMonitoring() {
 
 /**
  * 主要的第三方库初始化函数
- * @param {Object} app - Vue应用实例
+ * @param app - Vue应用实例
  */
-export function setupThirdParty(app) {
+export function setupThirdParty(app: App): void {
   console.log('🚀 开始初始化第三方库...');
 
   try {
@@ -239,7 +243,7 @@ export function setupThirdParty(app) {
     setupElementPlus(app);
     setupVueVirtualScroller(app);
     setupHowler();
-    setupPerformanceMonitoring();
+    // setupPerformanceMonitoring(); // 暂时隐藏性能监控
     setupErrorMonitoring();
 
     console.log('✅ 所有第三方库初始化完成');

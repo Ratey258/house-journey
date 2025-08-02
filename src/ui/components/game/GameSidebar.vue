@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 import PlayerInfo from '../player/PlayerInfo.vue';
-import { formatNumber } from '@/infrastructure/utils/formatUtils';
+import { formatNumber } from '../../../infrastructure/utils/formatUtils';
 
 interface InventoryItem {
   productId: string;
@@ -214,8 +214,8 @@ defineEmits<Emits>();
   background: rgba(0,0,0,0.3);
 }
 
-/* 响应式设计 */
-@media (max-width: 1024px) {
+/* 桌面端紧凑布局优化 */
+@media (max-width: 1280px) {
   .game-sidebar {
     width: 240px;
   }
@@ -226,13 +226,6 @@ defineEmits<Emits>();
   
   .inventory-item {
     padding: 8px 10px;
-  }
-}
-
-@media (max-width: 768px) {
-  .game-sidebar {
-    width: 100%;
-    max-height: 200px;
   }
 }
 </style>

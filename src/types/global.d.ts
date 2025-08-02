@@ -88,8 +88,8 @@ export enum ErrorType {
 /** 性能等级 */
 export type PerformanceLevel = 'high' | 'medium' | 'low' | 'critical';
 
-/** 设备类型 */
-export type DeviceType = 'mobile' | 'tablet' | 'desktop' | 'electron';
+/** 设备类型 - 桌面端专用 */
+export type DeviceType = 'desktop' | 'electron';
 
 /** 网络状态 */
 export type NetworkType = 'wifi' | 'cellular' | 'ethernet' | 'offline';

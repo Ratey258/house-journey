@@ -164,9 +164,16 @@ export function handleError(
   // Electron日志 - 确保错误可追溯
   if (window.electronAPI && window.electronAPI.logError) {
     window.electronAPI.logError(errorInfo);
+  } else if (typeof electronLog !== 'undefined' && electronLog.error) {
+    // 回退到electron-log（仅在Electron环境中可用）
+    try {
+      electronLog.error(`[${type}][${context}]`, error);
+    } catch (logError) {
+      console.warn('Electron log not available:', logError);
+    }
   } else {
-    // 回退到electron-log
-    electronLog.error(`[${type}][${context}]`, error);
+    // 在非Electron环境中使用console.error
+    console.error(`[ELECTRON-LOG][${type}][${context}]`, error);
   }
 
   // 开发环境下控制台输出更多信息

@@ -10,12 +10,12 @@
  */
 
 import { ref, computed, nextTick } from 'vue';
-import { useGameCoreStore } from '@/stores/gameCore';
-import { usePlayerStore } from '@/stores/player';
-import { useMarketStore } from '@/stores/market';
-import { useEventBus } from '@/infrastructure/state/event-bus';
-import { useSmartLogger } from '@/infrastructure/utils/smartLogger';
-import { handleError, ErrorType, ErrorSeverity } from '@/infrastructure/utils/errorHandler';
+import { useGameCoreStore } from '../../stores/gameCore';
+import { usePlayerStore } from '../../stores/player';
+import { useMarketStore } from '../../stores/market';
+import { useEventBus } from '../../infrastructure/state/event-bus';
+import { useSmartLogger } from '../../infrastructure/utils/smartLogger';
+import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler';
 
 export interface LoadingStep {
   id: string;

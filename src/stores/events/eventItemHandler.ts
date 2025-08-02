@@ -11,10 +11,10 @@ interface Product {
   [key: string]: any;
 }
 
-// 临时require导入
-const { getAllProducts: getProducts, getProductById: getProduct } = require('../../core/models/product');
-const getAllProducts = getProducts as () => Product[];
-const getProductById = getProduct as (id: string | number) => Product | null;
+// 导入产品模型函数
+import { getAllProducts as getProducts, getProductById as getProduct } from '../../core/models/product';
+const getAllProducts = getProducts;
+const getProductById = getProduct;
 
 // ==================== 类型定义 ====================
 

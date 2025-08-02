@@ -26,13 +26,13 @@ export interface AnimationConfig {
 }
 
 /**
- * 响应式断点配置接口
+ * 桌面端分辨率断点配置接口
  */
 export interface BreakpointConfig {
-  mobile: number;
-  tablet: number;
-  desktop: number;
-  widescreen: number;
+  compact: number;
+  standard: number;
+  wide: number;
+  ultrawide: number;
 }
 
 /**
@@ -80,12 +80,12 @@ export const uiConfig: UIConfig = {
     scale: 250                    // 缩放动画时长
   },
 
-  // 响应式断点
+  // 桌面端分辨率断点
   breakpoints: {
-    mobile: 768,                  // 移动端断点
-    tablet: 1024,                 // 平板断点
-    desktop: 1440,                // 桌面端断点
-    widescreen: 1920              // 宽屏断点
+    compact: 1280,                // 紧凑桌面布局
+    standard: 1920,               // 标准桌面布局
+    wide: 2560,                   // 宽屏桌面布局
+    ultrawide: 3440               // 超宽屏断点
   },
 
   // 主题颜色

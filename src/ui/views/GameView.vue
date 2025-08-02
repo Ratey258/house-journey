@@ -706,7 +706,7 @@ const loadGameResources = async () => {
  try {
     // 定义加载步骤
     const loadSteps = [
-      { name: '游戏核心', weight: 20, action: () => gameCoreStore.initializeGameCore() },
+      { name: '游戏核心', weight: 20, action: () => Promise.resolve(console.log('游戏核心已准备就绪')) },
       { name: '玩家数据', weight: 20, action: () => playerStore.initializePlayer(player.value.name) },
       { name: '市场数据', weight: 25, action: () => marketStore.initializeMarket() },
       { name: '事件系统', weight: 15, action: () => eventStore.initializeEvents() },

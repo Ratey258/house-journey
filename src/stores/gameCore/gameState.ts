@@ -216,17 +216,13 @@ export const useGameCoreStore = defineStore('gameCore', () => {
         const eventStore = useEventStore();
 
         // 更新玩家状态
-        if (typeof playerStore.updateWeeklyPlayerState === 'function') {
-          playerStore.updateWeeklyPlayerState(currentWeek.value);
-        }
+        playerStore.incrementWeek();
 
         // 更新市场状态
         marketStore.updateMarketState(currentWeek.value);
 
-        // 更新事件
-        if (typeof eventStore.updateEventsForWeek === 'function') {
-          eventStore.updateEventsForWeek(currentWeek.value);
-        }
+        // 生成随机事件（如果需要）
+        // eventStore.generateRandomEvent(currentWeek.value, playerData, marketData);
 
         // 检查游戏结束条件
         checkGameEndConditions();
@@ -454,6 +450,14 @@ export const useGameCoreStore = defineStore('gameCore', () => {
     logger.info('更新游戏目标', gameGoals.value);
   };
 
+  /**
+   * 设置最大周数
+   */
+  const setMaxWeeks = (weeks: number): void => {
+    maxWeeks.value = weeks;
+    logger.info('设置最大周数', { maxWeeks: weeks });
+  };
+
   // 定期清理过期通知
   setInterval(() => {
     if (notifications.value.length > 0) {
@@ -492,7 +496,8 @@ export const useGameCoreStore = defineStore('gameCore', () => {
     clearNotifications,
     clearExpiredNotifications,
     resetGame,
-    setGameGoals
+    setGameGoals,
+    setMaxWeeks
   };
 });
 

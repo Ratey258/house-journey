@@ -25,10 +25,11 @@
       v-if="!isLoading"
       :class="[
         'main-content',
+        layoutClass,
         {
-          'mobile-layout': isMobile,
-          'tablet-layout': isTablet,
-          'desktop-layout': isDesktop
+          'compact-layout': isCompact,
+          'standard-layout': isStandard,
+          'wide-layout': isWide
         }
       ]"
     />
@@ -120,7 +121,6 @@ const {
   isOnline,
   performanceMetrics,
   sendNotification,
-  gameVibrate,
   optimizePerformance
 } = useEnhancedGame();
 
@@ -144,7 +144,7 @@ const {
 } = useDesktopExperience();
 
 // 响应式布局
-const { isMobile, isTablet, isDesktop, layoutClass } = useResponsiveLayout();
+const { isCompact, isStandard, isWide, isDesktop, layoutClass } = useResponsiveLayout();
 
 // === Store实例 - Pinia 3.0 优化版本 ===
 const uiStore = useUiStore();
@@ -208,9 +208,6 @@ const initializeApp = async () => {
     loadingStatus.value = '加载完成!';
     loadingProgress.value = 100;
 
-    // 触觉反馈
-    gameVibrate([100, 50, 100]);
-
     // 延迟隐藏加载界面
     setTimeout(() => {
       isLoading.value = false;
@@ -224,9 +221,6 @@ const initializeApp = async () => {
     handleError(error, 'App初始化', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
     console.error('初始化应用失败:', error);
     loadingStatus.value = '初始化失败，请刷新页面重试';
-
-    // 错误时的触觉反馈
-    gameVibrate([200, 100, 200, 100, 200]);
   }
 };
 
@@ -295,17 +289,17 @@ body {
   transition: all 0.3s ease;
 }
 
-/* === 响应式布局增强 - @vueuse/core 13.6 === */
-.layout-mobile {
+/* === 桌面端布局增强 - 针对不同桌面分辨率优化 === */
+.layout-compact {
   font-size: 14px;
 }
 
-.layout-tablet {
-  font-size: 15px;
+.layout-standard {
+  font-size: 16px;
 }
 
-.layout-desktop {
-  font-size: 16px;
+.layout-wide {
+  font-size: 18px;
 }
 
 /* === 主题支持 === */
@@ -375,16 +369,16 @@ body {
   transition: all 0.3s ease;
 }
 
-.main-content.mobile-layout {
-  padding: 10px;
-}
-
-.main-content.tablet-layout {
+.main-content.compact-layout {
   padding: 15px;
 }
 
-.main-content.desktop-layout {
+.main-content.standard-layout {
   padding: 20px;
+}
+
+.main-content.wide-layout {
+  padding: 25px;
 }
 
 /* === 低性能模式优化 === */
@@ -468,11 +462,9 @@ body {
   color: white;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .dialog {
-    width: 95%;
-    max-height: 80%;
-  }
+/* 桌面端对话框优化 */
+.dialog {
+  width: min(600px, 90%);
+  max-height: 80%;
 }
 </style>

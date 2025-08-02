@@ -37,7 +37,6 @@ import {
   useWakeLock,
   useFullscreen,
   useShare,
-  useVibrate,
   useFavicon,
   useTitle
 } from '@vueuse/core';
@@ -98,9 +97,9 @@ export function useEnhancedGame() {
 
   const performanceMetrics = computed<PerformanceMetrics>(() => ({
     fps: 60, // 实际实现中需要计算真实FPS
-    memory: memory.value?.usedJSHeapSize || 0,
+    memory: memory.memory.value?.usedJSHeapSize || 0,
     renderTime: 0, // 需要实际测量
-    isLowPerformance: (memory.value?.usedJSHeapSize || 0) > 100 * 1024 * 1024 // 100MB阈值
+    isLowPerformance: (memory.memory.value?.usedJSHeapSize || 0) > 100 * 1024 * 1024 // 100MB阈值
   }));
 
   // === 游戏状态管理 ===
@@ -116,11 +115,14 @@ export function useEnhancedGame() {
   const isUserIdle = computed(() => idle.value);
 
   // === 自动保存功能 ===
-  const { start: startAutoSave, stop: stopAutoSave } = useIntervalFn(() => {
+  const autoSaveInterval = useIntervalFn(() => {
     if (gameSettings.value.autoSave && isPageVisible.value && !isUserIdle.value) {
       triggerAutoSave();
     }
-  }, () => gameSettings.value.autoSaveInterval);
+  }, gameSettings.value.autoSaveInterval);
+  
+  const startAutoSave = () => autoSaveInterval.resume();
+  const stopAutoSave = () => autoSaveInterval.pause();
 
   const triggerAutoSave = useDebounceFn(() => {
     console.log('自动保存游戏...');
@@ -167,14 +169,7 @@ export function useEnhancedGame() {
     }
   };
 
-  // === 震动反馈 ===
-  const { vibrate, isSupported: vibrateSupported } = useVibrate();
 
-  const gameVibrate = (pattern: number | number[] = 200) => {
-    if (vibrateSupported.value && gameSettings.value.soundEnabled) {
-      vibrate(pattern);
-    }
-  };
 
     // === SEO和元数据管理 ===
   const gameTitle = useTitle('《买房记》- 模拟经营游戏');
@@ -204,9 +199,15 @@ export function useEnhancedGame() {
     // 设置元数据标签
     setMetaTags();
 
+
+
     // 启动自动保存
-    if (gameSettings.value.autoSave) {
-      startAutoSave();
+    if (gameSettings.value.autoSave && typeof startAutoSave === 'function') {
+      try {
+        startAutoSave();
+      } catch (error) {
+        console.error('启动自动保存失败:', error);
+      }
     }
 
     // 启动性能监控
@@ -217,14 +218,22 @@ export function useEnhancedGame() {
       navigator.permissions?.query({ name: 'notifications' as PermissionName });
     }
 
-    // 游戏开始时请求唤醒锁定
+    // 游戏开始时请求唤醒锁定（桌面端暂时不需要）
     if (wakeLockSupported.value) {
-      requestWakeLock();
+      requestWakeLock('screen');
     }
   });
 
   onUnmounted(() => {
-    stopAutoSave();
+    // 清理自动保存
+    if (typeof stopAutoSave === 'function') {
+      try {
+        stopAutoSave();
+      } catch (error) {
+        console.error('停止自动保存失败:', error);
+      }
+    }
+
   });
 
   // === 监听器设置 ===
@@ -233,12 +242,22 @@ export function useEnhancedGame() {
   watch(isPageVisible, (visible) => {
     if (visible) {
       console.log('游戏恢复');
-      if (gameSettings.value.autoSave) {
-        startAutoSave();
+      if (gameSettings.value.autoSave && typeof startAutoSave === 'function') {
+        try {
+          startAutoSave();
+        } catch (error) {
+          console.error('恢复自动保存失败:', error);
+        }
       }
     } else {
       console.log('游戏暂停');
-      stopAutoSave();
+      if (typeof stopAutoSave === 'function') {
+        try {
+          stopAutoSave();
+        } catch (error) {
+          console.error('暂停自动保存失败:', error);
+        }
+      }
       triggerAutoSave(); // 离开时立即保存
     }
   });
@@ -298,16 +317,16 @@ export function useEnhancedGame() {
     exitFullscreen,
 
     // 功能方法
+    startAutoSave,
+    stopAutoSave,
     triggerAutoSave,
     sendNotification,
     shareScore,
-    gameVibrate,
     optimizePerformance,
 
     // 权限和支持检测
     notificationPermission,
     shareSupported,
-    vibrateSupported,
     wakeLockSupported,
 
     // 元数据
@@ -338,27 +357,30 @@ export function useComponentVisibility(target: Ref<HTMLElement | null>) {
 }
 
 /**
- * 响应式布局Composable
+ * 桌面端布局Composable - 专为桌面端游戏优化
  */
 export function useResponsiveLayout() {
   const { width, height } = useWindowSize();
 
-  const isMobile = computed(() => width.value < 768);
-  const isTablet = computed(() => width.value >= 768 && width.value < 1024);
-  const isDesktop = computed(() => width.value >= 1024);
+  // 桌面端游戏只需要检测不同的桌面分辨率
+  const isCompact = computed(() => width.value < 1280);  // 紧凑布局
+  const isStandard = computed(() => width.value >= 1280 && width.value < 1920);  // 标准布局
+  const isWide = computed(() => width.value >= 1920);  // 宽屏布局
+  const isDesktop = computed(() => true);  // 始终为桌面端
   const isLandscape = computed(() => width.value > height.value);
 
   const layoutClass = computed(() => {
-    if (isMobile.value) return 'layout-mobile';
-    if (isTablet.value) return 'layout-tablet';
-    return 'layout-desktop';
+    if (isCompact.value) return 'layout-compact';
+    if (isWide.value) return 'layout-wide';
+    return 'layout-standard';
   });
 
   return {
     width,
     height,
-    isMobile,
-    isTablet,
+    isCompact,
+    isStandard,
+    isWide,
     isDesktop,
     isLandscape,
     layoutClass

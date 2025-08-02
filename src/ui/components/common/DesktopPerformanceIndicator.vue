@@ -6,13 +6,23 @@
   <div v-if="showIndicator" class="performance-indicator" :class="indicatorClass">
     <div class="performance-header">
       <span class="performance-icon">🖥️</span>
-      <h4 class="performance-title">桌面端性能监控</h4>
+      <h4 class="performance-title">
+        桌面端性能监控
+        <small class="shortcut-hint">(Ctrl+1)</small>
+      </h4>
       <button 
         class="toggle-details" 
         @click="showDetails = !showDetails"
         :aria-expanded="showDetails"
       >
         {{ showDetails ? '隐藏' : '详情' }}
+      </button>
+      <button 
+        class="close-btn" 
+        @click="isVisible = false"
+        title="关闭 (Ctrl+1)"
+      >
+        ✕
       </button>
     </div>
 
@@ -135,7 +145,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useDesktopMonitoring } from '@/ui/composables/useDesktopMonitoring';
 
 // 使用桌面端性能监控
@@ -153,13 +163,35 @@ const {
 
 // 组件状态
 const showDetails = ref(false);
+const isVisible = ref(false); // 默认隐藏
 
-// 是否显示性能指示器（低性能或开发模式下显示）
-const showIndicator = computed(() => 
-  performanceMetrics.value.isLowPerformance || 
-  import.meta.env.DEV ||
-  showDetails.value
-);
+// 是否显示性能指示器（通过快捷键Ctrl+1控制）
+const showIndicator = computed(() => isVisible.value);
+
+// 切换显示状态
+const toggleVisibility = () => {
+  isVisible.value = !isVisible.value;
+  console.log(`性能监控窗口${isVisible.value ? '已显示' : '已隐藏'}`);
+};
+
+// 快捷键监听
+const handleKeydown = (event) => {
+  // Ctrl + 1
+  if (event.ctrlKey && event.key === '1') {
+    event.preventDefault();
+    toggleVisibility();
+  }
+};
+
+// 生命周期
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown);
+  console.log('桌面端性能监控已加载，按 Ctrl+1 显示/隐藏监控窗口');
+});
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown);
+});
 
 // 性能评分
 const performanceScore = computed(() => 
@@ -264,6 +296,19 @@ const getTrendText = (trend) => {
   margin: 0;
   color: #2c3e50;
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shortcut-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6c757d;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
 }
 
 .toggle-details {
@@ -278,6 +323,23 @@ const getTrendText = (trend) => {
 
 .toggle-details:hover {
   background: #e9ecef;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-left: 8px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #f8f9fa;
+  color: #dc3545;
 }
 
 .performance-overview {
@@ -481,6 +543,21 @@ const getTrendText = (trend) => {
   
   .toggle-details:hover {
     background: #5a6268;
+  }
+  
+  .shortcut-hint {
+    background: #495057;
+    border-color: #6c757d;
+    color: #adb5bd;
+  }
+  
+  .close-btn {
+    color: #adb5bd;
+  }
+  
+  .close-btn:hover {
+    background: #495057;
+    color: #f5c6cb;
   }
 }
 </style>

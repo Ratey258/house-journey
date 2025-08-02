@@ -187,8 +187,8 @@ defineEmits<Emits>();
   background: rgba(0,0,0,0.3);
 }
 
-/* 响应式设计 */
-@media (max-width: 1024px) {
+/* 桌面端紧凑布局优化 */
+@media (max-width: 1280px) {
   .tab-button {
     padding: 12px 16px;
     font-size: 0.9rem;
@@ -198,30 +198,6 @@ defineEmits<Emits>();
   .inventory-tab,
   .houses-tab {
     padding: 16px;
-  }
-}
-
-@media (max-width: 768px) {
-  .tab-buttons {
-    flex-direction: column;
-  }
-  
-  .tab-button {
-    padding: 12px;
-    text-align: center;
-  }
-  
-  .market-tab,
-  .inventory-tab,
-  .houses-tab {
-    padding: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .tab-button {
-    padding: 10px;
-    font-size: 0.85rem;
   }
 }
 </style>

@@ -166,10 +166,10 @@ import { useEventStore } from '../../stores/events';
 import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler';
 
 // 从全局变量获取版本信息（由Vite构建时自动注入）
-const version = __APP_VERSION__;
-const appName = __APP_NAME__;
-const appDescription = __APP_DESCRIPTION__;
-const appAuthor = __APP_AUTHOR__;
+const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.1.4';
+const appName = typeof __APP_NAME__ !== 'undefined' ? __APP_NAME__ : '买房记';
+const appDescription = typeof __APP_DESCRIPTION__ !== 'undefined' ? __APP_DESCRIPTION__ : '模拟经营游戏';
+const appAuthor = typeof __APP_AUTHOR__ !== 'undefined' ? __APP_AUTHOR__ : '开发者';
 
 const router = useRouter();
 const gameCore = useGameCoreStore();
@@ -340,25 +340,16 @@ async function startNewGame() {
     // 延迟一小段时间，让加载界面显示出来
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // 重置游戏状态
-    gameCore.currentWeek = 1;
-    gameCore.gameStarted = true;
-    gameCore.gamePaused = false;
-    gameCore.gameOver = false;
-    gameCore.victoryAchieved = false;
-    gameCore.gameResult = null;
-    gameCore.notifications = [];
-
     // 根据游戏模式设置周数限制
     if (gameMode.value === 'endless') {
       // 无尽模式，设置一个非常大的数字作为周数限制
-      gameCore.maxWeeks = 999999;
+      gameCore.setMaxWeeks(999999);
     } else {
       // 经典模式，使用默认的52周
-      gameCore.maxWeeks = 52;
+      gameCore.setMaxWeeks(52);
     }
 
-    // 确保调用startNewGame方法来设置玩家名称，并等待其完成
+    // 通过startNewGame方法来重置所有游戏状态和设置玩家名称
     await gameCore.startNewGame(finalPlayerName);
 
     // 双重检查玩家名称已被设置
@@ -814,6 +805,7 @@ onMounted(() => {
 .aurora-text {
   background-image: linear-gradient(90deg, #233863, #3a63b8, #233863);
   background-size: 300% 100%;
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: aurora 4s ease infinite;
@@ -1207,6 +1199,7 @@ onMounted(() => {
   margin-bottom: 5px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   background: linear-gradient(135deg, #1a2a6c, #b21f1f);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: title-glow 3s ease-in-out infinite;
