@@ -426,6 +426,32 @@ const getMostExpensiveHouse = computed(() => {
   }, props.player.purchasedHouses[0]);
 });
 
+const getVictoryBadgeText = computed(() => {
+  if (props.player.purchasedHouses && props.player.purchasedHouses.length > 0) {
+    return props.player.purchasedHouses.length > 1 ? '豪华置业' : '安家置业';
+  }
+  return '游戏通关!';
+});
+
+const getVictoryDescription = computed(() => {
+  const firstHouse = props.player.purchasedHouses && props.player.purchasedHouses.length > 0
+    ? props.player.purchasedHouses[0]
+    : null;
+
+  if (!firstHouse) {
+    return `在${props.gameState.maxWeeks}周游戏中，您成功通关!`;
+  }
+
+  const firstWeek = firstHouse.purchaseWeek || props.gameStats.week;
+  const houseCount = props.player.purchasedHouses.length;
+
+  if (houseCount > 1) {
+    return `在${props.gameState.maxWeeks}周游戏中，您共购买了${houseCount}套房产，首套房产仅用了${firstWeek}周就购得!`;
+  }
+
+  return `在${props.gameState.maxWeeks}周游戏中，您仅用了${firstWeek}周就完成了购房目标!`;
+});
+
 const getScoreRank = computed(() => {
   if (props.gameStats.score) {
     if (props.gameStats.score.rank) {
@@ -464,6 +490,36 @@ const getFinalScore = computed(() => {
 // ==================== 方法 ====================
 
 /**
+ * 更新得分显示
+ */
+const updateScoreDisplay = (): void => {
+  // 强制刷新得分显示
+  game.debug('强制刷新得分显示', {}, 'force-refresh-score');
+  // 如果得分为0但有净资产，尝试基于净资产计算一个默认得分
+  if (getFinalScore.value === 0 && props.gameStats.finalAssets && props.gameStats.finalAssets > 0) {
+    game.debug('检测到得分为0但有净资产，尝试计算默认得分', { finalAssets: props.gameStats.finalAssets }, 'calculate-default-score');
+    // 直接基于净资产计算得分
+    const calculatedScore = Math.floor(props.gameStats.finalAssets / 500);
+    // 创建完整的得分对象
+    const newScore = {
+      score: calculatedScore,
+      rank: calculateScoreRank(calculatedScore),
+      details: {
+        assetsScore: Math.floor(props.gameStats.finalAssets / 800),
+        timeScore: 0,
+        houseScore: 0,
+        tradeScore: 0,
+        bankScore: 0,
+        totalScore: calculatedScore
+      }
+    };
+    // 注意：在Setup Script中我们不能直接修改props，这里只是为了兼容原有逻辑
+    // 实际项目中应该通过emit事件通知父组件更新
+    Object.assign(props.gameStats, { score: newScore });
+  }
+};
+
+/**
  * 计算得分等级
  */
 const calculateScoreRank = (score: number): string => {
@@ -484,32 +540,49 @@ const getHouseImage = (house: any): string => {
   // 记录日志帮助调试
   ui.debug('正在获取房产图片', { house }, 'get-house-image');
 
-  // 根据房产ID选择对应图片
+  // 确保使用house.imageUrl或正确的图片路径
+  // 根据房产ID选择对应图片，使用正确的路径
   if (house.id || house.houseId) {
     const houseId = house.id || house.houseId;
-    
-    // 根据房产ID返回相应的图片
-    switch (String(houseId)) {
-      case '1':
-        return '/resources/assets/images/house_1.jpeg';
-      case '2':
-        return '/resources/assets/images/house_2.jpeg';
-      case '3':
-        return '/resources/assets/images/house_3.jpeg';
-      case '4':
-        return '/resources/assets/images/house_4.jpeg';
-      case '5':
-        return '/resources/assets/images/house_5.jpeg';
-      default:
-        return '/resources/assets/images/house_1.jpeg';
+
+    // 特定ID到图片的映射
+    const imageMap = {
+      'apartment': '/resources/assets/images/house_1.jpeg',
+      'second_hand': '/resources/assets/images/house_2.jpeg',
+      'highend': '/resources/assets/images/house_3.jpeg',
+      'villa': '/resources/assets/images/house_4.jpeg',
+      'mansion': '/resources/assets/images/house_5.jpeg'
+    };
+
+    // 先检查是否为预定义的房屋ID
+    if (imageMap[houseId as keyof typeof imageMap]) {
+      return imageMap[houseId as keyof typeof imageMap];
     }
+
+    // 如果不是预定义ID，尝试解析为数字
+    const parsedId = parseInt(String(houseId));
+    // 如果解析成功，使用对应索引；否则使用默认值1
+    const imageIndex = !isNaN(parsedId) ? (parsedId % 5 || 1) : 1;
+    return `/resources/assets/images/house_${imageIndex}.jpeg`;
   }
 
-  // 如果有imageUrl直接使用
+  // 如果存在imageUrl则优先使用
   if (house.imageUrl) return house.imageUrl;
-  if (house.image) return house.image;
+  if (house.image) {
+    // 确保image路径正确，添加前导/如果不存在
+    if (house.image.startsWith('./')) {
+      return house.image.replace('./', '/');
+    } else if (!house.image.startsWith('/')) {
+      return `/${house.image}`;
+    }
+    // 如果路径包含NaN，使用默认图片
+    if (house.image.includes('NaN')) {
+      return '/resources/assets/images/house_1.jpeg';
+    }
+    return house.image;
+  }
 
-  // 默认返回第一张图片
+  // 默认图片
   return '/resources/assets/images/house_1.jpeg';
 };
 
@@ -677,16 +750,701 @@ const animateResults = (): void => {
 // ==================== 生命周期 ====================
 
 onMounted(() => {
+  // 更新得分显示
+  updateScoreDisplay();
   // 检查成就
   checkAchievements();
 });
 </script>
 
 <style scoped>
-/* 组件样式将保持不变，这里省略... */
+/* 基础布局样式 */
 .game-over-view {
-  /* 样式内容 */
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: auto;
+  width: 100%;
+  background-color: transparent;
+  color: #333;
+  margin: 0;
 }
 
-/* 其他样式保持原样 */
+.game-over-container {
+  position: relative;
+  max-width: 600px;
+  width: 100%;
+  background-color: white;
+  border-radius: 30px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.2);
+  padding: 15px 18px 15px 18px;
+  overflow-y: auto;
+  max-height: 85vh;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.game-over-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* 头部和排名样式 */
+.header-section {
+  text-align: center;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.title {
+  font-size: 1.6rem;
+  margin: 0 0 3px 0;
+  color: #2c3e50;
+}
+
+.title.victory {
+  color: #27ae60;
+}
+
+.title.failure {
+  color: #e74c3c;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin: 0 0 5px 0;
+}
+
+.rank-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.rank-animation {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 15px;
+  font-size: 2.2rem;
+  font-weight: bold;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.rank-animation::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+  opacity: 0;
+}
+
+.rank-animation.animate::before {
+  animation: pulse 2s ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(2); }
+}
+
+.rank-S {
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  color: white;
+}
+
+.rank-A {
+  background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
+  color: white;
+}
+
+.rank-B {
+  background: linear-gradient(135deg, #cd7f32, #a05a2c);
+  color: white;
+}
+
+.rank-C {
+  background: linear-gradient(135deg, #4a90e2, #357abd);
+  color: white;
+}
+
+.rank-D {
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  color: white;
+}
+
+.rank-E {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+  color: white;
+}
+
+.score-display {
+  text-align: left;
+}
+
+.score-label {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin-bottom: 2px;
+}
+
+.score-value {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+/* 统计和房产样式 */
+.statistics-section, .house-info, .score-breakdown, .location-stats, .suggestions, .achievements-section {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+h2 {
+  font-size: 1.2rem;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  position: relative;
+  padding-left: 10px;
+}
+
+h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 20px;
+  background-color: #3498db;
+  border-radius: 3px;
+}
+
+.statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  opacity: 1;
+  transform: none;
+}
+
+.stat-item.animate-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.stat-icon {
+  font-size: 1.2rem;
+  margin-right: 8px;
+  color: #3498db;
+  background: rgba(52, 152, 219, 0.1);
+  padding: 5px;
+  border-radius: 50%;
+  height: 30px;
+  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #7f8c8d;
+  margin-bottom: 1px;
+}
+
+.stat-value {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.stat-value.positive {
+  color: #27ae60;
+}
+
+.stat-value.negative {
+  color: #e74c3c;
+}
+
+.house-info {
+  padding: 12px;
+  margin-bottom: 12px;
+  background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(225, 232, 237, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.house-info h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2c3e50;
+  position: relative;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.house-info h2:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -8px;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(to right, #3498db, #2ecc71);
+  border-radius: 3px;
+}
+
+.house-details {
+  display: flex;
+  gap: 8px;
+}
+
+.house-image-container {
+  flex: 0 0 100px;
+  height: 80px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #fff;
+}
+
+.house-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.house-text {
+  flex: 1;
+}
+
+.house-name {
+  margin: 0 0 3px 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.house-price, .house-week {
+  margin: 0 0 3px 0;
+  font-size: 0.9rem;
+}
+
+.best-house-badge {
+  font-size: 0.7rem;
+  background-color: #8e44ad;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* 成就样式 */
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  background-color: #fff3cd;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  opacity: 1;
+  transform: none;
+}
+
+.achievement-icon {
+  font-size: 1.6rem;
+  margin-right: 10px;
+  color: #ffc107;
+  background: rgba(255, 193, 7, 0.2);
+  padding: 5px;
+  border-radius: 50%;
+  height: 35px;
+  width: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.achievement-content {
+  flex: 1;
+}
+
+.achievement-name {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #856404;
+  margin-bottom: 3px;
+}
+
+.achievement-desc {
+  font-size: 0.85rem;
+  color: #856404;
+}
+
+/* 多套房产样式 */
+.all-houses-container {
+  margin-top: 15px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.all-houses-container h3 {
+  margin-top: 5px;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.houses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.mini-house-card {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.mini-house-image {
+  height: 80px;
+  overflow: hidden;
+}
+
+.mini-house-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mini-house-info {
+  padding: 8px;
+}
+
+.mini-house-name {
+  font-weight: bold;
+  font-size: 0.8rem;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-house-price {
+  color: #e74c3c;
+  font-size: 0.75rem;
+  margin-bottom: 2px;
+}
+
+.mini-house-week {
+  color: #7f8c8d;
+  font-size: 0.7rem;
+}
+
+/* 核心统计样式 */
+.core-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.core-stats .stat-item {
+  padding: 5px;
+  margin: 0;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.core-stats .stat-item:hover {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.core-stats .stat-label {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  margin-bottom: 5px;
+}
+
+.core-stats .stat-value {
+  font-size: 1rem;
+}
+
+/* 得分明细样式 */
+.score-details-section {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.score-details-section h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  color: #34495e;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.score-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.stat-bonus {
+  margin-top: 5px;
+  font-size: 0.7rem;
+  color: #8e44ad;
+  font-style: italic;
+}
+
+/* 按钮样式 */
+.actions {
+  padding: 12px 10px 15px;
+  border-top: 1px solid rgba(238, 238, 238, 0.5);
+  margin-top: 12px;
+  margin-bottom: 0;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 0 0 30px 30px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(249,249,249,0.95));
+  position: sticky;
+  bottom: -15px;
+  left: 0;
+  right: 0;
+  margin-left: -18px;
+  margin-right: -18px;
+  padding-left: 18px;
+  padding-right: 18px;
+  z-index: 100;
+  box-shadow: 0 -5px 10px rgba(0,0,0,0.05);
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  min-width: 140px;
+}
+
+.btn:after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(to bottom right, rgba(255,255,255,0.2), rgba(255,255,255,0));
+  transform: rotate(45deg);
+  transition: all 0.5s;
+  opacity: 0;
+}
+
+.btn:hover:after {
+  opacity: 1;
+  top: -100%;
+  left: -100%;
+}
+
+.btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.btn-icon {
+  margin-right: 8px;
+  font-size: 1.2rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  color: white;
+}
+
+.actions button:first-child {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+  transform: scale(1.05);
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(46, 204, 113, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+  }
+}
+
+/* 悬停效果 */
+.stat-item, .achievement-item {
+  transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-item:hover, .achievement-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .game-over-container {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .statistics-grid, .score-items, .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .house-details {
+    flex-direction: column;
+  }
+
+  .house-image-container {
+    width: 100%;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .house-details {
+    flex-direction: column;
+  }
+
+  .house-image-container {
+    width: 100%;
+    height: 100px;
+    margin-bottom: 10px;
+  }
+
+  .statistics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .score-items {
+    grid-template-columns: 1fr;
+  }
+
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 优化样式 */
+.achievements-section, .statistics-section {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+}
+
+h2 {
+  font-size: 1.1rem;
+  color: #2c3e50;
+  margin: 3px 0 6px 0;
+  position: relative;
+  padding-left: 8px;
+}
+
+h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  background-color: #3498db;
+  border-radius: 2px;
+}
+
+.statistics-grid, .achievements-grid {
+  margin-top: 5px;
+}
 </style>

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed, reactive, readonly } from 'vue';
 import i18n from '../../i18n';
+import { getPlayerConfig } from '../../config/game.config';
 
 /**
  * 玩家状态类型定义 - Pinia 3.0 增强的TypeScript支持
@@ -39,18 +40,21 @@ export interface HouseInfo {
  * 使用Composition API风格，提供更好的TypeScript支持和代码组织
  */
 export const usePlayerStore = defineStore('player', () => {
+  // 获取玩家配置
+  const playerConfig = getPlayerConfig();
+  
   // === 状态定义 ===
   const name = ref<string>('');
-  const money = ref<number>(2000);
-  const debt = ref<number>(5000);
-  const loanPrincipal = ref<number>(5000); // 贷款本金追踪
-  const capacity = ref<number>(100);
+  const money = ref<number>(playerConfig.initialMoney);
+  const debt = ref<number>(playerConfig.initialDebt);
+  const loanPrincipal = ref<number>(playerConfig.initialLoanPrincipal);
+  const capacity = ref<number>(playerConfig.initialCapacity);
   const inventoryUsed = ref<number>(0);
   const inventory = ref<InventoryItem[]>([]);
   const purchasedHouses = ref<HouseInfo[]>([]);
   const initialized = ref<boolean>(false);
   const bankDeposit = ref<number>(0);
-  const maxLoanAmount = ref<number>(20000);
+  const maxLoanAmount = ref<number>(playerConfig.maxLoanAmount);
 
   // 使用reactive保持对象的响应性 - Pinia 3.0最佳实践
   const statistics = reactive<PlayerStatistics>({
@@ -84,8 +88,8 @@ export const usePlayerStore = defineStore('player', () => {
 
   // 银行相关计算属性
   const weeklyInterest = computed(() => {
-    const depositInterest = bankDeposit.value * 0.003; // 0.3% 存款利息
-    const loanInterest = debt.value * 0.005; // 0.5% 贷款利息
+    const depositInterest = bankDeposit.value * playerConfig.depositInterestRate;
+    const loanInterest = debt.value * playerConfig.loanInterestRate;
     return depositInterest - loanInterest;
   });
 
@@ -107,9 +111,9 @@ export const usePlayerStore = defineStore('player', () => {
     );
   });
 
-  // 利率常量
-  const depositInterestRate = computed(() => 0.003); // 0.3%/周
-  const loanInterestRate = computed(() => 0.005); // 0.5%/周
+  // 利率常量 - 从配置获取
+  const depositInterestRate = computed(() => playerConfig.depositInterestRate);
+  const loanInterestRate = computed(() => playerConfig.loanInterestRate);
 
   // === Actions (Functions) - Pinia 3.0 优化版本 ===
 

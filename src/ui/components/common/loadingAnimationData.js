@@ -1,4 +1,7 @@
-// 简单的加载动画JSON数据
+/**
+ * Lottie加载动画数据 - 重命名为规范的camelCase格式
+ * 简单的旋转圆圈加载动画JSON数据
+ */
 export default {
   "v": "5.5.7",
   "fr": 30,
@@ -139,4 +142,4 @@ export default {
       "bm": 0
     }
   ]
-}; 
+};

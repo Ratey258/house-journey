@@ -8,6 +8,7 @@ import { withErrorHandling } from '../../infrastructure/utils/errorHandler';
 import storageService, { validateSaveData, repairSaveData, ensureVersionCompatibility, type SaveData } from '../../infrastructure/persistence/storageService';
 import { useUiStore } from '../uiStore';
 import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler';
+import { getPersistenceConfig } from '../../config/app.config';
 
 // ==================== 类型定义 ====================
 
@@ -41,10 +42,13 @@ export interface SaveSystemState {
 
 // ==================== 常量 ====================
 
+// 获取持久化配置
+const persistenceConfig = getPersistenceConfig();
+
 const SAVE_LIST_KEY = 'saveList';
 const SAVE_PREFIX = 'houseJourneySave_';
-const MAX_AUTO_SAVES = 3;
-const AUTO_SAVE_INTERVAL = 5; // 每5周自动保存一次
+const MAX_AUTO_SAVES = persistenceConfig.maxAutoSaves;
+const AUTO_SAVE_INTERVAL = persistenceConfig.autoSaveInterval;
 
 // 从全局变量获取版本号（由Vite构建时自动注入）
 declare const __APP_VERSION__: string;

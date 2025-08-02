@@ -19,7 +19,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
-import loadingAnimationData from './loading-animation.js';
+import loadingAnimationData from './loadingAnimationData.js';
 
 // 定义组件属性
 const props = defineProps({

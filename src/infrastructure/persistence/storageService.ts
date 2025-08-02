@@ -1,9 +1,10 @@
 /**
  * 存储服务 - TypeScript版本
- * 提供数据持久化功能
+ * 提供数据持久化功能，增强异步操作安全性
  */
 import { storageError } from '@/infrastructure/utils/errorTypes';
 import { handleError, ErrorType, ErrorSeverity } from '../utils/errorHandler';
+import { withTimeout } from '../utils/asyncUtils';
 
 // ==================== 类型定义 ====================
 
@@ -438,7 +439,11 @@ export class ElectronStorageService implements StorageInterface {
 
       // 检查是否在Electron环境中
       if (typeof window !== 'undefined' && window.electronAPI) {
-        const config = await window.electronAPI.getConfig();
+        const config = await withTimeout(
+          window.electronAPI.getConfig(),
+          5000, // 5秒超时
+          `Storage get operation timeout for key: ${key}`
+        );
         const data = config[fullKey];
 
         if (data !== undefined) {
@@ -468,7 +473,11 @@ export class ElectronStorageService implements StorageInterface {
       const dataToStore = typeof value === 'object' ? JSON.stringify(value) : value;
 
       if (typeof window !== 'undefined' && window.electronAPI) {
-        await window.electronAPI.setConfig({ [fullKey]: dataToStore });
+        await withTimeout(
+          window.electronAPI.setConfig({ [fullKey]: dataToStore }),
+          5000, // 5秒超时
+          `Storage set operation timeout for key: ${key}`
+        );
         return true;
       }
 
@@ -490,7 +499,11 @@ export class ElectronStorageService implements StorageInterface {
       const fullKey = this.prefix + key;
 
       if (typeof window !== 'undefined' && window.electronAPI) {
-        await window.electronAPI.setConfig({ [fullKey]: undefined });
+        await withTimeout(
+          window.electronAPI.setConfig({ [fullKey]: undefined }),
+          5000, // 5秒超时
+          `Storage remove operation timeout for key: ${key}`
+        );
         return true;
       }
 
@@ -509,7 +522,11 @@ export class ElectronStorageService implements StorageInterface {
   async getAllKeys(): Promise<string[]> {
     try {
       if (typeof window !== 'undefined' && window.electronAPI) {
-        const config = await window.electronAPI.getConfig();
+        const config = await withTimeout(
+          window.electronAPI.getConfig(),
+          5000, // 5秒超时
+          'Storage getAllKeys operation timeout'
+        );
         return Object.keys(config)
           .filter(key => key.startsWith(this.prefix))
           .map(key => key.substring(this.prefix.length));
@@ -530,7 +547,11 @@ export class ElectronStorageService implements StorageInterface {
   async clearAll(): Promise<boolean> {
     try {
       if (typeof window !== 'undefined' && window.electronAPI) {
-        const config = await window.electronAPI.getConfig();
+        const config = await withTimeout(
+          window.electronAPI.getConfig(),
+          5000, // 5秒超时
+          'Storage clearAll getConfig operation timeout'
+        );
         const keysToRemove = Object.keys(config).filter(key => key.startsWith(this.prefix));
 
         if (keysToRemove.length === 0) {
@@ -543,7 +564,11 @@ export class ElectronStorageService implements StorageInterface {
           clearConfig[key] = undefined;
         });
 
-        await window.electronAPI.setConfig(clearConfig);
+        await withTimeout(
+          window.electronAPI.setConfig(clearConfig),
+          5000, // 5秒超时
+          'Storage clearAll setConfig operation timeout'
+        );
         return true;
       }
 

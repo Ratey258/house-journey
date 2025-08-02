@@ -21,7 +21,7 @@ import {
 import { useSmartLogger } from './infrastructure/utils/smartLogger';
 import { initSnapshotSystem } from './infrastructure/persistence/stateSnapshot';
 // 导入第三方库配置
-import { setupThirdParty } from './plugins/thirdParty';
+import { setupThirdParty } from './plugins/setupThirdPartyLibraries';
 
 // ==================== 类型定义 ====================
 
@@ -243,15 +243,23 @@ function validateCriticalResources(): void {
 // 标记游戏已启动
 markGameRunning();
 
-// 注册页面卸载事件
+// 定期更新活动状态，保存定时器引用以便清理
+const activityTimer = setInterval(() => {
+  markGameRunning();
+}, 60000); // 每分钟更新一次
+
+// 注册页面卸载事件，清理定时器防止内存泄漏
 window.addEventListener('beforeunload', () => {
+  clearInterval(activityTimer); // 清理定时器
   clearGameRunningMark();
 });
 
-// 定期更新活动状态
-setInterval(() => {
-  markGameRunning();
-}, 60000); // 每分钟更新一次
+// 页面隐藏时也清理定时器（移动端友好）
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    clearInterval(activityTimer);
+  }
+});
 
 // ==================== 应用挂载系统 ====================
 

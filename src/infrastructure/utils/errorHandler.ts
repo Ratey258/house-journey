@@ -56,14 +56,19 @@ declare global {
   }
 }
 
+import { getErrorHandlingConfig } from '../../config/app.config';
+
+// 获取错误处理配置
+const errorConfig = getErrorHandlingConfig();
+
 // 错误日志存储
 const errorLogs: Ref<ErrorInfo[]> = ref([]);
-const MAX_ERROR_LOGS = 200; // 最大保留日志数量
+const MAX_ERROR_LOGS = errorConfig.maxErrorLogs;
 
 // 游戏运行状态标记
 const GAME_RUNNING_FLAG = 'gameRunning';
 const LAST_ACTIVITY_KEY = 'lastGameActivity';
-const ACTIVITY_TIMEOUT = 300000; // 5分钟无操作视为非活动状态
+const ACTIVITY_TIMEOUT = errorConfig.activityTimeout;
 
 // 缓存uiStore实例
 let cachedUiStore: UiStore | null = null;

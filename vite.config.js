@@ -82,9 +82,9 @@ export default defineConfig(({ mode }) => {
               return 'ui-framework';
             }
             // 图表库（大型依赖）
-            if (id.includes('chart.js') || id.includes('echarts')) {
-              return 'charts';
-            }
+                    if (id.includes('echarts')) {
+          return 'charts';
+        }
             // 工具库
             if (id.includes('lodash-es') || id.includes('dayjs') || id.includes('@vueuse/core')) {
               return 'utilities';

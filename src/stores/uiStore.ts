@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, readonly, type Ref } from 'vue';
+import { getToastConfig } from '../config/ui.config';
 
 // Toast interfaces
 export interface ToastAction {
@@ -230,7 +231,8 @@ export const useUiStore = defineStore('ui', () => {
    * @deprecated 使用 addToast 代替
    */
   function showToast(options: Pick<ToastOptions, 'type' | 'message' | 'duration'>): string {
-    const { type = 'info', message = '', duration = 3000 } = options;
+    const toastConfig = getToastConfig();
+    const { type = 'info', message = '', duration = toastConfig.defaultDuration } = options;
     return addToast({ type, message, duration });
   }
 
