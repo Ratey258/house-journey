@@ -201,24 +201,16 @@ export function useDesktopGame() {
   });
 
   /**
-   * 系统通知
+   * 系统通知（已禁用）
    */
   const showSystemNotification = (title: string, body: string, options?: NotificationOptions): void => {
-    if (isElectron.value && (window as any).electronAPI?.showNotification) {
-      (window as any).electronAPI.showNotification(title, body);
-      logger.info('显示系统通知', { title, body });
-    } else if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body, ...options });
-      logger.info('显示浏览器通知', { title, body });
-    } else {
-      // 降级到应用内通知
-      eventBus.emit('ui:toast:show', {
-        type: 'info',
-        message: `${title}: ${body}`,
-        duration: 5000
-      });
-      logger.debug('显示应用内通知', { title, body });
-    }
+    // 禁用所有原生通知，仅使用应用内通知
+    eventBus.emit('ui:toast:show', {
+      type: 'info',
+      message: `${title}: ${body}`,
+      duration: 5000
+    });
+    logger.debug('显示应用内通知（原生通知已禁用）', { title, body });
   };
 
   // ===== 主题管理 =====

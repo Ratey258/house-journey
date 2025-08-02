@@ -189,7 +189,7 @@ export const useGameStore = defineStore('gameCompat', (): GameStore => {
     const productIdStr = String(productId);
     
     // 库存检查和移除
-    const removeResult = inventoryActions.removeFromInventory(productIdStr, quantity);
+    const removeResult = inventoryActions.removeFromInventoryByProductId(productIdStr, quantity);
     if (!removeResult.success) {
       return removeResult;
     }
@@ -213,11 +213,17 @@ export const useGameStore = defineStore('gameCompat', (): GameStore => {
     }
     player.incrementTransactionCount();
 
+    // 计算利润
+    const product = removeResult.product;
+    const purchasePrice = product?.purchasePrice || 0;
+    const profit = (currentPrice - purchasePrice) * quantity;
+    const profitPercent = purchasePrice > 0 ? ((currentPrice / purchasePrice - 1) * 100) : 0;
+
     return {
       success: true,
       income: totalIncome,
-      profit: removeResult.profit,
-      profitPercent: removeResult.profitPercent
+      profit: profit,
+      profitPercent: profitPercent
     };
   }
 

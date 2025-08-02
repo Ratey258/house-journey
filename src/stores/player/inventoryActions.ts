@@ -36,6 +36,8 @@ export interface OperationResult {
   success: boolean;
   message?: string;
   product?: InventoryItem;
+  profit?: number;
+  profitPercent?: number;
 }
 
 // ==================== 库存操作服务 ====================
@@ -45,6 +47,18 @@ export interface OperationResult {
  */
 export const useInventoryActions = () => {
   const playerStore = usePlayerStore();
+  
+  // 获取当前商品价格的辅助函数（避免循环引用）
+  const getCurrentProductPrice = (productId: string | number): number => {
+    try {
+      // 这里使用一个简单的方法来避免循环依赖
+      // 在实际项目中应该通过其他方式获取价格
+      return 0;
+    } catch (error) {
+      console.warn('获取商品价格失败:', error);
+      return 0;
+    }
+  };
 
   /**
    * 添加物品到库存
@@ -268,6 +282,85 @@ export const useInventoryActions = () => {
   };
 
   /**
+   * 根据产品ID移除物品
+   * @param productId 产品ID
+   * @param quantity 移除数量
+   * @returns 操作结果
+   */
+  const removeFromInventoryByProductId = (productId: string | number, quantity: number): OperationResult => {
+    console.log('InventoryActions - 根据productId移除物品:', { productId, quantity, type: typeof productId });
+    
+    // 查找匹配的物品
+    const itemIndex = playerStore.inventory.findIndex((item: any) => {
+      // 多种匹配方式，确保兼容性
+      if (item.productId === productId) return true;
+      if (typeof productId === 'number' && Number(item.productId) === productId) return true;
+      if (String(item.productId) === String(productId)) return true;
+      return false;
+    });
+
+    if (itemIndex === -1) {
+      console.error('InventoryActions - 找不到指定商品:', productId);
+      return { success: false, message: '背包中没有该商品' };
+    }
+
+    const item = playerStore.inventory[itemIndex];
+    if (item.quantity < quantity) {
+      console.error('InventoryActions - 商品数量不足:', { available: item.quantity, requested: quantity });
+      return { success: false, message: '商品数量不足' };
+    }
+
+    // 计算利润（利润计算将在sellProduct中进行）
+    const purchasePrice = item.purchasePrice || 0;
+    const profit = 0; // 实际利润在sellProduct中计算
+    const profitPercent = 0;
+
+    console.log('InventoryActions - 移除商品信息:', {
+      itemIndex,
+      currentQuantity: item.quantity,
+      removeQuantity: quantity,
+      purchasePrice
+    });
+
+    // 创建返回的产品信息
+    const product: InventoryItem = {
+      productId: item.productId,
+      name: item.name,
+      quantity: quantity,
+      purchasePrice: item.purchasePrice,
+      totalValue: item.totalValue,
+      size: item.size || 1
+    };
+
+    // 更新数量
+    item.quantity -= quantity;
+    
+    // 如果数量为0，删除该条目
+    if (item.quantity <= 0) {
+      playerStore.inventory.splice(itemIndex, 1);
+      console.log('InventoryActions - 商品数量为0，已删除');
+    }
+
+    // 更新已用容量
+    const spaceFreed = quantity;
+    playerStore.updateInventoryUsed(-spaceFreed);
+
+    console.log('InventoryActions - 移除成功，当前背包:', playerStore.inventory.map(item => ({
+      productId: item.productId,
+      name: item.name,
+      quantity: item.quantity
+    })));
+
+    // 强制触发更新
+    playerStore.forceUpdateInventory();
+
+    return {
+      success: true,
+      product
+    };
+  };
+
+  /**
    * 获取库存总价值
    * @returns 库存总价值
    */
@@ -290,6 +383,7 @@ export const useInventoryActions = () => {
   return {
     addToInventory,
     removeFromInventory,
+    removeFromInventoryByProductId,
     findByProductId,
     getTotalQuantity,
     getTotalValue,

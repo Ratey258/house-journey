@@ -143,13 +143,8 @@ export function useEnhancedGame() {
   const notificationPermission = usePermission('notifications');
 
   const sendNotification = (title: string, options?: NotificationOptions) => {
-    if (gameSettings.value.notifications && notificationPermission.value === 'granted') {
-      new Notification(title, {
-        icon: '/logo.png',
-        badge: '/logo.png',
-        ...options
-      });
-    }
+    // 禁用原生通知，使用应用内通知
+    console.log('原生通知已禁用:', { title, options });
   };
 
   // === 全屏和唤醒锁定 ===

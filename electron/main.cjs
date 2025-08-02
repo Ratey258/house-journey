@@ -633,37 +633,12 @@ async function handleClearErrorLogs(event, date) {
 
 // ======== 桌面端用户体验增强功能处理器 ========
 
-// 处理系统通知请求
+// 处理系统通知请求（已禁用）
 async function handleShowNotification(event, { title, body, options = {} }) {
   try {
-    // 检查通知权限
-    if (!Notification.isSupported()) {
-      throw new Error('System notifications are not supported');
-    }
-
-    // 创建系统通知
-    const notification = new Notification({
-      title: title || '买房记',
-      body: body || '',
-      icon: options.icon || path.join(__dirname, '../resources/logo.png'),
-      silent: options.silent || false,
-      urgency: options.urgency || 'normal', // low, normal, critical
-      timeoutType: options.timeoutType || 'default', // default, never
-      actions: options.actions || []
-    });
-
-    // 添加事件监听
-    notification.on('click', () => {
-      // 点击通知时聚焦到主窗口
-      if (mainWindow) {
-        if (mainWindow.isMinimized()) mainWindow.restore();
-        mainWindow.focus();
-      }
-    });
-
-    notification.show();
-
-    return { success: true, id: notification.id };
+    // 禁用原生通知，直接返回失败
+    console.log('原生通知已禁用:', { title, body });
+    return { success: false, error: '原生通知已禁用' };
   } catch (error) {
     console.error('Show notification failed:', error);
     return { success: false, error: error.message };

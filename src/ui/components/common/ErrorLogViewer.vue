@@ -93,7 +93,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, type Ref } from 'vue';
 import { loadErrorLogs, clearErrorLogs, exportErrorLogs } from '@/infrastructure/utils/errorHandler';
-import { formatDate } from '@/infrastructure/utils';
+import { formatDate } from '@/i18n';
 
 // ==================== 类型定义 ====================
 

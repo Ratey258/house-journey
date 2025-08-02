@@ -75,32 +75,16 @@ export function useDesktopExperience() {
   const badgeCount = ref(0);
 
   /**
-   * 显示系统通知
+   * 显示系统通知（已禁用）
    */
   async function showNotification(
     title: string,
     body: string,
     options: NotificationOptions = {}
   ): Promise<boolean> {
-    if (!isElectron.value) {
-      logger.warn('系统通知不可用', '不在Electron环境中');
-      return false;
-    }
-
-        try {
-      const result = await window.electronAPI?.showNotification?.(title, body, options);
-
-      if (result?.success) {
-        logger.info('系统通知已显示', { title, body, id: result.id });
-        return true;
-      } else {
-        logger.error('显示系统通知失败', result?.error);
-        return false;
-      }
-    } catch (error) {
-      logger.error('显示系统通知异常', error);
-      return false;
-    }
+    // 禁用原生通知
+    logger.info('原生通知已禁用', { title, body });
+    return false;
   }
 
   /**

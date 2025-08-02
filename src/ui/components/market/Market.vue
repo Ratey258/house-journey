@@ -268,7 +268,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { useGameStore } from '../../../stores';
 import { useGameCoreStore } from '../../../stores/gameCore';
 import { useI18n } from 'vue-i18n';
@@ -286,7 +286,7 @@ const gameCoreStore = useGameCoreStore(); // 添加游戏核心存储
 const locations = computed(() => gameStore.locations || []);
 const currentLocation = computed(() => gameStore.currentLocation || { id: '', name: '加载中...' });
 const availableProducts = computed(() => gameStore.availableProducts || []);
-const player = computed(() => gameStore.player || { money: 0, capacity: 0, inventoryUsed: 0 });
+const player = computed(() => gameStore.player || { money: 0, capacity: 0, inventoryUsed: 0, inventory: [] });
 
 // 响应式变量
 const showTradePanel = ref(false);
@@ -348,17 +348,42 @@ const canPlayerBuy = (product) => {
 const canPlayerSell = (product) => {
   if (!product) return false;
 
-  // 检查玩家是否拥有该商品
-  const playerInventory = player.value.inventory || [];
-  return playerInventory.some(item => item.productId === product.id && item.quantity > 0);
+  // 直接从playerStore获取最新的inventory数据
+  const playerInventory = gameStore.player.inventory || [];
+  const hasProduct = playerInventory.some(item => {
+    // 多种匹配方式，确保兼容性
+    const match = (item.productId === product.id || 
+                  String(item.productId) === String(product.id) ||
+                  (typeof product.id === 'number' && Number(item.productId) === product.id)) &&
+                  item.quantity > 0;
+    return match;
+  });
+  
+  console.log('Market - 是否可以出售:', { productId: product.id, hasProduct, inventory: playerInventory });
+  return hasProduct;
 };
 
 // 获取玩家拥有的指定商品数量
 const getPlayerProductQuantity = (productId) => {
-  const playerInventory = player.value.inventory || [];
-  return playerInventory
-    .filter(item => item.productId === productId)
+  // 直接从playerStore获取最新的inventory数据
+  const playerInventory = gameStore.player.inventory || [];
+  console.log('Market - 获取商品数量:', { productId, inventory: playerInventory });
+  
+  const quantity = playerInventory
+    .filter(item => {
+      // 多种匹配方式，确保兼容性
+      const match = item.productId === productId || 
+                   String(item.productId) === String(productId) ||
+                   (typeof productId === 'number' && Number(item.productId) === productId);
+      if (match) {
+        console.log('Market - 找到匹配商品:', { itemProductId: item.productId, productId, quantity: item.quantity });
+      }
+      return match;
+    })
     .reduce((total, item) => total + item.quantity, 0);
+    
+  console.log('Market - 商品总数量:', { productId, quantity });
+  return quantity;
 };
 
 // 打开交易面板
@@ -414,6 +439,12 @@ const quickBuy = (product) => {
           showTransactionToast.value = false;
         }, 3000);
       });
+
+      // 强制刷新页面数据（购买成功后）
+      console.log('购买成功，强制刷新UI数据');
+      nextTick(() => {
+        // 这里可以触发其他需要更新的组件
+      });
     } else {
       // 显示失败提示
       transactionToastMessage.value = result.message || '购买失败';
@@ -461,6 +492,12 @@ const quickBuyMultiple = (product, quantity) => {
         setTimeout(() => {
           showTransactionToast.value = false;
         }, 3000);
+      });
+
+      // 强制刷新页面数据（购买成功后）
+      console.log('批量购买成功，强制刷新UI数据');
+      nextTick(() => {
+        // 这里可以触发其他需要更新的组件
       });
     } else {
       // 显示失败提示
