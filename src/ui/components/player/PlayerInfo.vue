@@ -88,23 +88,27 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useGameStore, useGameCoreStore } from '@/stores';
+import { useGameCoreStore } from '@/stores';
 import { formatNumber } from '@/infrastructure/utils';
 import BankModal from './BankModal.vue';
 
-const gameStore = useGameStore();
-const gameCoreStore = useGameCoreStore();
+// ✅ 使用Service Composables替代直接Store访问
+import { usePlayerService, useGameState } from '@/ui/composables';
 
-const player = computed(() => gameStore.player);
-const currentWeek = computed(() => gameStore.currentWeek);
-const isEndlessMode = computed(() => gameStore.isEndlessMode);
+const gameCoreStore = useGameCoreStore(); // 保留用于推进周数
+
+// ✅ Service Composables
+const { player, playerMoney, playerStatistics, loadPlayer } = usePlayerService();
+const { currentWeek, isEndlessMode } = useGameState();
 
 // 银行相关
 const showBankModal = ref(false);
 
-// 进入下一周
-const advanceWeek = () => {
+// 进入下一周 - ✅ 使用Service层刷新数据
+const advanceWeek = async () => {
   gameCoreStore.advanceWeek();
+  // 刷新玩家数据以反映新周的变化
+  await loadPlayer();
 };
 
 // 获取玩家名称首字母作为头像

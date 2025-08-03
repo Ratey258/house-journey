@@ -5,19 +5,43 @@
 import { withErrorHandling } from '../../infrastructure/utils/errorHandler';
 import { ErrorType } from '../../infrastructure/utils/errorTypes';
 import { batchUpdatePrices, generateLocationProducts } from '../../core/services/priceSystem';
+import { IMarketService } from '../interfaces/services';
+import type { 
+  IPlayerRepository, 
+  IProductRepository, 
+  IMarketRepository 
+} from '../../core/interfaces/repositories';
+import type { 
+  TradeResult, 
+  MarketUpdateResult, 
+  LocationProducts,
+  MarketState 
+} from '../interfaces/services';
 
 /**
- * 市场服务类
+ * 市场服务实现类
+ * 实现了IMarketService接口，负责协调市场相关的业务流程
  */
-export class MarketService {
+export class MarketService extends IMarketService {
+  private playerRepository: IPlayerRepository;
+  private productRepository: IProductRepository;
+  private marketRepository: IMarketRepository;
+  private eventEmitter: any; // TODO: 需要定义IEventEmitter接口
+
   /**
    * 构造函数
-   * @param {Object} playerRepository 玩家仓储
-   * @param {Object} productRepository 产品仓储
-   * @param {Object} marketRepository 市场仓储
-   * @param {Object} eventEmitter 事件发射器
+   * @param playerRepository 玩家仓储
+   * @param productRepository 产品仓储
+   * @param marketRepository 市场仓储
+   * @param eventEmitter 事件发射器
    */
-  constructor(playerRepository, productRepository, marketRepository, eventEmitter) {
+  constructor(
+    playerRepository: IPlayerRepository, 
+    productRepository: IProductRepository, 
+    marketRepository: IMarketRepository, 
+    eventEmitter: any
+  ) {
+    super();
     this.playerRepository = playerRepository;
     this.productRepository = productRepository;
     this.marketRepository = marketRepository;
@@ -26,12 +50,12 @@ export class MarketService {
   
   /**
    * 交易商品
-   * @param {string} productId 产品ID
-   * @param {number} quantity 数量
-   * @param {boolean} isBuying 是否为购买操作
-   * @returns {Promise<Object>} 交易结果
+   * @param productId 产品ID
+   * @param quantity 数量
+   * @param isBuying 是否为购买操作
+   * @returns 交易结果
    */
-  async tradeProduct(productId, quantity, isBuying) {
+  async tradeProduct(productId: string, quantity: number, isBuying: boolean): Promise<TradeResult> {
     return withErrorHandling(async () => {
       const player = await this.playerRepository.getPlayer();
       const product = await this.productRepository.getProductById(productId);
@@ -101,10 +125,10 @@ export class MarketService {
   
   /**
    * 更新市场价格
-   * @param {number} weekNumber 周数
-   * @returns {Promise<Object>} 更新后的价格
+   * @param weekNumber 周数
+   * @returns 更新后的价格
    */
-  async updateMarketPrices(weekNumber) {
+  async updateMarketPrices(weekNumber: number): Promise<any> {
     return withErrorHandling(async () => {
       const products = await this.productRepository.getAllProducts();
       const priceHistory = await this.marketRepository.getAllPrices();
@@ -132,11 +156,11 @@ export class MarketService {
   
   /**
    * 更新地点可用产品
-   * @param {string} locationId 地点ID
-   * @param {number} weekNumber 周数
-   * @returns {Promise<Array>} 可用产品列表
+   * @param locationId 地点ID
+   * @param weekNumber 周数
+   * @returns 可用产品列表
    */
-  async updateLocationProducts(locationId, weekNumber) {
+  async updateLocationProducts(locationId: string, weekNumber: number): Promise<any[]> {
     return withErrorHandling(async () => {
       const location = await this.marketRepository.getLocationById(locationId);
       if (!location) {
@@ -164,11 +188,11 @@ export class MarketService {
   
   /**
    * 变更当前地点
-   * @param {string} locationId 地点ID
-   * @param {number} weekNumber 当前周数
-   * @returns {Promise<Object>} 地点信息和可用产品
+   * @param locationId 地点ID
+   * @param weekNumber 当前周数
+   * @returns 地点信息和可用产品
    */
-  async changeLocation(locationId, weekNumber) {
+  async changeLocation(locationId: string, weekNumber: number): Promise<any> {
     return withErrorHandling(async () => {
       const player = await this.playerRepository.getPlayer();
       const location = await this.marketRepository.getLocationById(locationId);
@@ -204,9 +228,9 @@ export class MarketService {
   
   /**
    * 获取当前市场状态
-   * @returns {Promise<Object>} 市场状态
+   * @returns 市场状态
    */
-  async getMarketStatus() {
+  async getMarketStatus(): Promise<any> {
     return withErrorHandling(async () => {
       const currentLocation = await this.marketRepository.getCurrentLocation();
       const priceHistory = await this.marketRepository.getAllPrices();
@@ -221,4 +245,4 @@ export class MarketService {
   }
 }
 
-export default MarketService; 
+export default MarketService;

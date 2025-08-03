@@ -113,9 +113,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { usePlayerStore } from '@/stores/player';
-import { storeToRefs } from 'pinia';
+import { ref, onMounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { formatNumber, getHouseImagePath } from '@/infrastructure/utils';
 import {
@@ -128,13 +126,20 @@ import { useUiStore } from '@/stores/uiStore';
 import { useSaveStore } from '@/stores/persistence';
 import { getAllHouses } from '@/core/models/house';
 
+// ✅ 使用Service Composables替代直接Store访问
+import { usePlayerService } from '@/ui/composables';
+
 const { t } = useI18n();
 const gameStore = useGameCoreStore();
-const playerStore = usePlayerStore();
 const uiStore = useUiStore();
 
-// 从playerStore获取玩家金钱
-const { money: playerMoney } = storeToRefs(playerStore);
+// ✅ Service Composables
+const { 
+  player, 
+  playerMoney, 
+  purchaseHouse: purchaseHouseService, 
+  loadPlayer 
+} = usePlayerService();
 
 // 从房屋模型获取房屋数据
 const houses = ref([]);
@@ -198,21 +203,22 @@ const getHouseImage = (house) => {
   }
 };
 
-// 判断玩家是否能买得起
+// 判断玩家是否能买得起 - ✅ 使用Service层数据
 const canPlayerAfford = (house) => {
-  return playerStore.money >= house.price;
+  return playerMoney.value >= house.price;
 };
 
-// 检查房屋是否已被购买
+// 检查房屋是否已被购买 - ✅ 使用Service层数据
 const isHousePurchased = (houseId) => {
-  return playerStore.purchasedHouses.some(house => house.houseId === houseId);
+  const purchasedHouses = player.value?.purchasedHouses || [];
+  return purchasedHouses.some(house => house.houseId === houseId);
 };
 
 // 判断是否为重大购买（超过玩家当前资金的80%）
 // 移除未使用的计算属性
 // const isSignificantPurchase = computed(() => {
 //   if (!selectedHouse.value) return false;
-//   return selectedHouse.value.price > playerStore.money * 0.8;
+//   return selectedHouse.value.price > playerMoney.value * 0.8;
 // });
 
 // 打开购买模态框
@@ -223,8 +229,8 @@ const openBuyModal = (house) => {
       type: 'error',
       message: t('market.houseMarket.notEnoughMoney', {
         price: formatNumber(house.price),
-        money: formatNumber(playerStore.money),
-        shortfall: formatNumber(house.price - playerStore.money)
+        money: formatNumber(playerMoney.value),
+        shortfall: formatNumber(house.price - playerMoney.value)
       }),
       duration: 5000 // 显示时间稍长，让玩家有足够时间阅读
     });
@@ -241,18 +247,18 @@ const closeBuyModal = () => {
   selectedHouse.value = null;
 };
 
-// 购买房屋
-const purchaseHouse = () => {
+// 购买房屋 - ✅ 使用Service层方法
+const purchaseHouse = async () => {
   if (!selectedHouse.value) return;
 
   // 再次严格验证资金，防止在打开模态框后资金变动
-  if (playerStore.money < selectedHouse.value.price) {
+  if (playerMoney.value < selectedHouse.value.price) {
     uiStore.showToast({
       type: 'error',
       message: t('market.houseMarket.fundsChanged', {
         price: formatNumber(selectedHouse.value.price),
-        money: formatNumber(playerStore.money),
-        shortfall: formatNumber(selectedHouse.value.price - playerStore.money)
+        money: formatNumber(playerMoney.value),
+        shortfall: formatNumber(selectedHouse.value.price - playerMoney.value)
       }),
       duration: 5000
     });
@@ -261,19 +267,22 @@ const purchaseHouse = () => {
   }
 
   // 大额购买确认（超过玩家资金的90%）
-  if (selectedHouse.value.price > playerStore.money * 0.9) {
+  if (selectedHouse.value.price > playerMoney.value * 0.9) {
     if (!confirm(t('market.houseMarket.significantConfirm', {
-      percent: Math.round((selectedHouse.value.price / playerStore.money) * 100)
+      percent: Math.round((selectedHouse.value.price / playerMoney.value) * 100)
     }))) {
       closeBuyModal();
       return;
     }
   }
 
-  // 执行购买
-  const success = playerStore.purchaseHouse(selectedHouse.value);
+    // 执行购买 - ✅ 使用Service层的购买房屋方法
+  const success = await purchaseHouseService(selectedHouse.value);
 
   if (success) {
+    // ✅ 刷新玩家数据以反映购买后的变化
+    await loadPlayer();
+    
     // 尝试触发自动保存
     try {
       const saveStore = useSaveStore();

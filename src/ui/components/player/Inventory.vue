@@ -96,13 +96,17 @@ import { PriceTrend } from '@/core/services/priceSystem';
 import TradePanel from '@/ui/components/market/TradePanel.vue';
 import { formatNumber } from '@/infrastructure/utils';
 
-const { t } = useI18n();
-const gameStore = useGameStore();
+// ✅ 使用Service Composables替代直接Store访问
+import { usePlayerService, useMarketService } from '@/ui/composables';
 
-// 计算属性
-const player = computed(() => gameStore.player);
-// 修复：使用正确的方式获取playerInventory
-const playerInventory = computed(() => gameStore.player.inventory || []);
+const { t } = useI18n();
+const gameStore = useGameStore(); // 暂时保留用于价格数据
+
+// ✅ Service Composables
+const { player, playerInventory, loadPlayer } = usePlayerService();
+const { sellProduct: sellProductService, isLoading: isMarketLoading, error: marketError } = useMarketService();
+
+// 计算属性 - 混合使用Service和Store数据
 const currentLocation = computed(() => gameStore.currentLocation);
 
 // 响应式变量
@@ -255,9 +259,10 @@ const calculateChangePercent = (item) => {
   return ((currentPrice - purchasePrice) / purchasePrice) * 100;
 };
 
-const quickSell = (item) => {
+const quickSell = async (item) => {
   if (item.quantity > 0) {
-    const result = gameStore.sellProduct(item.productId, 1);
+    // ✅ 使用Service层的销售方法
+    const result = await sellProductService(item.productId, 1);
     
     if (result.success) {
       // 改进交易成功提示的格式，与市场界面一致
@@ -290,17 +295,21 @@ const quickSell = (item) => {
           showTransactionToast.value = false;
         }, 3000);
       });
+
+      // ✅ 刷新玩家数据
+      await loadPlayer();
     }
   }
 };
 
 // 添加快速卖出多个物品的方法
-const quickSellMultiple = (item, quantity) => {
+const quickSellMultiple = async (item, quantity) => {
   // 确保不会卖出超过拥有的数量
   const sellAmount = Math.min(item.quantity, quantity);
   
   if (sellAmount > 0) {
-    const result = gameStore.sellProduct(item.productId, sellAmount);
+    // ✅ 使用Service层的销售方法
+    const result = await sellProductService(item.productId, sellAmount);
     
     if (result.success) {
       // 改进交易成功提示的格式，与市场界面一致
@@ -333,6 +342,9 @@ const quickSellMultiple = (item, quantity) => {
           showTransactionToast.value = false;
         }, 3000);
       });
+
+      // ✅ 刷新玩家数据
+      await loadPlayer();
     }
   }
 };

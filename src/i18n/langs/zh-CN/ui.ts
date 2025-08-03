@@ -129,4 +129,4 @@ export default {
       }
     }
   }
-}; 
+} as const;

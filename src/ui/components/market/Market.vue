@@ -278,11 +278,29 @@ import PriceTrendComponent from './PriceTrend.vue';
 import MiniPriceChart from './MiniPriceChart.vue';
 import { formatNumber, formatPercentChange, getPriceChangeClass } from '../../../infrastructure/utils/formatUtils';
 
-const { t } = useI18n();
-const gameStore = useGameStore();
-const gameCoreStore = useGameCoreStore(); // 添加游戏核心存储
+// ✅ 使用 Service Composables 替代直接业务操作
+import { useMarketService, usePlayerService } from '@/ui/composables';
 
-// 计算属性
+const { t } = useI18n();
+const gameStore = useGameStore(); // 暂时保留用于数据读取
+const gameCoreStore = useGameCoreStore(); // 游戏核心存储
+
+// ✅ Service Composables - 用于业务操作
+const { 
+  buyProduct: buyProductService, 
+  sellProduct: sellProductService, 
+  isLoading: isMarketLoading, 
+  error: marketError 
+} = useMarketService();
+
+const { 
+  player: playerFromService, 
+  playerMoney, 
+  playerInventory: playerInventoryFromService, 
+  loadPlayer 
+} = usePlayerService();
+
+// 计算属性 - 混合使用Store数据（读取）和Service数据（写入）
 const locations = computed(() => gameStore.locations || []);
 const currentLocation = computed(() => gameStore.currentLocation || { id: '', name: '加载中...' });
 const availableProducts = computed(() => gameStore.availableProducts || []);
@@ -412,13 +430,13 @@ const getPriceHistory = (productId) => {
   return gameStore.productPrices?.[productId]?.history || [];
 };
 
-// 快速购买1个
-const quickBuy = (product) => {
+// 快速购买1个 - ✅ 使用Service Composables
+const quickBuy = async (product) => {
   if (!canPlayerBuy(product)) return;
 
   try {
-    // 调用游戏商店的购买方法，传递productId而不是整个product对象
-    const result = gameStore.buyProduct(product.id, 1);
+    // ✅ 使用Service层的购买方法
+    const result = await buyProductService(product.id, 1);
 
     if (result.success) {
       // 显示成功提示，带有产品图标和名称
@@ -440,8 +458,9 @@ const quickBuy = (product) => {
         }, 3000);
       });
 
-      // 强制刷新页面数据（购买成功后）
+      // ✅ 强制刷新页面数据（购买成功后）
       console.log('购买成功，强制刷新UI数据');
+      await loadPlayer(); // 刷新玩家数据
       nextTick(() => {
         // 这里可以触发其他需要更新的组件
       });
@@ -467,13 +486,13 @@ const quickBuy = (product) => {
   }
 };
 
-// 快速购买多个
-const quickBuyMultiple = (product, quantity) => {
+// 快速购买多个 - ✅ 使用Service Composables
+const quickBuyMultiple = async (product, quantity) => {
   if (!canPlayerBuy(product)) return;
 
   try {
-    // 调用游戏商店的购买方法
-    const result = gameStore.buyProduct(product.id, quantity);
+    // ✅ 使用Service层的购买方法
+    const result = await buyProductService(product.id, quantity);
 
     if (result.success) {
       // 显示成功提示
@@ -494,8 +513,9 @@ const quickBuyMultiple = (product, quantity) => {
         }, 3000);
       });
 
-      // 强制刷新页面数据（购买成功后）
+      // ✅ 强制刷新页面数据（购买成功后）
       console.log('批量购买成功，强制刷新UI数据');
+      await loadPlayer(); // 刷新玩家数据
       nextTick(() => {
         // 这里可以触发其他需要更新的组件
       });
@@ -521,13 +541,13 @@ const quickBuyMultiple = (product, quantity) => {
   }
 };
 
-// 快速出售1个
-const quickSell = (product) => {
+// 快速出售1个 - ✅ 使用Service Composables
+const quickSell = async (product) => {
   if (!canPlayerSell(product)) return;
 
   try {
-    // 调用游戏商店的出售方法
-    const result = gameStore.sellProduct(product.id, 1);
+    // ✅ 使用Service层的出售方法
+    const result = await sellProductService(product.id, 1);
 
     if (result.success) {
       // 显示成功提示，包含收入金额和利润信息
@@ -560,6 +580,9 @@ const quickSell = (product) => {
           showTransactionToast.value = false;
         }, 3000);
       });
+
+      // ✅ 刷新玩家数据
+      await loadPlayer();
     } else {
       // 显示失败提示
       transactionToastMessage.value = result.message || '出售失败';
@@ -582,13 +605,13 @@ const quickSell = (product) => {
   }
 };
 
-// 快速出售多个
-const quickSellMultiple = (product, quantity) => {
+// 快速出售多个 - ✅ 使用Service Composables
+const quickSellMultiple = async (product, quantity) => {
   if (!canPlayerSell(product)) return;
 
   try {
-    // 调用游戏商店的出售方法
-    const result = gameStore.sellProduct(product.id, quantity);
+    // ✅ 使用Service层的出售方法
+    const result = await sellProductService(product.id, quantity);
 
     if (result.success) {
       // 显示成功提示，包含收入金额和利润信息
@@ -621,6 +644,9 @@ const quickSellMultiple = (product, quantity) => {
           showTransactionToast.value = false;
         }, 3000);
       });
+
+      // ✅ 刷新玩家数据
+      await loadPlayer();
     } else {
       // 显示失败提示
       transactionToastMessage.value = result.message || '出售失败';

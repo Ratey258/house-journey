@@ -111,4 +111,4 @@ export default {
       achieved: '你达成了成就: {name}'
     }
   }
-}; 
+} as const;

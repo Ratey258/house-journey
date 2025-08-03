@@ -12,4 +12,4 @@ export default {
   ...events,
   ...ui,
   ...errors
-};
+} as const;

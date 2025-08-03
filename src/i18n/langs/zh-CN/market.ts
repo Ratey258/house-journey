@@ -208,4 +208,4 @@ export default {
       low: '低'
     }
   }
-};
+} as const;
