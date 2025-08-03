@@ -241,6 +241,9 @@ import { useEventStore } from '@/stores/events';
 import { useSaveStore } from '@/stores/persistence';
 import eventEmitter from '@/infrastructure/eventEmitter';
 
+// ✅ 引入Service Composables（用于少数需要的业务操作）
+import { useGameState } from '@/ui/composables';
+
 // Vue 3.5 性能优化：组件异步加载策略
 // 核心游戏组件 - 立即加载（用户立即可见）
 import PlayerInfo from '@/ui/components/player/PlayerInfo.vue';
@@ -264,6 +267,13 @@ const eventStore = useEventStore(); // 事件存储
 const settingsStore = useSettingsStore();
 const uiStore = useUiStore();
 const { t } = useI18n();
+
+// ✅ Service Composables - 用于统一状态管理
+const { 
+  currentWeek: currentWeekFromService, 
+  maxWeeks: maxWeeksFromService,
+  gameOver: gameOverFromService 
+} = useGameState();
 // Vue 3.5 新特性：类型安全的模板引用
 const eventModal = useTemplateRef('eventModal');
 const tutorialSystem = useTemplateRef('tutorialSystem');

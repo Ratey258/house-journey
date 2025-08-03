@@ -32,8 +32,8 @@
                 <span class="card-icon sparkle">💹</span>
                 <span class="card-title">{{ $t('bank.currentDeposit') }}</span>
               </div>
-              <div class="card-amount deposit-value">¥{{ formatNumber(playerStore.bankDeposit) }}</div>
-              <div class="card-info">{{ $t('bank.depositInterest') }}: {{ formatPercent(playerStore.depositInterestRate) }}</div>
+              <div class="card-amount deposit-value">¥{{ formatNumber(player?.bankDeposit || 0) }}</div>
+              <div class="card-info">{{ $t('bank.depositInterest') }}: {{ formatPercent(player?.depositInterestRate || 0.05) }}</div>
             </div>
 
             <div class="overview-card debt-card">
@@ -41,8 +41,8 @@
                 <span class="card-icon sparkle">💸</span>
                 <span class="card-title">{{ $t('playerInfo.debt') }}</span>
               </div>
-              <div class="card-amount debt-value">¥{{ formatNumber(playerStore.debt) }}</div>
-              <div class="card-info">{{ $t('bank.loanInterest') }}: {{ formatPercent(playerStore.loanInterestRate) }}</div>
+              <div class="card-amount debt-value">¥{{ formatNumber(player?.debt || 0) }}</div>
+              <div class="card-info">{{ $t('bank.loanInterest') }}: {{ formatPercent(player?.loanInterestRate || 0.08) }}</div>
             </div>
           </div>
 
@@ -51,12 +51,12 @@
             <div class="info-item pulse-hover">
               <span class="info-icon">💰</span>
               <span class="info-label">{{ $t('playerInfo.money') }}:</span>
-              <span class="info-value money-value">¥{{ formatNumber(playerStore.money) }}</span>
+              <span class="info-value money-value">¥{{ formatNumber(player?.money || 0) }}</span>
             </div>
             <div class="info-item pulse-hover">
               <span class="info-icon">📊</span>
               <span class="info-label">{{ $t('bank.availableLoan') }}:</span>
-              <span class="info-value available-loan-value">¥{{ formatNumber(playerStore.availableLoanAmount) }}</span>
+              <span class="info-value available-loan-value">¥{{ formatNumber(player?.availableLoanAmount || 0) }}</span>
             </div>
           </div>
 
@@ -107,26 +107,26 @@
                 <input
                   type="range"
                   min="0"
-                  :max="playerStore.money"
+                  :max="player?.money || 0"
                   v-model="depositAmount"
                   step="1"
                   class="styled-slider deposit-slider"
                 />
                 <div class="amount-actions">
                   <button class="amount-btn" @click="depositAmount = 0">0</button>
-                  <button class="amount-btn" @click="depositAmount = Math.floor(playerStore.money / 2)">50%</button>
-                  <button class="amount-btn" @click="depositAmount = playerStore.money">全部</button>
+                  <button class="amount-btn" @click="depositAmount = Math.floor(player?.money || 0 / 2)">50%</button>
+                  <button class="amount-btn" @click="depositAmount = player?.money || 0">全部</button>
                 </div>
               </div>
 
               <div class="summary-info no-border">
                 <div class="summary-row">
                   <div>{{ $t('bank.weeklyInterest') }}</div>
-                  <div>¥{{ formatNumber(Math.floor(Number(depositAmount) * playerStore.depositInterestRate)) }}</div>
+                  <div>¥{{ formatNumber(Math.floor(Number(depositAmount) * player?.depositInterestRate || 0.05)) }}</div>
                 </div>
                 <div class="summary-row">
                   <div>{{ $t('bank.remainingMoney') }}</div>
-                  <div>¥{{ formatNumber(playerStore.money - Number(depositAmount)) }}</div>
+                  <div>¥{{ formatNumber(player?.money || 0 - Number(depositAmount)) }}</div>
                 </div>
               </div>
 
@@ -152,27 +152,27 @@
                 <input
                   type="range"
                   min="0"
-                  :max="Math.max(playerStore.bankDeposit, 1)"
+                  :max="Math.max(player?.bankDeposit || 0, 1)"
                   v-model="withdrawAmount"
                   step="1"
                   class="styled-slider withdraw-slider"
-                  :disabled="playerStore.bankDeposit <= 0"
+                  :disabled="player?.bankDeposit || 0 <= 0"
                 />
                 <div class="amount-actions">
                   <button class="amount-btn" @click="withdrawAmount = 0">0</button>
-                  <button class="amount-btn" @click="withdrawAmount = Math.floor(playerStore.bankDeposit / 2)">50%</button>
-                  <button class="amount-btn" @click="withdrawAmount = playerStore.bankDeposit">全部</button>
+                  <button class="amount-btn" @click="withdrawAmount = Math.floor(player?.bankDeposit || 0 / 2)">50%</button>
+                  <button class="amount-btn" @click="withdrawAmount = player?.bankDeposit || 0">全部</button>
                 </div>
               </div>
 
               <div class="summary-info no-border">
                 <div class="summary-row">
                   <div>{{ $t('bank.remainingDeposit') }}</div>
-                  <div>¥{{ formatNumber(playerStore.bankDeposit - Number(withdrawAmount)) }}</div>
+                  <div>¥{{ formatNumber(player?.bankDeposit || 0 - Number(withdrawAmount)) }}</div>
                 </div>
                 <div class="summary-row">
                   <div>{{ $t('bank.remainingMoney') }}</div>
-                  <div>¥{{ formatNumber(playerStore.money + Number(withdrawAmount)) }}</div>
+                  <div>¥{{ formatNumber(player?.money || 0 + Number(withdrawAmount)) }}</div>
                 </div>
               </div>
 
@@ -198,27 +198,27 @@
                 <input
                   type="range"
                   min="0"
-                  :max="Math.max(playerStore.availableLoanAmount, 1)"
+                  :max="Math.max(player?.availableLoanAmount || 0, 1)"
                   v-model="loanAmount"
                   step="1"
                   class="styled-slider loan-slider"
-                  :disabled="playerStore.availableLoanAmount <= 0"
+                  :disabled="player?.availableLoanAmount || 0 <= 0"
                 />
                 <div class="amount-actions">
                   <button class="amount-btn" @click="loanAmount = 0">0</button>
-                  <button class="amount-btn" @click="loanAmount = Math.floor(playerStore.availableLoanAmount / 2)">50%</button>
-                  <button class="amount-btn" @click="loanAmount = playerStore.availableLoanAmount">全部</button>
+                  <button class="amount-btn" @click="loanAmount = Math.floor(player?.availableLoanAmount || 0 / 2)">50%</button>
+                  <button class="amount-btn" @click="loanAmount = player?.availableLoanAmount || 0">全部</button>
                 </div>
               </div>
 
               <div class="summary-info no-border">
                 <div class="summary-row">
                   <div>{{ $t('bank.weeklyInterest') }}</div>
-                  <div>¥{{ formatNumber(Math.floor(Number(loanAmount) * playerStore.loanInterestRate)) }}</div>
+                  <div>¥{{ formatNumber(Math.floor(Number(loanAmount) * player?.loanInterestRate || 0.08)) }}</div>
                 </div>
                 <div class="summary-row">
                   <div>{{ $t('bank.remainingLoan') }}</div>
-                  <div>¥{{ formatNumber(playerStore.debt + Number(loanAmount)) }}</div>
+                  <div>¥{{ formatNumber(player?.debt || 0 + Number(loanAmount)) }}</div>
                 </div>
               </div>
 
@@ -244,26 +244,26 @@
                 <input
                   type="range"
                   min="0"
-                  :max="Math.min(playerStore.money, playerStore.debt)"
+                  :max="Math.min(player?.money || 0, player?.debt || 0)"
                   v-model="repayAmount"
                   step="1"
                   class="styled-slider repay-slider"
                 />
                 <div class="amount-actions">
                   <button class="amount-btn" @click="repayAmount = 0">0</button>
-                  <button class="amount-btn" @click="repayAmount = Math.floor(Math.min(playerStore.money, playerStore.debt) / 2)">50%</button>
-                  <button class="amount-btn" @click="repayAmount = Math.min(playerStore.money, playerStore.debt)">全部</button>
+                  <button class="amount-btn" @click="repayAmount = Math.floor(Math.min(player?.money || 0, player?.debt || 0) / 2)">50%</button>
+                  <button class="amount-btn" @click="repayAmount = Math.min(player?.money || 0, player?.debt || 0)">全部</button>
                 </div>
               </div>
 
               <div class="summary-info no-border">
                 <div class="summary-row">
                   <div>{{ $t('bank.remainingDebt') }}</div>
-                  <div>¥{{ formatNumber(Math.max(0, playerStore.debt - Number(repayAmount))) }}</div>
+                  <div>¥{{ formatNumber(Math.max(0, player?.debt || 0 - Number(repayAmount))) }}</div>
                 </div>
                 <div class="summary-row">
                   <div>{{ $t('bank.remainingMoney') }}</div>
-                  <div>¥{{ formatNumber(Math.max(0, playerStore.money - Number(repayAmount))) }}</div>
+                  <div>¥{{ formatNumber(Math.max(0, player?.money || 0 - Number(repayAmount))) }}</div>
                 </div>
               </div>
 
@@ -286,14 +286,28 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue';
-import { usePlayerStore } from '@/stores/player';
+import { ref, onMounted, nextTick, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { formatNumber } from '@/infrastructure/utils';
 
-// 获取需要的store和工具
-const playerStore = usePlayerStore();
+// ✅ 使用Service Composables替代直接Store访问
+import { usePlayerService } from '@/ui/composables';
+
 const { t } = useI18n();
+
+// ✅ Service Composables
+const { 
+  player,
+  playerMoney,
+  playerDebt,
+  isLoading: isPlayerLoading,
+  error: playerError,
+  depositToBank: depositToBankService,
+  withdrawFromBank: withdrawFromBankService,
+  takeLoan: takeLoanService,
+  repayDebt: repayDebtService,
+  loadPlayer
+} = usePlayerService();
 
 // 定义组件属性和事件
 defineProps({
@@ -393,20 +407,23 @@ const animateNumberChange = (element, startValue, endValue, duration = 500) => {
 };
 
 // 增强存款操作，添加动画反馈
-const makeDeposit = () => {
+const makeDeposit = async () => {
   const amount = Number(depositAmount.value);
   if (amount <= 0) return;
 
   // 获取相关元素
   const depositValueEl = document.querySelector('.deposit-value');
   const moneyValueEl = document.querySelector('.money-value');
-  const oldDepositValue = playerStore.bankDeposit;
-  const oldMoneyValue = playerStore.money;
+  const oldDepositValue = player.value?.bankDeposit || 0;
+  const oldMoneyValue = player.value?.money || 0;
 
-  if (playerStore.depositToBank(amount)) {
-    // 动画过渡数值变化
-    animateNumberChange(depositValueEl, oldDepositValue, playerStore.bankDeposit);
-    animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
+  // ✅ 使用Service层的存款方法
+  const success = await depositToBankService(amount);
+  if (success) {
+    // ✅ 刷新玩家数据后更新动画
+    await loadPlayer();
+    animateNumberChange(depositValueEl, oldDepositValue, player.value?.bankDeposit || 0);
+    animateNumberChange(moneyValueEl, oldMoneyValue, player.value?.money || 0);
 
     // 添加成功反馈动画
     depositValueEl.classList.add('value-change-success');
@@ -428,20 +445,23 @@ const makeDeposit = () => {
 };
 
 // 增强取款操作，添加动画反馈
-const makeWithdrawal = () => {
+const makeWithdrawal = async () => {
   const amount = Number(withdrawAmount.value);
   if (amount <= 0) return;
 
   // 获取相关元素
   const depositValueEl = document.querySelector('.deposit-value');
   const moneyValueEl = document.querySelector('.money-value');
-  const oldDepositValue = playerStore.bankDeposit;
-  const oldMoneyValue = playerStore.money;
+  const oldDepositValue = player.value?.bankDeposit || 0;
+  const oldMoneyValue = player.value?.money || 0;
 
-  if (playerStore.withdrawFromBank(amount)) {
-    // 动画过渡数值变化
-    animateNumberChange(depositValueEl, oldDepositValue, playerStore.bankDeposit);
-    animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
+  // ✅ 使用Service层的取款方法
+  const success = await withdrawFromBankService(amount);
+  if (success) {
+    // ✅ 刷新玩家数据后更新动画
+    await loadPlayer();
+    animateNumberChange(depositValueEl, oldDepositValue, player.value?.bankDeposit || 0);
+    animateNumberChange(moneyValueEl, oldMoneyValue, player.value?.money || 0);
 
     // 添加成功反馈动画
     moneyValueEl.classList.add('value-change-success');
@@ -463,20 +483,23 @@ const makeWithdrawal = () => {
 };
 
 // 增强贷款操作，添加动画反馈
-const takeLoan = () => {
+const takeLoan = async () => {
   const amount = Number(loanAmount.value);
   if (amount <= 0) return;
 
   // 获取相关元素
   const debtValueEl = document.querySelector('.debt-value');
   const moneyValueEl = document.querySelector('.money-value');
-  const oldDebtValue = playerStore.debt;
-  const oldMoneyValue = playerStore.money;
+  const oldDebtValue = player.value?.debt || 0;
+  const oldMoneyValue = player.value?.money || 0;
 
-  if (playerStore.takeLoan(amount)) {
-    // 动画过渡数值变化
-    animateNumberChange(debtValueEl, oldDebtValue, playerStore.debt);
-    animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
+  // ✅ 使用Service层的贷款方法
+  const success = await takeLoanService(amount);
+  if (success) {
+    // ✅ 刷新玩家数据后更新动画
+    await loadPlayer();
+    animateNumberChange(debtValueEl, oldDebtValue, player.value?.debt || 0);
+    animateNumberChange(moneyValueEl, oldMoneyValue, player.value?.money || 0);
 
     // 添加成功反馈动画
     moneyValueEl.classList.add('value-change-success');
@@ -498,20 +521,23 @@ const takeLoan = () => {
 };
 
 // 增强还款操作，添加动画反馈
-const repayLoan = () => {
+const repayLoan = async () => {
   const amount = Number(repayAmount.value);
   if (amount <= 0) return;
 
   // 获取相关元素
   const debtValueEl = document.querySelector('.debt-value');
   const moneyValueEl = document.querySelector('.money-value');
-  const oldDebtValue = playerStore.debt;
-  const oldMoneyValue = playerStore.money;
+  const oldDebtValue = player.value?.debt || 0;
+  const oldMoneyValue = player.value?.money || 0;
 
-  if (playerStore.repayDebt(amount)) {
-    // 动画过渡数值变化
-    animateNumberChange(debtValueEl, oldDebtValue, playerStore.debt);
-    animateNumberChange(moneyValueEl, oldMoneyValue, playerStore.money);
+  // ✅ 使用Service层的还债方法
+  const success = await repayDebtService(amount);
+  if (success) {
+    // ✅ 刷新玩家数据后更新动画
+    await loadPlayer();
+    animateNumberChange(debtValueEl, oldDebtValue, player.value?.debt || 0);
+    animateNumberChange(moneyValueEl, oldMoneyValue, player.value?.money || 0);
 
     // 添加成功反馈动画
     debtValueEl.classList.add('value-change-success');
@@ -576,7 +602,7 @@ watch(() => depositAmount.value, (newValue) => {
   nextTick(() => {
     const slider = document.querySelector('.deposit-slider');
     if (slider) {
-      updateSliderBackground(slider, Number(newValue), playerStore.money, 'deposit');
+      updateSliderBackground(slider, Number(newValue), player?.money || 0, 'deposit');
     }
   });
 });
@@ -586,7 +612,7 @@ watch(() => withdrawAmount.value, (newValue) => {
   nextTick(() => {
     const slider = document.querySelector('.withdraw-slider');
     if (slider) {
-      updateSliderBackground(slider, Number(newValue), playerStore.bankDeposit, 'withdraw');
+      updateSliderBackground(slider, Number(newValue), player?.bankDeposit || 0, 'withdraw');
     }
   });
 });
@@ -596,7 +622,7 @@ watch(() => loanAmount.value, (newValue) => {
   nextTick(() => {
     const slider = document.querySelector('.loan-slider');
     if (slider) {
-      updateSliderBackground(slider, Number(newValue), playerStore.availableLoanAmount, 'loan');
+      updateSliderBackground(slider, Number(newValue), player?.availableLoanAmount || 0, 'loan');
     }
   });
 });
@@ -606,7 +632,7 @@ watch(() => repayAmount.value, (newValue) => {
   nextTick(() => {
     const slider = document.querySelector('.repay-slider');
     if (slider) {
-      const maxAmount = Math.min(playerStore.money, playerStore.debt);
+      const maxAmount = Math.min(player?.money || 0, player?.debt || 0);
       updateSliderBackground(slider, Number(newValue), maxAmount, 'repay');
     }
   });
@@ -617,10 +643,10 @@ watch(() => activeTab.value, () => {
   nextTick(() => {
     // 初始化当前标签页的滑块
     const sliders = {
-      deposit: { slider: '.deposit-slider', value: depositAmount.value, max: playerStore.money, type: 'deposit' },
-      withdraw: { slider: '.withdraw-slider', value: withdrawAmount.value, max: playerStore.bankDeposit, type: 'withdraw' },
-      loan: { slider: '.loan-slider', value: loanAmount.value, max: playerStore.availableLoanAmount, type: 'loan' },
-      repay: { slider: '.repay-slider', value: repayAmount.value, max: Math.min(playerStore.money, playerStore.debt), type: 'repay' }
+      deposit: { slider: '.deposit-slider', value: depositAmount.value, max: player?.money || 0, type: 'deposit' },
+      withdraw: { slider: '.withdraw-slider', value: withdrawAmount.value, max: player?.bankDeposit || 0, type: 'withdraw' },
+      loan: { slider: '.loan-slider', value: loanAmount.value, max: player?.availableLoanAmount || 0, type: 'loan' },
+      repay: { slider: '.repay-slider', value: repayAmount.value, max: Math.min(player?.money || 0, player?.debt || 0), type: 'repay' }
     };
 
     const current = sliders[activeTab.value];
@@ -638,10 +664,10 @@ onMounted(() => {
   nextTick(() => {
     // 初始化当前标签页的滑块
     const sliders = {
-      deposit: { slider: '.deposit-slider', value: depositAmount.value, max: playerStore.money, type: 'deposit' },
-      withdraw: { slider: '.withdraw-slider', value: withdrawAmount.value, max: playerStore.bankDeposit, type: 'withdraw' },
-      loan: { slider: '.loan-slider', value: loanAmount.value, max: playerStore.availableLoanAmount, type: 'loan' },
-      repay: { slider: '.repay-slider', value: repayAmount.value, max: Math.min(playerStore.money, playerStore.debt), type: 'repay' }
+      deposit: { slider: '.deposit-slider', value: depositAmount.value, max: player?.money || 0, type: 'deposit' },
+      withdraw: { slider: '.withdraw-slider', value: withdrawAmount.value, max: player?.bankDeposit || 0, type: 'withdraw' },
+      loan: { slider: '.loan-slider', value: loanAmount.value, max: player?.availableLoanAmount || 0, type: 'loan' },
+      repay: { slider: '.repay-slider', value: repayAmount.value, max: Math.min(player?.money || 0, player?.debt || 0), type: 'repay' }
     };
 
     const current = sliders[activeTab.value];

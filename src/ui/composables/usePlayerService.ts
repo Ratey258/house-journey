@@ -126,6 +126,88 @@ export function usePlayerService(): UsePlayerServiceReturn {
     error.value = null;
   };
 
+  /**
+   * 银行操作方法
+   */
+  
+  // 存款到银行
+  const depositToBank = async (amount: number): Promise<boolean> => {
+    if (!player.value) return false;
+    
+    try {
+      // 调用玩家实体的存款方法（如果Store有的话，或者直接操作数据）
+      if (player.value.money >= amount) {
+        player.value.money -= amount;
+        player.value.bankDeposit = (player.value.bankDeposit || 0) + amount;
+        await savePlayer();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '存款失败';
+      return false;
+    }
+  };
+
+  // 从银行取款
+  const withdrawFromBank = async (amount: number): Promise<boolean> => {
+    if (!player.value) return false;
+    
+    try {
+      const bankDeposit = player.value.bankDeposit || 0;
+      if (bankDeposit >= amount) {
+        player.value.money += amount;
+        player.value.bankDeposit = bankDeposit - amount;
+        await savePlayer();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '取款失败';
+      return false;
+    }
+  };
+
+  // 贷款
+  const takeLoan = async (amount: number): Promise<boolean> => {
+    if (!player.value) return false;
+    
+    try {
+      const availableLoan = player.value.availableLoanAmount || 0;
+      if (availableLoan >= amount) {
+        player.value.money += amount;
+        player.value.debt = (player.value.debt || 0) + amount;
+        player.value.availableLoanAmount = availableLoan - amount;
+        await savePlayer();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '贷款失败';
+      return false;
+    }
+  };
+
+  // 还债
+  const repayDebt = async (amount: number): Promise<boolean> => {
+    if (!player.value) return false;
+    
+    try {
+      const debt = player.value.debt || 0;
+      if (player.value.money >= amount && debt >= amount) {
+        player.value.money -= amount;
+        player.value.debt = debt - amount;
+        player.value.availableLoanAmount = (player.value.availableLoanAmount || 0) + amount;
+        await savePlayer();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '还债失败';
+      return false;
+    }
+  };
+
   return {
     // 状态
     player,
@@ -142,6 +224,12 @@ export function usePlayerService(): UsePlayerServiceReturn {
     loadPlayer,
     savePlayer,
     refreshPlayer,
+    
+    // 银行操作方法
+    depositToBank,
+    withdrawFromBank,
+    takeLoan,
+    repayDebt,
     
     // 工具方法
     clearError
