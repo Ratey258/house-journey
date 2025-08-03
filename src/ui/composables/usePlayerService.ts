@@ -134,16 +134,28 @@ export function usePlayerService(): UsePlayerServiceReturn {
   const depositToBank = async (amount: number): Promise<boolean> => {
     if (!player.value) return false;
     
-    try {
-      // 调用玩家实体的存款方法（如果Store有的话，或者直接操作数据）
-      if (player.value.money >= amount) {
-        player.value.money -= amount;
-        player.value.bankDeposit = (player.value.bankDeposit || 0) + amount;
-        await savePlayer();
-        return true;
-      }
+    // 检查资金是否足够
+    if (player.value.money < amount) {
       return false;
+    }
+    
+    // 保存原始值，以便在失败时回滚
+    const originalMoney = player.value.money;
+    const originalDeposit = player.value.bankDeposit || 0;
+    
+    try {
+      // 先修改数据
+      player.value.money -= amount;
+      player.value.bankDeposit = originalDeposit + amount;
+      
+      // 保存到存储
+      await savePlayer();
+      return true;
     } catch (err) {
+      // 回滚数据
+      player.value.money = originalMoney;
+      player.value.bankDeposit = originalDeposit;
+      
       error.value = err instanceof Error ? err.message : '存款失败';
       return false;
     }
