@@ -1,0 +1,127 @@
+/**
+ * CSS变量定义
+ * FSD架构 - Shared层样式变量
+ */
+
+:root {
+  /* 主题色彩 */
+  --color-primary: #3498db;
+  --color-primary-dark: #2980b9;
+  --color-primary-light: #ebf5ff;
+  --color-primary-rgb: 52, 152, 219;
+
+  /* 状态色彩 */
+  --color-success: #27ae60;
+  --color-success-light: #d5f4e6;
+  --color-warning: #f39c12;
+  --color-warning-light: #fef9e7;
+  --color-error: #e74c3c;
+  --color-error-light: #fdf2f2;
+  --color-error-dark: #c0392b;
+  --color-info: #17a2b8;
+  --color-info-light: #d1ecf1;
+
+  /* 背景色彩 */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f8f9fa;
+  --color-bg-tertiary: #e9ecef;
+  --color-bg-hover: #f1f3f4;
+
+  /* 文字色彩 */
+  --color-text-primary: #212529;
+  --color-text-secondary: #6c757d;
+  --color-text-tertiary: #adb5bd;
+  --color-text-disabled: #dee2e6;
+
+  /* 边框色彩 */
+  --color-border: #dee2e6;
+  --color-border-light: #f1f3f4;
+  --color-border-dark: #adb5bd;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.2);
+
+  /* 圆角 */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* 间距 */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* 字体大小 */
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-md: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.25rem;
+  --font-2xl: 1.5rem;
+  --font-3xl: 2rem;
+
+  /* 过渡动画 */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+
+  /* Z-index层级 */
+  --z-dropdown: 1000;
+  --z-modal: 1050;
+  --z-tooltip: 1080;
+  --z-toast: 1090;
+}
+
+/* 深色主题 */
+[data-theme="dark"] {
+  --color-bg-primary: #1a1a2e;
+  --color-bg-secondary: #16213e;
+  --color-bg-tertiary: #0f172a;
+  --color-bg-hover: #1e293b;
+
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #cbd5e1;
+  --color-text-tertiary: #94a3b8;
+  --color-text-disabled: #64748b;
+
+  --color-border: #334155;
+  --color-border-light: #475569;
+  --color-border-dark: #1e293b;
+
+  --color-primary-light: #1e3a8a;
+}
+
+/* 浅色主题 */
+[data-theme="light"] {
+  /* 默认就是浅色主题，无需重新定义 */
+}
+
+/* 高对比度主题 */
+@media (prefers-contrast: high) {
+  :root {
+    --color-text-primary: #000000;
+    --color-text-secondary: #333333;
+    --color-border: #666666;
+  }
+}
+
+/* 减少动画的用户偏好 */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0s;
+    --transition-normal: 0s;
+    --transition-slow: 0s;
+  }
+  
+  * {
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+  }
+}

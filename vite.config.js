@@ -55,7 +55,7 @@ export default defineConfig(({ mode }) => {
       // 预加载模块以提升性能
       warmup: {
         clientFiles: [
-          './src/main.ts',
+          './src/app/main.ts',
           './src/App.vue',
           './src/stores/index.ts'
         ]
