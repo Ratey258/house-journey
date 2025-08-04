@@ -223,11 +223,11 @@ export const usePlayerStore = defineStore('player', () => {
   /**
    * 更新金钱 - 安全版本
    */
-  const updateMoney = (amount: number): void => {
+  const updateMoney = (amount: number): boolean => {
     const newAmount = money.value + amount;
     if (newAmount < 0) {
       console.warn('PlayerStore - 资金不足，无法扣除');
-      return;
+      return false;
     }
 
     money.value = newAmount;
@@ -236,6 +236,8 @@ export const usePlayerStore = defineStore('player', () => {
     if (amount > 0) {
       statistics.totalProfit += amount;
     }
+
+    return true;
   };
 
   /**

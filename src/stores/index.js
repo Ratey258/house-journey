@@ -114,8 +114,10 @@ export const useGameStore = defineStore('gameCompat', () => {
     // 使用playerStore的方法来安全地更新金钱
     const moneyUpdateResult = player.updateMoney(-totalCost);
     if (!moneyUpdateResult) {
-      console.error('无法更新玩家金钱');
-      return { success: false, message: '更新金钱失败' };
+      console.error('无法更新玩家金钱 - 资金不足');
+      // 如果金钱更新失败，需要回滚库存操作
+      inventoryActions.removeFromInventory(product.id, quantity);
+      return { success: false, message: '资金不足' };
     }
 
     // 更新统计信息 (通过增加统计的方式)
@@ -248,8 +250,8 @@ export const useGameStore = defineStore('gameCompat', () => {
     // 使用playerStore的方法来安全地更新金钱和债务
     const moneyUpdateResult = player.updateMoney(-amount);
     if (!moneyUpdateResult) {
-      console.error('无法更新玩家金钱');
-      return { success: false, message: '更新金钱失败' };
+      console.error('无法更新玩家金钱 - 资金不足');
+      return { success: false, message: '资金不足' };
     }
 
     // 这里假设有repayLoan方法，如果没有则需要添加
@@ -285,8 +287,8 @@ export const useGameStore = defineStore('gameCompat', () => {
     // 使用playerStore的方法来安全地更新金钱
     const moneyUpdateResult = player.updateMoney(-house.price);
     if (!moneyUpdateResult) {
-      console.error('无法更新玩家金钱');
-      return { success: false, message: '更新金钱失败' };
+      console.error('无法更新玩家金钱 - 资金不足');
+      return { success: false, message: '资金不足' };
     }
 
     // 如果有purchaseHouse方法，使用它；否则直接修改
@@ -332,8 +334,10 @@ export const useGameStore = defineStore('gameCompat', () => {
     // 使用playerStore的方法来安全地更新金钱
     const moneyUpdateResult = player.updateMoney(-totalCost);
     if (!moneyUpdateResult) {
-      console.error('无法更新玩家金钱');
-      return { success: false, message: '更新金钱失败' };
+      console.error('无法更新玩家金钱 - 资金不足');
+      // 如果金钱更新失败，需要回滚库存操作
+      inventoryActions.removeFromInventory(product.id, quantity);
+      return { success: false, message: '资金不足' };
     }
 
     player.statistics.transactionCount += 1;
