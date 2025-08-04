@@ -144,7 +144,7 @@ export const useInventoryActions = () => {
     const product = { ...item, quantity };
 
     // 使用playerStore的方法来安全地移除库存
-    const result = playerStore.removeInventoryItem(inventoryIndex, quantity);
+    const result = playerStore.removeInventoryItem(item.productId, quantity);
 
     if (!result) {
       console.error('InventoryActions - 无法从玩家库存移除物品');
