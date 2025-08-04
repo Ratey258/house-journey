@@ -479,8 +479,9 @@ export const useEventStore = defineStore('event', {
       // 处理背包容量变化
       if (option.effects && option.effects.capacity && option.effects.capacity > 0) {
         console.log('EventState - 背包容量增加:', option.effects.capacity);
-        // 直接使用option.effects.capacity的值，而不是两倍的值
-        playerData.capacity = playerData.capacity + option.effects.capacity;
+        // 兼容Vue 3响应式系统 - 正确处理ref对象
+        const currentCapacity = this._getReactiveValue(playerData.capacity);
+        this._setReactiveValue(playerData, 'capacity', currentCapacity + option.effects.capacity);
 
         // 添加到应用效果列表
         if (!processedResult.appliedEffects.some(e => e.type === 'capacity')) {
@@ -495,14 +496,25 @@ export const useEventStore = defineStore('event', {
       // 处理属性变化
       if (option.effects && option.effects.attributes) {
         console.log('EventState - 玩家属性变化:', option.effects.attributes);
-        if (!playerData.attributes) {
-          playerData.attributes = {};
+        // 兼容Vue 3响应式系统 - 正确处理attributes对象
+        let currentAttributes = this._getReactiveValue(playerData.attributes);
+        if (!currentAttributes) {
+          currentAttributes = {};
+          this._setReactiveValue(playerData, 'attributes', currentAttributes);
         }
 
         // 应用每个属性变化
         for (const [key, value] of Object.entries(option.effects.attributes)) {
-          const oldValue = playerData.attributes[key];
-          playerData.attributes[key] = value;
+          const oldValue = currentAttributes[key];
+
+          // 如果attributes是响应式对象，直接设置属性
+          if (currentAttributes && typeof currentAttributes === 'object') {
+            currentAttributes[key] = value;
+          } else {
+            // 重新设置整个attributes对象
+            const newAttributes = { ...currentAttributes, [key]: value };
+            this._setReactiveValue(playerData, 'attributes', newAttributes);
+          }
 
           // 添加到应用效果列表
           processedResult.appliedEffects.push({
@@ -615,6 +627,38 @@ export const useEventStore = defineStore('event', {
       });
 
       return { total, byType };
+    },
+
+    /**
+     * 获取响应式值 - 兼容Vue 3的ref和reactive
+     * @param {any} value 可能是ref、reactive或普通值
+     * @returns {any} 实际值
+     */
+    _getReactiveValue(value) {
+      // 检查是否是Vue 3的ref对象
+      if (value && typeof value === 'object' && 'value' in value && typeof value.value !== 'undefined') {
+        return value.value;
+      }
+      // 普通值直接返回
+      return value;
+    },
+
+    /**
+     * 设置响应式值 - 兼容Vue 3的ref和reactive
+     * @param {Object} target 目标对象
+     * @param {string} key 属性名
+     * @param {any} newValue 新值
+     */
+    _setReactiveValue(target, key, newValue) {
+      const property = target[key];
+
+      // 检查是否是Vue 3的ref对象
+      if (property && typeof property === 'object' && 'value' in property && typeof property.value !== 'undefined') {
+        property.value = newValue;
+      } else {
+        // 普通对象或reactive对象
+        target[key] = newValue;
+      }
     }
   }
 });

@@ -2,6 +2,15 @@ import { defineStore } from 'pinia';
 import { ref, computed, reactive, readonly } from 'vue';
 import i18n from '../../i18n';
 
+// 响应式数据设置辅助函数
+function setReactiveValue(obj: any, key: string, value: any) {
+  if (obj && typeof obj[key] === 'object' && 'value' in obj[key]) {
+    obj[key].value = value;
+  } else {
+    obj[key] = value;
+  }
+}
+
 /**
  * 玩家状态类型定义 - Pinia 3.0 增强的TypeScript支持
  */
@@ -121,7 +130,7 @@ export const usePlayerStore = defineStore('player', () => {
 
     try {
       // 重置所有状态
-      name.value = playerName || i18n.global.t('system.defaultPlayerName');
+      setReactiveValue({ name }, 'name', playerName || i18n.global.t('system.defaultPlayerName'));
       money.value = 2000;
       debt.value = 5000;
       loanPrincipal.value = 5000;

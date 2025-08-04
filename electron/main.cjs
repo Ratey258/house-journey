@@ -5,6 +5,29 @@ const Store = require('electron-store');
 const { setupAutoUpdater } = require('./updater.cjs');
 const pkg = require('../package.json');
 
+// 初始化 electron-log
+const log = require('electron-log');
+
+// 配置 electron-log
+log.transports.file.level = 'info';
+log.transports.console.level = 'debug';
+log.transports.file.maxSize = 5 * 1024 * 1024; // 5MB
+
+// 设置日志文件路径
+if (app.isPackaged) {
+  log.transports.file.resolvePath = () => path.join(app.getPath('userData'), 'logs', 'main.log');
+} else {
+  log.transports.file.resolvePath = () => path.join(__dirname, '..', 'logs', 'main.log');
+}
+
+// 创建日志目录
+const logDir = path.dirname(log.transports.file.getFile().path);
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+}
+
+console.log = log.info; // 重定向 console.log 到 electron-log
+
 // 全局变量
 let mainWindow = null;
 let splashScreen = null;

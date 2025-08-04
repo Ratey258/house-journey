@@ -730,11 +730,12 @@ export class EventSystem {
       // 检查是否为百分比变化（大于-1且小于1的小数）
       if (moneyChange > -1 && moneyChange < 1 && moneyChange !== 0) {
         // 百分比变化
-        const percentChange = moneyChange * gameState.player.money;
-
         if (moneyChange > 0) {
-          // 按百分比增加金钱
-          gameState.player.money += percentChange;
+          // 按百分比增加金钱 - 兼容Vue 3响应式系统
+          const currentMoney = this._getReactiveValue(gameState.player.money);
+          const percentChange = moneyChange * currentMoney;
+          this._setReactiveValue(gameState.player, 'money', currentMoney + percentChange);
+
           result.appliedEffects.push({
             type: 'money',
             value: percentChange,
@@ -743,22 +744,24 @@ export class EventSystem {
             success: true
           });
         } else {
-          // 按百分比减少金钱
-          if (gameState.player.money + percentChange < 0) {
+          // 按百分比减少金钱 - 兼容Vue 3响应式系统
+          const currentMoney = this._getReactiveValue(gameState.player.money);
+          const percentChange = moneyChange * currentMoney;
+
+          if (currentMoney + percentChange < 0) {
             // 金钱不足，扣除全部
-            const originalMoney = gameState.player.money;
-            gameState.player.money = 0;
+            this._setReactiveValue(gameState.player, 'money', 0);
 
             result.appliedEffects.push({
               type: 'money',
-              value: -originalMoney,
+              value: -currentMoney,
               isPercentage: true,
               percentage: Math.abs(moneyChange) * 100,
               success: true
             });
           } else {
             // 金钱足够，正常扣款
-            gameState.player.money += percentChange;
+            this._setReactiveValue(gameState.player, 'money', currentMoney + percentChange);
             result.appliedEffects.push({
               type: 'money',
               value: percentChange,
@@ -771,20 +774,23 @@ export class EventSystem {
       } else {
         // 固定金额变化
         if (moneyChange > 0) {
-          // 增加金钱
-          gameState.player.money += moneyChange;
+          // 增加金钱 - 兼容Vue 3响应式系统
+          const currentMoney = this._getReactiveValue(gameState.player.money);
+          this._setReactiveValue(gameState.player, 'money', currentMoney + moneyChange);
+
           result.appliedEffects.push({
             type: 'money',
             value: moneyChange,
             success: true
           });
         } else if (moneyChange < 0) {
-          // 减少金钱
-          if (gameState.player.money + moneyChange < 0) {
+          // 减少金钱 - 兼容Vue 3响应式系统
+          const currentMoney = this._getReactiveValue(gameState.player.money);
+          if (currentMoney + moneyChange < 0) {
             // 金钱不足，放弃扣款，事件处理失败
             console.warn('EventSystem - 金钱不足，无法扣款', {
               required: Math.abs(moneyChange),
-              available: gameState.player.money
+              available: currentMoney
             });
 
             result.failedEffects.push({
@@ -794,7 +800,7 @@ export class EventSystem {
             });
           } else {
             // 金钱足够，正常扣款
-            gameState.player.money += moneyChange;
+            this._setReactiveValue(gameState.player, 'money', currentMoney + moneyChange);
             result.appliedEffects.push({
               type: 'money',
               value: moneyChange,
@@ -810,21 +816,25 @@ export class EventSystem {
       const debtChange = effects.debt;
 
       if (debtChange > 0) {
-        // 增加债务
-        gameState.player.debt += debtChange;
+        // 增加债务 - 兼容Vue 3响应式系统
+        const currentDebt = this._getReactiveValue(gameState.player.debt);
+        this._setReactiveValue(gameState.player, 'debt', currentDebt + debtChange);
+
         result.appliedEffects.push({
           type: 'debt',
           value: debtChange,
           success: true
         });
       } else if (debtChange < 0) {
-        // 减少债务
+        // 减少债务 - 兼容Vue 3响应式系统
+        const currentDebt = this._getReactiveValue(gameState.player.debt);
+
         // 检查是否为百分比减免（小于1的负数）
         if (debtChange > -1 && debtChange < 0) {
           // 计算百分比减免金额
-          const percentReduction = Math.abs(debtChange) * gameState.player.debt;
-          const actualReduction = Math.min(gameState.player.debt, percentReduction);
-          gameState.player.debt -= actualReduction;
+          const percentReduction = Math.abs(debtChange) * currentDebt;
+          const actualReduction = Math.min(currentDebt, percentReduction);
+          this._setReactiveValue(gameState.player, 'debt', currentDebt - actualReduction);
 
           result.appliedEffects.push({
             type: 'debt',
@@ -835,8 +845,8 @@ export class EventSystem {
           });
         } else {
           // 固定金额减免
-          const actualReduction = Math.min(gameState.player.debt, Math.abs(debtChange));
-          gameState.player.debt -= actualReduction;
+          const actualReduction = Math.min(currentDebt, Math.abs(debtChange));
+          this._setReactiveValue(gameState.player, 'debt', currentDebt - actualReduction);
 
           result.appliedEffects.push({
             type: 'debt',
@@ -953,8 +963,10 @@ export class EventSystem {
 
     // 处理背包容量效果
     if (effects.capacity) {
-      // 增加背包容量
-      gameState.player.capacity += effects.capacity;
+      // 增加背包容量 - 兼容Vue 3响应式系统
+      const currentCapacity = this._getReactiveValue(gameState.player.capacity);
+      this._setReactiveValue(gameState.player, 'capacity', currentCapacity + effects.capacity);
+
       result.appliedEffects.push({
         type: 'capacity',
         value: effects.capacity,
@@ -964,15 +976,25 @@ export class EventSystem {
 
     // 处理属性效果
     if (effects.attributes && Object.keys(effects.attributes).length > 0) {
-      // 确保属性对象存在
-      if (!gameState.player.attributes) {
-        gameState.player.attributes = {};
+      // 确保属性对象存在 - 兼容Vue 3响应式系统
+      let currentAttributes = this._getReactiveValue(gameState.player.attributes);
+      if (!currentAttributes) {
+        currentAttributes = {};
+        this._setReactiveValue(gameState.player, 'attributes', currentAttributes);
       }
 
       // 应用每个属性变化
       for (const [key, value] of Object.entries(effects.attributes)) {
-        const oldValue = gameState.player.attributes[key] || 0;
-        gameState.player.attributes[key] = value;
+        const oldValue = currentAttributes[key] || 0;
+
+        // 如果attributes是响应式对象，直接设置属性
+        if (currentAttributes && typeof currentAttributes === 'object') {
+          currentAttributes[key] = value;
+        } else {
+          // 重新设置整个attributes对象
+          const newAttributes = { ...currentAttributes, [key]: value };
+          this._setReactiveValue(gameState.player, 'attributes', newAttributes);
+        }
 
         result.appliedEffects.push({
           type: 'attribute',
@@ -1118,5 +1140,37 @@ export class EventSystem {
     this.activeEvents = saveState.activeEvents || [];
     this.eventHistory = saveState.eventHistory || [];
     this.cooldowns = saveState.cooldowns || {};
+  }
+
+  /**
+   * 获取响应式值 - 兼容Vue 3的ref和reactive
+   * @param {any} value 可能是ref、reactive或普通值
+   * @returns {any} 实际值
+   */
+  _getReactiveValue(value) {
+    // 检查是否是Vue 3的ref对象
+    if (value && typeof value === 'object' && 'value' in value && typeof value.value !== 'undefined') {
+      return value.value;
+    }
+    // 普通值直接返回
+    return value;
+  }
+
+  /**
+   * 设置响应式值 - 兼容Vue 3的ref和reactive
+   * @param {Object} target 目标对象
+   * @param {string} key 属性名
+   * @param {any} newValue 新值
+   */
+  _setReactiveValue(target, key, newValue) {
+    const property = target[key];
+
+    // 检查是否是Vue 3的ref对象
+    if (property && typeof property === 'object' && 'value' in property && typeof property.value !== 'undefined') {
+      property.value = newValue;
+    } else {
+      // 普通对象或reactive对象
+      target[key] = newValue;
+    }
   }
 }

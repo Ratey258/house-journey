@@ -9,6 +9,15 @@ import repositoryFactory from '../../infrastructure/persistence/repository-facto
 import { withErrorHandling } from '../../infrastructure/utils/errorHandler';
 import { ErrorType } from '../../infrastructure/utils/errorTypes';
 
+// 响应式数据设置辅助函数
+function setReactiveValue(obj, key, value) {
+  if (obj && typeof obj[key] === 'object' && 'value' in obj[key]) {
+    obj[key].value = value;
+  } else {
+    obj[key] = value;
+  }
+}
+
 /**
  * 玩家状态类型定义
  * @typedef {Object} PlayerState
@@ -103,7 +112,7 @@ export const usePlayerStoreEnhanced = defineStore('player', () => {
       try {
         const player = await playerRepository.getPlayer();
 
-        name.value = player.name;
+        setReactiveValue({ name }, 'name', player.name);
         money.value = player.money;
         inventory.value = player.inventory || [];
         statistics.value = player.statistics || {
@@ -286,7 +295,7 @@ export const usePlayerStoreEnhanced = defineStore('player', () => {
     return withErrorHandling(async () => {
       const player = await playerRepository.resetPlayer(options);
 
-      name.value = player.name;
+      setReactiveValue({ name }, 'name', player.name);
       money.value = player.money;
       inventory.value = [];
       statistics.value = player.statistics;

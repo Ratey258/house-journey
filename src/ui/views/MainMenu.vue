@@ -195,6 +195,16 @@ const devToastMessage = ref('');
 // 关于对话框状态
 const showAbout = ref(false);
 
+// 响应式兼容辅助函数
+const setReactiveValue = (target, key, value) => {
+  const property = target[key];
+  if (property && typeof property === 'object' && 'value' in property) {
+    property.value = value;
+  } else {
+    target[key] = value;
+  }
+};
+
 // 加载提示
 const loadingTips = [
   "正在准备市场数据...",
@@ -361,20 +371,21 @@ async function startNewGame() {
     // 确保调用startNewGame方法来设置玩家名称，并等待其完成
     await gameCore.startNewGame(finalPlayerName);
 
-    // 双重检查玩家名称已被设置
-    if (!player.name) {
-      player.name = finalPlayerName;
+    // 双重检查玩家名称已被设置 - 兼容Vue 3响应式系统
+    const currentName = player.name && typeof player.name === 'object' && 'value' in player.name ? player.name.value : player.name;
+    if (!currentName) {
+      setReactiveValue(player, 'name', finalPlayerName);
     }
 
-    // 设置难度
+    // 设置难度 - 兼容Vue 3响应式系统
     if (difficulty.value === 'hard') {
       // 困难模式
-      player.money = 2000;
-      player.debt = 5000;
+      setReactiveValue(player, 'money', 2000);
+      setReactiveValue(player, 'debt', 5000);
     } else if (difficulty.value === 'easy') {
       // 简单模式
-      player.money = 5000;
-      player.debt = 2000;
+      setReactiveValue(player, 'money', 5000);
+      setReactiveValue(player, 'debt', 2000);
     }
 
     // 保存玩家名称到本地存储

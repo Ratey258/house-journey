@@ -5,6 +5,15 @@
 import { storageError } from '@/infrastructure/utils/errorTypes';
 import { handleError, ErrorType, ErrorSeverity } from '../utils/errorHandler';
 
+// 响应式数据设置辅助函数
+function setReactiveValue(obj, key, value) {
+  if (obj && typeof obj[key] === 'object' && 'value' in obj[key]) {
+    obj[key].value = value;
+  } else {
+    obj[key] = value;
+  }
+}
+
 /**
  * 存档验证与修复工具
  * 提供验证、修复和升级存档数据的功能
@@ -167,7 +176,7 @@ export function repairSaveData(saveData, template = null) {
   }
 
   // 修复玩家数据
-  repairedData.player.name = repairedData.player.name || '玩家';
+  setReactiveValue(repairedData.player, 'name', repairedData.player.name || '玩家');
   repairedData.player.money = ensureNumber(repairedData.player.money, 5000);
   if (repairedData.player.money < 0) {
     repairedData.player.money = 0;

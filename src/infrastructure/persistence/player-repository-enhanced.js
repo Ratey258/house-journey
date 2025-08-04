@@ -7,6 +7,15 @@ import { IPlayerRepository } from '../../core/interfaces/repositories';
 import { withErrorHandling } from '../utils/errorHandler';
 import { ErrorType } from '../utils/errorTypes';
 
+// 响应式数据设置辅助函数
+function setReactiveValue(obj, key, value) {
+  if (obj && typeof obj[key] === 'object' && 'value' in obj[key]) {
+    obj[key].value = value;
+  } else {
+    obj[key] = value;
+  }
+}
+
 /**
  * 玩家实体
  * @typedef {Object} Player
@@ -151,7 +160,7 @@ export class PlayerRepositoryEnhanced extends BaseRepository {
       }
 
       if (options.name) {
-        defaultPlayer.name = options.name;
+        setReactiveValue(defaultPlayer, 'name', options.name);
       }
 
       // 更新缓存和存储

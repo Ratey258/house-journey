@@ -270,9 +270,10 @@ export async function applySnapshot(gameStore, snapshot) {
         gameStore.player = {};
       }
 
-      gameStore.player.name = snapshot.player.name || '';
-      gameStore.player.money = snapshot.player.money || 0;
-      gameStore.player.debt = snapshot.player.debt || 0;
+      // 兼容Vue 3响应式系统的属性设置
+      _setReactiveValue(gameStore.player, 'name', snapshot.player.name || '');
+      _setReactiveValue(gameStore.player, 'money', snapshot.player.money || 0);
+      _setReactiveValue(gameStore.player, 'debt', snapshot.player.debt || 0);
 
       // 恢复库存
       if (snapshot.player.inventory && Array.isArray(snapshot.player.inventory)) {
@@ -345,5 +346,23 @@ export async function initSnapshotSystem() {
     handleError(error, 'stateSnapshot (persistence)', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
     console.error('初始化快照系统时出错:', error);
     return false;
+  }
+}
+
+/**
+ * 设置响应式值 - 兼容Vue 3的ref和reactive
+ * @param {Object} target 目标对象
+ * @param {string} key 属性名
+ * @param {any} newValue 新值
+ */
+function _setReactiveValue(target, key, newValue) {
+  const property = target[key];
+
+  // 检查是否是Vue 3的ref对象
+  if (property && typeof property === 'object' && 'value' in property && typeof property.value !== 'undefined') {
+    property.value = newValue;
+  } else {
+    // 普通对象或reactive对象
+    target[key] = newValue;
   }
 }

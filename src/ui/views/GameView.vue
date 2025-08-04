@@ -252,6 +252,31 @@ import TutorialSystem from '@/ui/components/common/TutorialSystem.vue';
 import GameLoader from '@/ui/components/common/GameLoader.vue';
 import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler'; // 导入GameLoader组件
 
+// 响应式兼容辅助函数
+const setReactiveValue = (target, key, value) => {
+  try {
+    const property = target[key];
+    if (property && typeof property === 'object' && 'value' in property) {
+      // 这是一个 ref 对象，设置其 value 属性
+      property.value = value;
+    } else if (target._rawValue && target._rawValue[key] && typeof target._rawValue[key] === 'object' && 'value' in target._rawValue[key]) {
+      // 处理 Pinia store 的情况
+      target._rawValue[key].value = value;
+    } else if (typeof target[key] !== 'undefined') {
+      // 直接设置属性
+      target[key] = value;
+    } else {
+      console.warn(`无法设置属性 ${key}，属性不存在或不可写`);
+    }
+  } catch (error) {
+    console.warn(`设置属性 ${key} 时出错:`, error);
+    // 尝试通过 store 的 action 来设置
+    if (target.$patch && typeof target.$patch === 'function') {
+      target.$patch({ [key]: value });
+    }
+  }
+};
+
 const router = useRouter();
 const gameCoreStore = useGameCoreStore(); // 游戏核心存储
 const playerStore = usePlayerStore(); // 玩家存储
@@ -352,8 +377,15 @@ onMounted(() => {
     const savedPlayerName = localStorage.getItem('lastPlayerName') || '玩家';
     console.log('获取到玩家名称:', savedPlayerName);
 
-    // 设置玩家名称
-    playerStore.name = savedPlayerName;
+    // 设置玩家名称 - 直接设置ref的value
+    if (playerStore.name && typeof playerStore.name === 'object' && 'value' in playerStore.name) {
+      playerStore.name.value = savedPlayerName;
+    } else {
+      // 如果不是ref对象，使用initializePlayer方法
+      playerStore.initializePlayer(savedPlayerName).catch(error => {
+        console.error('初始化玩家失败:', error);
+      });
+    }
   }
 
   // 确保游戏不会在初始状态下显示为结束

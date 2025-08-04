@@ -8,6 +8,15 @@ import storageService, { validateSaveData, repairSaveData, ensureVersionCompatib
 import { useUiStore } from '../uiStore';
 import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler';
 
+// 响应式数据设置辅助函数
+function setReactiveValue(obj, key, value) {
+  if (obj && typeof obj[key] === 'object' && 'value' in obj[key]) {
+    obj[key].value = value;
+  } else {
+    obj[key] = value;
+  }
+}
+
 // 存档相关常量
 const SAVE_LIST_KEY = 'saveList';
 const SAVE_PREFIX = 'houseJourneySave_';
@@ -692,7 +701,7 @@ export const useSaveStore = defineStore('save', {
 
       // 加载玩家数据
       if (saveData.player) {
-        player.name = saveData.player.name || '玩家';
+        setReactiveValue(player, 'name', saveData.player.name || '玩家');
         player.money = saveData.player.money || 5000;
         player.debt = saveData.player.debt || 2000;
         player.capacity = saveData.player.capacity || 100;

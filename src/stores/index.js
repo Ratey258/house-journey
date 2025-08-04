@@ -263,8 +263,12 @@ export const useGameStore = defineStore('gameCompat', () => {
         return { success: false, message: '还款失败' };
       }
     } else {
-      // 直接修改debt作为临时解决方案
-      player.debt -= amount;
+      // 兼容Vue 3响应式系统的修改方式
+      if (player.debt && typeof player.debt === 'object' && 'value' in player.debt) {
+        player.debt.value -= amount;
+      } else {
+        player.debt -= amount;
+      }
     }
 
     return { success: true, amountRepaid: amount };

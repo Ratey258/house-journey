@@ -4,6 +4,15 @@ import { useMarketStore } from '../market';
 import { useEventStore } from '../events';
 import { handleError, ErrorType, ErrorSeverity } from '../../infrastructure/utils/errorHandler';
 
+// 响应式数据设置辅助函数
+function setReactiveValue(obj, key, value) {
+  if (obj && typeof obj[key] === 'object' && 'value' in obj[key]) {
+    obj[key].value = value;
+  } else {
+    obj[key] = value;
+  }
+}
+
 /**
  * 游戏核心状态管理
  * 负责管理游戏流程、周数和全局游戏状态
@@ -51,7 +60,7 @@ export const useGameCoreStore = defineStore('gameCore', {
 
         // 确保名称已被设置
         if (!playerStore.name && playerName) {
-          playerStore.name = playerName;
+          setReactiveValue(playerStore, 'name', playerName);
         }
 
         marketStore.initializeMarket().then(() => {
