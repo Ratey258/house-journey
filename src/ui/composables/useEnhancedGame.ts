@@ -37,7 +37,6 @@ import {
   useWakeLock,
   useFullscreen,
   useShare,
-  useVibrate,
   useFavicon,
   useTitle
 } from '@vueuse/core';
@@ -98,9 +97,9 @@ export function useEnhancedGame() {
 
   const performanceMetrics = computed<PerformanceMetrics>(() => ({
     fps: 60, // 实际实现中需要计算真实FPS
-    memory: memory.value?.usedJSHeapSize || 0,
+    memory: memory.memory.value?.usedJSHeapSize || 0,
     renderTime: 0, // 需要实际测量
-    isLowPerformance: (memory.value?.usedJSHeapSize || 0) > 100 * 1024 * 1024 // 100MB阈值
+    isLowPerformance: (memory.memory.value?.usedJSHeapSize || 0) > 100 * 1024 * 1024 // 100MB阈值
   }));
 
   // === 游戏状态管理 ===
@@ -116,11 +115,11 @@ export function useEnhancedGame() {
   const isUserIdle = computed(() => idle.value);
 
   // === 自动保存功能 ===
-  const { start: startAutoSave, stop: stopAutoSave } = useIntervalFn(() => {
+  const { pause: stopAutoSave, resume: startAutoSave } = useIntervalFn(() => {
     if (gameSettings.value.autoSave && isPageVisible.value && !isUserIdle.value) {
       triggerAutoSave();
     }
-  }, () => gameSettings.value.autoSaveInterval);
+  }, gameSettings.value.autoSaveInterval, { immediate: false });
 
   const triggerAutoSave = useDebounceFn(() => {
     console.log('自动保存游戏...');
@@ -167,16 +166,7 @@ export function useEnhancedGame() {
     }
   };
 
-  // === 震动反馈 ===
-  const { vibrate, isSupported: vibrateSupported } = useVibrate();
-
-  const gameVibrate = (pattern: number | number[] = 200) => {
-    if (vibrateSupported.value && gameSettings.value.soundEnabled) {
-      vibrate(pattern);
-    }
-  };
-
-    // === SEO和元数据管理 ===
+  // === SEO和元数据管理 ===
   const gameTitle = useTitle('《买房记》- 模拟经营游戏');
   const gameFavicon = useFavicon('/ico.ico');
 
@@ -219,7 +209,7 @@ export function useEnhancedGame() {
 
     // 游戏开始时请求唤醒锁定
     if (wakeLockSupported.value) {
-      requestWakeLock();
+      requestWakeLock('screen');
     }
   });
 
@@ -299,15 +289,15 @@ export function useEnhancedGame() {
 
     // 功能方法
     triggerAutoSave,
+    startAutoSave,
+    stopAutoSave,
     sendNotification,
     shareScore,
-    gameVibrate,
     optimizePerformance,
 
     // 权限和支持检测
     notificationPermission,
     shareSupported,
-    vibrateSupported,
     wakeLockSupported,
 
     // 元数据
@@ -338,27 +328,19 @@ export function useComponentVisibility(target: Ref<HTMLElement | null>) {
 }
 
 /**
- * 响应式布局Composable
+ * 桌面端布局Composable - 移除移动端支持
  */
-export function useResponsiveLayout() {
+export function useDesktopLayout() {
   const { width, height } = useWindowSize();
 
-  const isMobile = computed(() => width.value < 768);
-  const isTablet = computed(() => width.value >= 768 && width.value < 1024);
-  const isDesktop = computed(() => width.value >= 1024);
+  const isDesktop = computed(() => true); // 桌面端应用，始终为true
   const isLandscape = computed(() => width.value > height.value);
 
-  const layoutClass = computed(() => {
-    if (isMobile.value) return 'layout-mobile';
-    if (isTablet.value) return 'layout-tablet';
-    return 'layout-desktop';
-  });
+  const layoutClass = computed(() => 'layout-desktop');
 
   return {
     width,
     height,
-    isMobile,
-    isTablet,
     isDesktop,
     isLandscape,
     layoutClass

@@ -164,18 +164,7 @@ input:focus, select:focus, textarea:focus {
   background-color: var(--color-gray-100);
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .game-content {
-    flex-direction: column;
-  }
-  
-  .left-panel {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--color-gray-200);
-  }
-}
+/* 桌面端布局 - 移除移动端响应式支持 */
 
 /* 数字显示样式 */
 .price, .numeric-value {
@@ -198,4 +187,4 @@ input:focus, select:focus, textarea:focus {
 
 .text-info {
   color: var(--color-info-blue);
-} 
+}

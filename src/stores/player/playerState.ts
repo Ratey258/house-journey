@@ -339,6 +339,37 @@ export const usePlayerStore = defineStore('player', () => {
   };
 
   /**
+   * 更新玩家每周状态 - 兼容旧版本API
+   * @param currentWeek 当前周数
+   */
+  const updateWeeklyPlayerState = (currentWeek: number): void => {
+    console.log(`PlayerStore - 更新玩家每周状态，周数: ${currentWeek}`);
+
+    // 更新周数统计
+    statistics.weekCount = currentWeek;
+
+    // 处理债务利息（每周增加0.5%）
+    if (debt.value > 0) {
+      const interest = Math.floor(debt.value * 0.005);
+      debt.value += interest;
+      console.log(`PlayerStore - 债务利息: ${interest}, 总债务: ${debt.value}`);
+    }
+
+    // 处理银行存款利息（每周增加0.3%）
+    if (bankDeposit.value > 0) {
+      const depositInterest = Math.floor(bankDeposit.value * 0.003);
+      bankDeposit.value += depositInterest;
+      console.log(`PlayerStore - 存款利息: ${depositInterest}, 总存款: ${bankDeposit.value}`);
+    }
+
+    // 更新最高金额记录
+    const currentTotal = money.value + bankDeposit.value;
+    if (currentTotal > statistics.maxMoney) {
+      statistics.maxMoney = currentTotal;
+    }
+  };
+
+  /**
    * 重置玩家数据
    */
   const resetPlayer = (): void => {
@@ -388,6 +419,7 @@ export const usePlayerStore = defineStore('player', () => {
     purchaseHouse,
     processWeeklyInterest,
     incrementWeek,
+    updateWeeklyPlayerState,
     resetPlayer
   };
 });

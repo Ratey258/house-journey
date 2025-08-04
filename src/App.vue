@@ -20,17 +20,10 @@
       @complete="onLoadingComplete"
     />
 
-    <!-- 主应用内容 - 增强布局适配 -->
+    <!-- 主应用内容 - 桌面端布局 -->
     <router-view
       v-if="!isLoading"
-      :class="[
-        'main-content',
-        {
-          'mobile-layout': isMobile,
-          'tablet-layout': isTablet,
-          'desktop-layout': isDesktop
-        }
-      ]"
+      class="main-content desktop-layout"
     />
 
     <!-- 全局错误对话框 -->
@@ -88,7 +81,7 @@ import { useMarketStore } from './stores/market';
 import { useEventStore } from './stores/events';
 
 // 新增Composables - @vueuse/core 13.6功能集成
-import { useEnhancedGame, useResponsiveLayout } from './ui/composables/useEnhancedGame';
+import { useEnhancedGame, useDesktopLayout } from './ui/composables/useEnhancedGame';
 
 // 工具导入
 import { handleError, ErrorType, ErrorSeverity } from '@/infrastructure/utils/errorHandler';
@@ -107,12 +100,11 @@ const {
   isOnline,
   performanceMetrics,
   sendNotification,
-  gameVibrate,
   optimizePerformance
 } = useEnhancedGame();
 
-// 响应式布局
-const { isMobile, isTablet, isDesktop, layoutClass } = useResponsiveLayout();
+// 桌面端布局
+const { isDesktop, layoutClass } = useDesktopLayout();
 
 // === Store实例 - Pinia 3.0 优化版本 ===
 const uiStore = useUiStore();
@@ -170,9 +162,6 @@ const initializeApp = async () => {
     loadingStatus.value = '加载完成!';
     loadingProgress.value = 100;
 
-    // 触觉反馈
-    gameVibrate([100, 50, 100]);
-
     // 延迟隐藏加载界面
     setTimeout(() => {
       isLoading.value = false;
@@ -186,9 +175,6 @@ const initializeApp = async () => {
     handleError(error, 'App初始化', ErrorType.UNKNOWN, ErrorSeverity.ERROR);
     console.error('初始化应用失败:', error);
     loadingStatus.value = '初始化失败，请刷新页面重试';
-
-    // 错误时的触觉反馈
-    gameVibrate([200, 100, 200, 100, 200]);
   }
 };
 
@@ -257,15 +243,7 @@ body {
   transition: all 0.3s ease;
 }
 
-/* === 响应式布局增强 - @vueuse/core 13.6 === */
-.layout-mobile {
-  font-size: 14px;
-}
-
-.layout-tablet {
-  font-size: 15px;
-}
-
+/* === 桌面端布局 === */
 .layout-desktop {
   font-size: 16px;
 }
@@ -330,19 +308,11 @@ body {
   content: "⚡";
 }
 
-/* === 主内容区域适配 === */
+/* === 主内容区域 - 桌面端布局 === */
 .main-content {
   width: 100%;
   height: 100%;
   transition: all 0.3s ease;
-}
-
-.main-content.mobile-layout {
-  padding: 10px;
-}
-
-.main-content.tablet-layout {
-  padding: 15px;
 }
 
 .main-content.desktop-layout {
@@ -430,11 +400,9 @@ body {
   color: white;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .dialog {
-    width: 95%;
-    max-height: 80%;
-  }
+/* 桌面端对话框样式 */
+.dialog {
+  width: 400px;
+  max-height: 70%;
 }
 </style>

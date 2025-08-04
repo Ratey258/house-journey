@@ -82,73 +82,30 @@ export const useInventoryActions = () => {
     // 计算本次购买的总价值
     const purchaseValue = price * quantity;
 
-    if (existingIndex !== -1) {
-      // 更新已有条目，计算总价值和平均价格
-      const existingItem = playerStore.inventory[existingIndex];
-
-      console.log('InventoryActions - 更新已有物品:', {
-        existingItem: {
-          productId: existingItem.productId,
-          name: existingItem.name,
-          quantity: existingItem.quantity,
-          purchasePrice: existingItem.purchasePrice
-        }
-      });
-
-      // 如果存在totalValue字段，使用它；否则计算总价值
-      const oldTotalValue = existingItem.totalValue || (existingItem.purchasePrice * existingItem.quantity);
-      const newTotalQuantity = existingItem.quantity + quantity;
-      const newTotalValue = oldTotalValue + (price * quantity);
-
-      // 计算新的平均价格（四舍五入到整数）
-      const newAveragePrice = Math.round(newTotalValue / newTotalQuantity);
-
-      console.log('InventoryActions - 计算新价格:', {
-        oldTotalValue,
-        newTotalQuantity,
-        newTotalValue,
-        newAveragePrice
-      });
-
-      // 更新物品数量、总价值和平均价格
-      playerStore.inventory[existingIndex].quantity = newTotalQuantity;
-      playerStore.inventory[existingIndex].purchasePrice = newAveragePrice;
-      playerStore.inventory[existingIndex].totalValue = newTotalValue; // 使用totalValue字段记录总价值
-
-      console.log('InventoryActions - 已更新物品:', playerStore.inventory[existingIndex]);
-    } else {
-      // 添加新条目
-      // 确保productId的一致性 - 优先使用数字类型
-      let finalProductId = productId;
-      if (typeof productId === 'string' && !isNaN(Number(productId))) {
-        finalProductId = Number(productId);
-      }
-
-      const newItem = {
-        productId: finalProductId,
-        name: product.name || `商品${finalProductId}`,
-        quantity: quantity,
-        purchasePrice: price,
-        totalValue: purchaseValue, // 添加总价值字段
-        size: 1 // 修改：固定设置size为1
-      };
-
-      console.log('InventoryActions - 添加新物品:', newItem);
-      playerStore.inventory.push(newItem);
-
-      console.log('InventoryActions - 添加后背包物品数量:', playerStore.inventory.length);
-      console.log('InventoryActions - 添加后背包物品列表:', playerStore.inventory.map(item => ({
-        productId: item.productId,
-        name: item.name,
-        quantity: item.quantity
-      })));
+    // 准备要添加/更新的物品数据
+    let finalProductId = productId;
+    if (typeof productId === 'string' && !isNaN(Number(productId))) {
+      finalProductId = Number(productId);
     }
 
-    // 更新已用容量
-    const oldInventoryUsed = playerStore.inventoryUsed;
-    playerStore.inventoryUsed += totalSpace;
+    const itemToAdd = {
+      productId: finalProductId,
+      name: product.name || `商品${finalProductId}`,
+      quantity: quantity,
+      purchasePrice: price,
+      totalValue: purchaseValue,
+      size: 1
+    };
 
-    console.log(`InventoryActions - 更新背包容量: ${oldInventoryUsed} -> ${playerStore.inventoryUsed}`);
+    // 使用playerStore的方法来安全地添加/更新库存
+    const result = playerStore.addInventoryItem(itemToAdd);
+
+    if (!result) {
+      console.error('InventoryActions - 无法添加物品到玩家库存');
+      return { success: false, message: '添加物品失败' };
+    }
+
+    console.log(`InventoryActions - 成功添加物品到背包`);
     console.log('InventoryActions - 当前背包物品:', playerStore.inventory.map(item => ({
       productId: item.productId,
       name: item.name,
@@ -159,15 +116,8 @@ export const useInventoryActions = () => {
     console.log('InventoryActions - 背包最终状态检查:', {
       inventoryArray: playerStore.inventory,
       isArray: Array.isArray(playerStore.inventory),
-      length: playerStore.inventory.length,
-      isReactive: typeof playerStore.inventory === 'object' && playerStore.inventory.__v_isReactive
+      length: playerStore.inventory.length
     });
-
-    // 强制触发更新
-    if (Array.isArray(playerStore.inventory)) {
-      // 创建一个新数组，确保引用变化
-      playerStore.inventory = [...playerStore.inventory];
-    }
 
     return { success: true };
   };
@@ -190,20 +140,16 @@ export const useInventoryActions = () => {
       return { success: false, message: '无效的移除数量' };
     }
 
-    // 移除物品 - 修复：每件物品只占用1个空间
-    const spaceFreed = quantity; // 修改：不再使用item.size，每个物品固定占用1个空间
+    // 创建要移除的物品数据
     const product = { ...item, quantity };
 
-    // 更新数量
-    item.quantity -= quantity;
+    // 使用playerStore的方法来安全地移除库存
+    const result = playerStore.removeInventoryItem(inventoryIndex, quantity);
 
-    // 如果数量为0，删除该条目
-    if (item.quantity <= 0) {
-      playerStore.inventory.splice(inventoryIndex, 1);
+    if (!result) {
+      console.error('InventoryActions - 无法从玩家库存移除物品');
+      return { success: false, message: '移除物品失败' };
     }
-
-    // 更新容量
-    playerStore.inventoryUsed -= spaceFreed;
 
     return {
       success: true,
@@ -243,11 +189,11 @@ export const useInventoryActions = () => {
   };
 
   /**
-   * 清空库存
+   * 清空库存 - 已移除，使用playerStore的方法
    */
   const clearInventory = () => {
-    playerStore.inventory = [];
-    playerStore.inventoryUsed = 0;
+    // 注意：此功能应该通过playerStore的resetPlayer方法实现
+    console.warn('clearInventory已弃用，请使用playerStore.resetPlayer()');
   };
 
   return {

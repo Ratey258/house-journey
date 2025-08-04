@@ -34,10 +34,10 @@ export const useGameStore = defineStore('gameCompat', () => {
   const gameGoals = computed(() => gameCore.gameGoals);
   const gameProgress = computed(() => gameCore.gameProgress);
   const isGameActive = computed(() => gameCore.isGameActive);
-  
+
   // 玩家相关状态
   const playerState = computed(() => player);
-  
+
   // 市场相关状态
   const locations = computed(() => market.locations);
   const currentLocation = computed(() => market.currentLocation);
@@ -46,7 +46,7 @@ export const useGameStore = defineStore('gameCompat', () => {
   const availableProducts = computed(() => market.availableProducts);
   const houses = computed(() => market.houses);
   const marketModifiers = computed(() => market.marketModifiers);
-  
+
   // 事件相关状态
   const currentEvent = computed(() => events.currentEvent);
   const eventHistory = computed(() => events.eventHistory);
@@ -55,39 +55,39 @@ export const useGameStore = defineStore('gameCompat', () => {
   function startNewGame(playerName) {
     gameCore.startNewGame(playerName);
   }
-  
+
   function advanceWeek() {
     return gameCore.advanceWeek();
   }
-  
+
   function changeLocation(locationId) {
     return market.changeLocation(locationId);
   }
-  
+
   function updateProductPrices() {
     market.updateProductPrices(gameCore.currentWeek);
   }
-  
+
   function updateLocationProducts() {
     market.updateLocationProducts(gameCore.currentWeek);
   }
-  
+
   function generateRandomEvent() {
     events.generateRandomEvent(gameCore.currentWeek);
   }
-  
+
   function buyProduct(productId, quantity) {
     // 确保productId是字符串类型，以便统一比较
     const productIdStr = String(productId);
-    
+
     // 从市场可用商品中查找产品
     const product = market.availableProducts.find(p => String(p.id) === productIdStr);
-    
+
     if (!product) {
       console.log('商品不存在:', productId, '可用商品IDs:', market.availableProducts.map(p => p.id));
       return { success: false, message: '商品不存在' };
     }
-    
+
     // 使用字符串化的ID查找价格
     const price = market.productPrices[productIdStr]?.price;
     if (!price) {
@@ -100,44 +100,51 @@ export const useGameStore = defineStore('gameCompat', () => {
       }
       return { success: false, message: '价格未定义' };
     }
-    
+
     const totalCost = price * quantity;
     if (player.money < totalCost) {
       return { success: false, message: '资金不足' };
     }
-    
+
     const addResult = inventoryActions.addToInventory(product, quantity, price);
     if (!addResult.success) {
       return addResult;
     }
-    
-    player.money -= totalCost;
+
+    // 使用playerStore的方法来安全地更新金钱
+    const moneyUpdateResult = player.updateMoney(-totalCost);
+    if (!moneyUpdateResult) {
+      console.error('无法更新玩家金钱');
+      return { success: false, message: '更新金钱失败' };
+    }
+
+    // 更新统计信息 (通过增加统计的方式)
     player.statistics.transactionCount += 1;
-    
+
     return { success: true };
   }
-  
+
   function sellProduct(productId, quantity) {
     // 参数验证
     if (!productId || quantity <= 0) {
       return { success: false, message: '无效的参数' };
     }
-    
+
     // 确保productId是字符串类型，以便统一比较
     const productIdStr = String(productId);
-    
+
     // 查找玩家库存中的商品（现在只会有一个条目，因为我们按产品ID合并了）
     const inventoryItem = player.inventory.find(item => String(item.productId) === productIdStr);
     if (!inventoryItem) {
       console.log('物品不存在于库存中:', productId, '库存物品IDs:', player.inventory.map(item => item.productId));
       return { success: false, message: '物品不存在' };
     }
-    
+
     // 检查数量是否足够
     if (inventoryItem.quantity < quantity) {
       return { success: false, message: '数量不足' };
     }
-    
+
     // 获取当前市场价格，使用字符串化的ID
     const currentPrice = market.productPrices[productIdStr]?.price || 0;
     if (currentPrice <= 0) {
@@ -150,173 +157,225 @@ export const useGameStore = defineStore('gameCompat', () => {
       }
       return { success: false, message: '当前市场不收购此物品' };
     }
-    
+
     // 计算总收入
     const totalIncome = currentPrice * quantity;
-    
+
     // 使用平均购买价格计算成本
     const inventoryIndex = player.inventory.indexOf(inventoryItem);
     const avgPurchasePrice = inventoryItem.purchasePrice;
     const totalCost = avgPurchasePrice * quantity;
-      
+
       // 从库存中移除物品
     const removeResult = inventoryActions.removeFromInventory(inventoryIndex, quantity);
       if (!removeResult.success) {
         return { success: false, message: '出售失败：' + removeResult.message };
     }
-    
+
     // 计算利润
     const profit = totalIncome - totalCost;
-    
-    // 更新玩家资金和统计数据
-    player.money += totalIncome;
+
+    // 使用playerStore的方法来安全地更新金钱
+    const moneyUpdateResult = player.updateMoney(totalIncome);
+    if (!moneyUpdateResult) {
+      console.error('无法更新玩家金钱');
+      return { success: false, message: '更新金钱失败' };
+    }
+
+    // 更新统计数据 (注意：statistics可能也需要通过方法更新)
     player.statistics.totalProfit += profit;
     player.statistics.transactionCount += 1;
-    
+
     // 返回成功结果
-    return { 
-      success: true, 
-      income: totalIncome, 
-      profit: profit, 
+    return {
+      success: true,
+      income: totalIncome,
+      profit: profit,
       profitPercent: totalCost > 0 ? (profit / totalCost * 100).toFixed(1) : 0
     };
   }
-  
+
   function saveGame(saveName, isAutoSave = false) {
     return saves.saveGame(saveName, isAutoSave);
   }
-  
+
   function loadGame(saveId) {
     return saves.loadGame(saveId);
   }
-  
+
   function getSaves() {
     return saves.getSaves();
   }
-  
+
   function checkGameEnd() {
     gameCore.checkGameEnd();
   }
-  
+
   function getCurrentProductPrice(productId) {
     if (!productId) return 0;
-    
+
     // 确保将productId转换为字符串进行比较
     const productIdStr = String(productId);
-    
+
     const price = market.productPrices[productIdStr]?.price;
     if (price !== undefined && price !== null) {
       return price;
     }
-    
+
     // 如果在productPrices中找不到价格，尝试从products列表中获取basePrice
     const product = market.products.find(p => String(p.id) === productIdStr);
     if (product && product.basePrice) {
       return product.basePrice;
     }
-    
+
     return 0;
   }
-  
+
   // 添加getProductPriceTrend方法
   function getProductPriceTrend(productId) {
     return market.getProductPriceTrend(productId);
   }
-  
+
   function repayDebt(amount) {
     if (amount <= 0 || amount > player.money) {
       return { success: false, message: '无效的还款金额' };
     }
-    
+
     if (amount > player.debt) {
       amount = player.debt;
     }
-    
-    player.money -= amount;
-    player.debt -= amount;
-    
+
+    // 使用playerStore的方法来安全地更新金钱和债务
+    const moneyUpdateResult = player.updateMoney(-amount);
+    if (!moneyUpdateResult) {
+      console.error('无法更新玩家金钱');
+      return { success: false, message: '更新金钱失败' };
+    }
+
+    // 这里假设有repayLoan方法，如果没有则需要添加
+    if (player.repayLoan) {
+      const repayResult = player.repayLoan(amount);
+      if (!repayResult) {
+        // 回滚金钱变化
+        player.updateMoney(amount);
+        return { success: false, message: '还款失败' };
+      }
+    } else {
+      // 直接修改debt作为临时解决方案
+      player.debt -= amount;
+    }
+
     return { success: true, amountRepaid: amount };
   }
-  
+
   function buyHouse(houseId) {
     const house = market.houses.find(h => h.id === houseId);
     if (!house) {
       return { success: false, message: '房屋不存在' };
     }
-    
+
     if (player.money < house.price) {
       return { success: false, message: '资金不足' };
     }
-    
+
     if (player.purchasedHouses.some(h => h.houseId === houseId)) {
       return { success: false, message: '已拥有此房屋' };
     }
-    
-    player.money -= house.price;
-    player.purchasedHouses.push({
-      houseId: house.id,
-      name: house.name,
-      purchasePrice: house.price,
-      purchaseDate: new Date().toISOString()
-    });
-    
+
+    // 使用playerStore的方法来安全地更新金钱
+    const moneyUpdateResult = player.updateMoney(-house.price);
+    if (!moneyUpdateResult) {
+      console.error('无法更新玩家金钱');
+      return { success: false, message: '更新金钱失败' };
+    }
+
+    // 如果有purchaseHouse方法，使用它；否则直接修改
+    if (player.purchaseHouse) {
+      const purchaseResult = player.purchaseHouse(house);
+      if (!purchaseResult) {
+        // 回滚金钱变化
+        player.updateMoney(house.price);
+        return { success: false, message: '购买房屋失败' };
+      }
+    } else {
+      // 直接修改purchasedHouses作为临时解决方案
+      player.purchasedHouses.push({
+        houseId: house.id,
+        name: house.name,
+        purchasePrice: house.price,
+        purchaseDate: new Date().toISOString()
+      });
+    }
+
     // 检查游戏结束条件
     gameCore.checkGameEnd();
-    
+
     return { success: true };
   }
-  
+
   function addNotification(type, message) {
     gameCore.addNotification(type, message);
   }
-  
+
   // 使用基本价格购买的辅助函数
   function buyWithBasePrice(product, basePrice, quantity) {
     const totalCost = basePrice * quantity;
     if (player.money < totalCost) {
       return { success: false, message: '资金不足' };
     }
-    
+
     const addResult = inventoryActions.addToInventory(product, quantity, basePrice);
     if (!addResult.success) {
       return addResult;
     }
-    
-    player.money -= totalCost;
+
+    // 使用playerStore的方法来安全地更新金钱
+    const moneyUpdateResult = player.updateMoney(-totalCost);
+    if (!moneyUpdateResult) {
+      console.error('无法更新玩家金钱');
+      return { success: false, message: '更新金钱失败' };
+    }
+
     player.statistics.transactionCount += 1;
-    
+
     return { success: true };
   }
-  
+
   // 使用基本价格出售的辅助函数
   function sellWithBasePrice(inventoryItem, basePrice, quantity) {
     // 计算总收入
     const totalIncome = basePrice * quantity;
-    
+
     // 使用平均购买价格计算成本
     const inventoryIndex = player.inventory.indexOf(inventoryItem);
     const avgPurchasePrice = inventoryItem.purchasePrice;
     const totalCost = avgPurchasePrice * quantity;
-    
+
     // 从库存中移除物品
     const removeResult = inventoryActions.removeFromInventory(inventoryIndex, quantity);
     if (!removeResult.success) {
       return { success: false, message: '出售失败：' + removeResult.message };
     }
-    
+
     // 计算利润
     const profit = totalIncome - totalCost;
-    
-    // 更新玩家资金和统计数据
-    player.money += totalIncome;
+
+    // 使用playerStore的方法来安全地更新金钱
+    const moneyUpdateResult = player.updateMoney(totalIncome);
+    if (!moneyUpdateResult) {
+      console.error('无法更新玩家金钱');
+      return { success: false, message: '更新金钱失败' };
+    }
+
+    // 更新统计数据
     player.statistics.totalProfit += profit;
     player.statistics.transactionCount += 1;
-    
+
     // 返回成功结果
-    return { 
-      success: true, 
-      income: totalIncome, 
-      profit: profit, 
+    return {
+      success: true,
+      income: totalIncome,
+      profit: profit,
       profitPercent: totalCost > 0 ? (profit / totalCost * 100).toFixed(1) : 0
     };
   }
@@ -344,7 +403,7 @@ export const useGameStore = defineStore('gameCompat', () => {
     marketModifiers,
     currentEvent,
     eventHistory,
-    
+
     // 方法
     startNewGame,
     advanceWeek,
@@ -373,4 +432,4 @@ export { useMarketStore } from './market';
 export { useEventStore } from './events';
 export { useSaveStore } from './persistence';
 export { useSettingsStore } from './settingsStore';
-export { useUiStore } from './uiStore'; 
+export { useUiStore } from './uiStore';

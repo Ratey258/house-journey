@@ -306,24 +306,48 @@ const formatChange = (changePercent) => {
   return `${prefix}${changePercent.toFixed(1)}%`;
 };
 
-// 修改changeLocation函数，添加进入下一周的逻辑
+// 修改changeLocation函数，添加错误处理
 const changeLocation = (locationId) => {
   if (locationId && locationId !== currentLocation.value?.id) {
-    // 先进入下一周
-    gameCoreStore.advanceWeek();
+    try {
+      console.log(`Market - 开始切换地点到: ${locationId}`);
 
-    // 然后切换地点
-    gameStore.changeLocation(locationId);
+      // 先进入下一周
+      const weekAdvanced = gameCoreStore.advanceWeek();
+      if (!weekAdvanced) {
+        console.error('Market - 无法进入下一周');
+        return;
+      }
 
-    // 显示提示消息
-    const newLocation = locations.value.find(loc => loc.id === locationId);
-    if (newLocation) {
-      transactionToastMessage.value = `已前往${newLocation.name}，进入下一周`;
-      transactionToastClass.value = 'location-change';
-      transactionToastIcon.value = '🚶';
+      // 然后切换地点
+      const locationChanged = gameStore.changeLocation(locationId);
+      if (!locationChanged) {
+        console.error('Market - 无法切换地点');
+        return;
+      }
+
+      // 显示提示消息
+      const newLocation = locations.value.find(loc => loc.id === locationId);
+      if (newLocation) {
+        transactionToastMessage.value = `已前往${newLocation.name}，进入下一周`;
+        transactionToastClass.value = 'location-change';
+        transactionToastIcon.value = '🚶';
+        showTransactionToast.value = true;
+
+        // 3秒后自动隐藏提示
+        setTimeout(() => {
+          showTransactionToast.value = false;
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Market - 切换地点时发生错误:', error);
+
+      // 显示错误提示
+      transactionToastMessage.value = '切换地点失败，请重试';
+      transactionToastClass.value = 'error';
+      transactionToastIcon.value = '❌';
       showTransactionToast.value = true;
 
-      // 3秒后自动隐藏提示
       setTimeout(() => {
         showTransactionToast.value = false;
       }, 3000);
