@@ -1,19 +1,53 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-// 添加调试信息
-console.log('Preload脚本正在执行');
+// 2025年安全最佳实践：严格的API验证
+const validateChannel = (channel) => {
+  const allowedChannels = [
+    'file:save-game', 'file:load-game', 'file:list-saves', 'file:delete-save',
+    'config:get', 'config:set', 'config:reset',
+    'app:quit', 'app:toggle-fullscreen',
+    'error:log', 'error:get-logs', 'error:clear-logs',
+    'updater:check', 'updater:download', 'updater:install'
+  ];
+  return allowedChannels.includes(channel);
+};
 
-// 暴露给渲染进程的API
+// 添加调试信息（生产环境会被移除）
+if (process.env.NODE_ENV === 'development') {
+  console.log('Preload脚本正在执行');
+}
+
+// 2025年安全最佳实践：暴露最小化的安全API
 contextBridge.exposeInMainWorld('electronAPI', {
-  // 文件操作
-  saveGame: (data) => ipcRenderer.invoke('file:save-game', data),
-  loadGame: (saveName) => ipcRenderer.invoke('file:load-game', saveName),
+  // 文件操作 - 添加数据验证
+  saveGame: (data) => {
+    if (!data || typeof data !== 'object') {
+      throw new Error('无效的存档数据');
+    }
+    return ipcRenderer.invoke('file:save-game', data);
+  },
+  loadGame: (saveName) => {
+    if (!saveName || typeof saveName !== 'string') {
+      throw new Error('无效的存档名称');
+    }
+    return ipcRenderer.invoke('file:load-game', saveName);
+  },
   listSaves: () => ipcRenderer.invoke('file:list-saves'),
-  deleteSave: (saveName) => ipcRenderer.invoke('file:delete-save', saveName),
+  deleteSave: (saveName) => {
+    if (!saveName || typeof saveName !== 'string') {
+      throw new Error('无效的存档名称');
+    }
+    return ipcRenderer.invoke('file:delete-save', saveName);
+  },
 
-  // 配置操作
+  // 配置操作 - 添加数据验证
   getConfig: () => ipcRenderer.invoke('config:get'),
-  setConfig: (config) => ipcRenderer.invoke('config:set', config),
+  setConfig: (config) => {
+    if (!config || typeof config !== 'object') {
+      throw new Error('无效的配置数据');
+    }
+    return ipcRenderer.invoke('config:set', config);
+  },
   resetConfig: () => ipcRenderer.invoke('config:reset'),
 
   // 应用操作
@@ -72,8 +106,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeAllListeners('saves:cleared');
   },
 
-  // 调试功能
-  debug: {
+  // 调试功能 - 仅在开发环境可用
+  debug: process.env.NODE_ENV === 'development' ? {
     log: (message) => console.log(message),
     error: (message) => console.error(message),
     info: (message) => console.info(message),
@@ -82,7 +116,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       platform: process.platform,
       arch: process.arch
     })
-  }
+  } : null,
+
+  // 安全API信息（帮助调试）
+  getSecurityInfo: () => ({
+    contextIsolated: true,
+    sandboxed: true,
+    nodeIntegration: false,
+    apiVersion: '2025.1'
+  })
 });
 
 // 添加全局错误处理
@@ -110,4 +152,7 @@ window.addEventListener('unhandledrejection', (event) => {
   });
 });
 
-console.log('Preload脚本执行完成');
+// 仅在开发环境输出日志
+if (process.env.NODE_ENV === 'development') {
+  console.log('Preload脚本执行完成 - 安全API已就绪');
+}

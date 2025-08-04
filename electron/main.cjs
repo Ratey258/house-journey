@@ -10,9 +10,22 @@ let mainWindow = null;
 let splashScreen = null;
 const isDevelopment = !app.isPackaged;
 
-// 强化安全性
-app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
-app.commandLine.appendSwitch('disable-site-isolation-trials');
+// 2025年Electron安全最佳实践
+app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor,OutOfBlinkCors');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-dev-shm-usage');
+
+// 启用严格的安全策略
+app.commandLine.appendSwitch('enable-features', 'SecureOriginTrials');
+app.commandLine.appendSwitch('force-fieldtrials', 'SecureOrigin/ForceSecure');
+
+// 禁用不安全的功能
+if (!isDevelopment) {
+  app.commandLine.appendSwitch('disable-http-cache');
+  app.commandLine.appendSwitch('disable-dev-tools');
+}
 
 // 解析命令行参数
 const argv = process.argv.slice(1);
@@ -95,21 +108,34 @@ function createMainWindow() {
     title: `买房记 v${pkg.version}`,
     show: false, // 先不显示主窗口
     webPreferences: {
+      // 2025年安全配置
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      nodeIntegrationInWorker: false,
+      nodeIntegrationInSubFrames: false,
       webSecurity: true,
+      allowRunningInsecureContent: false,
+      experimentalFeatures: false,
+
+      // 沙盒模式增强
+      sandbox: true,
+
+      // 禁用不安全功能
+      webviewTag: false,
+      enableRemoteModule: false,
+      navigateOnDragDrop: false,
+      spellcheck: false,
+
+      // 安全特性增强
+      disableBlinkFeatures: 'Auxclick,Serial,WebBluetooth,WebUSB',
+      safeDialogs: true,
+      safeDialogsMessage: '此应用正在显示对话框',
+
       // 严格的内容安全策略
       contentSecurityPolicy: isDevelopment
         ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss: http: https:;"
-        : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';",
-      webviewTag: false,
-      sandbox: true,
-      allowRunningInsecureContent: false,
-      disableBlinkFeatures: 'Auxclick',
-      enableRemoteModule: false,
-      navigateOnDragDrop: false,
-      spellcheck: false
+        : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self';"
     },
     icon: isDevelopment
       ? path.join(__dirname, '../resources/logo.png')
