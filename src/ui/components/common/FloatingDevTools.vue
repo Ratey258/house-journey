@@ -243,15 +243,15 @@
             </div>
             <div class="status-row">
               <span class="status-label">资金:</span>
-              <span class="status-value">¥{{ formatNumber(gameStore.player.money) }}</span>
+              <span class="status-value">¥{{ formatNumber(playerStore.money) }}</span>
             </div>
             <div class="status-row">
               <span class="status-label">债务:</span>
-              <span class="status-value">¥{{ formatNumber(gameStore.player.debt) }}</span>
+              <span class="status-value">¥{{ formatNumber(playerStore.debt) }}</span>
             </div>
             <div class="status-row">
               <span class="status-label">库存用量:</span>
-              <span class="status-value">{{ gameStore.player.inventoryUsed || 0 }}/{{ gameStore.player.capacity || 100 }}</span>
+              <span class="status-value">{{ playerStore.inventoryUsed || 0 }}/{{ playerStore.capacity || 100 }}</span>
             </div>
           </div>
         </div>
@@ -275,6 +275,7 @@ import { useGameCoreStore } from '@/stores/gameCore'; // 新增导入
 
 // 状态
 const gameStore = useGameStore();
+const playerStore = usePlayerStore();
 const isMinimized = ref(false);
 const posX = ref(20);
 const posY = ref(80);
@@ -412,19 +413,30 @@ const closeTools = () => {
 // 工具功能
 const addMoney = () => {
   if (moneyAmount.value) {
-    gameStore.player.money += moneyAmount.value;
+    // 使用updateMoney方法安全地更新金钱
+    playerStore.updateMoney(moneyAmount.value);
   }
 };
 
 const setMoney = () => {
   if (moneyAmount.value !== null && moneyAmount.value >= 0) {
-    gameStore.player.money = moneyAmount.value;
+    // 直接设置money的value属性
+    if (playerStore.money && typeof playerStore.money === 'object' && 'value' in playerStore.money) {
+      playerStore.money.value = moneyAmount.value;
+    } else {
+      // 使用updateMoney设置新值
+      const currentMoney = playerStore.money || 0;
+      playerStore.updateMoney(moneyAmount.value - currentMoney);
+    }
   }
 };
 
 const setDebt = () => {
   if (debtAmount.value !== null && debtAmount.value >= 0) {
-    gameStore.player.debt = debtAmount.value;
+    // 直接设置debt的value属性
+    if (playerStore.debt && typeof playerStore.debt === 'object' && 'value' in playerStore.debt) {
+      playerStore.debt.value = debtAmount.value;
+    }
   }
 };
 
@@ -450,13 +462,21 @@ const setCurrentWeek = () => {
 
 const setCapacity = () => {
   if (capacityValue.value !== null && capacityValue.value > 0) {
-    gameStore.player.capacity = capacityValue.value;
+    // 直接设置capacity的value属性
+    if (playerStore.capacity && typeof playerStore.capacity === 'object' && 'value' in playerStore.capacity) {
+      playerStore.capacity.value = capacityValue.value;
+    }
   }
 };
 
 const clearInventory = () => {
-  gameStore.player.inventory = [];
-  gameStore.player.inventoryUsed = 0;
+  // 直接设置inventory和inventoryUsed的value属性
+  if (playerStore.inventory && typeof playerStore.inventory === 'object' && 'value' in playerStore.inventory) {
+    playerStore.inventory.value = [];
+  }
+  if (playerStore.inventoryUsed && typeof playerStore.inventoryUsed === 'object' && 'value' in playerStore.inventoryUsed) {
+    playerStore.inventoryUsed.value = 0;
+  }
 };
 
 const addRandomItems = () => {
@@ -528,14 +548,15 @@ const buySelectedHouse = () => {
 
     // 直接购买房屋，不检查资金
     // 1. 先扣减资金以满足purchaseHouse方法的要求
-    const originalMoney = gameStore.player.money;
+    const originalMoney = playerStore.money;
     if (originalMoney < house.price) {
       // 临时增加足够的资金
-      gameStore.player.money = house.price + 1000; // 加一些额外资金防止边界情况
+      if (playerStore.money && typeof playerStore.money === 'object' && 'value' in playerStore.money) {
+        playerStore.money.value = house.price + 1000; // 加一些额外资金防止边界情况
+      }
     }
 
     // 2. 使用playerStore购买房屋
-    const playerStore = usePlayerStore();
     const success = playerStore.purchaseHouse(house);
 
     // 3. 如果购买成功，显示结算画面
@@ -584,8 +605,8 @@ const loadGameList = async () => {
 onMounted(() => {
   // 初始化周数设置
   weekToSet.value = gameStore.currentWeek;
-  debtAmount.value = gameStore.player.debt;
-  capacityValue.value = gameStore.player.capacity;
+  debtAmount.value = playerStore.debt;
+  capacityValue.value = playerStore.capacity;
 });
 
 // 新增：计算属性

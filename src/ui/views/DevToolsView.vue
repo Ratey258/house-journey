@@ -165,13 +165,13 @@
           <strong>当前周数:</strong> {{ gameStore.currentWeek }}{{ isEndlessMode ? '' : '/' + gameStore.maxWeeks }}
         </div>
         <div class="status-item">
-          <strong>玩家资金:</strong> ¥{{ formatNumber(gameStore.player.money) }}
+          <strong>玩家资金:</strong> ¥{{ formatNumber(playerStore.money) }}
         </div>
         <div class="status-item">
-          <strong>玩家债务:</strong> ¥{{ formatNumber(gameStore.player.debt) }}
+          <strong>玩家债务:</strong> ¥{{ formatNumber(playerStore.debt) }}
         </div>
         <div class="status-item">
-          <strong>背包使用:</strong> {{ gameStore.player.inventoryUsed }}/{{ gameStore.player.capacity }}
+          <strong>背包使用:</strong> {{ playerStore.inventoryUsed }}/{{ playerStore.capacity }}
         </div>
         <div class="status-item">
           <strong>当前地点:</strong> {{ gameStore.currentLocation?.name }}
@@ -191,11 +191,12 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useGameStore } from '@/stores';
-import { useInventoryActions } from '@/stores/player';
+import { useInventoryActions, usePlayerStore } from '@/stores/player';
 import { runPriceSystemTests } from '@/infrastructure/utils/priceSystemTest';
 import { formatNumber } from '@/infrastructure/utils';
 
 const gameStore = useGameStore();
+const playerStore = usePlayerStore();
 const router = useRouter();
 
 // 响应式状态
@@ -270,7 +271,8 @@ const advanceMultipleWeeks = (weeks) => {
 // 增加资金
 const addMoney = () => {
   if (moneyAmount.value) {
-    gameStore.player.money += moneyAmount.value;
+    // 使用updateMoney方法安全地更新金钱
+    playerStore.updateMoney(moneyAmount.value);
   }
 };
 
@@ -296,31 +298,45 @@ const applyMarketModifier = () => {
 // 新增：更新玩家参数
 const updatePlayerParams = () => {
   if (playerParams.value.money !== null && playerParams.value.money >= 0) {
-    gameStore.player.money = playerParams.value.money;
+    // 直接设置money的value属性
+    if (playerStore.money && typeof playerStore.money === 'object' && 'value' in playerStore.money) {
+      playerStore.money.value = playerParams.value.money;
+    }
   }
 
   if (playerParams.value.debt !== null && playerParams.value.debt >= 0) {
-    gameStore.player.debt = playerParams.value.debt;
+    // 直接设置debt的value属性
+    if (playerStore.debt && typeof playerStore.debt === 'object' && 'value' in playerStore.debt) {
+      playerStore.debt.value = playerParams.value.debt;
+    }
   }
 
   if (playerParams.value.capacity !== null && playerParams.value.capacity > 0) {
-    gameStore.player.capacity = playerParams.value.capacity;
+    // 直接设置capacity的value属性
+    if (playerStore.capacity && typeof playerStore.capacity === 'object' && 'value' in playerStore.capacity) {
+      playerStore.capacity.value = playerParams.value.capacity;
+    }
   }
 };
 
 // 新增：重置玩家参数（回填当前值）
 const resetPlayerParams = () => {
   playerParams.value = {
-    money: gameStore.player.money,
-    debt: gameStore.player.debt,
-    capacity: gameStore.player.capacity
+    money: playerStore.money,
+    debt: playerStore.debt,
+    capacity: playerStore.capacity
   };
 };
 
 // 清空库存
 const clearInventory = () => {
-  gameStore.player.inventory = [];
-  gameStore.player.inventoryUsed = 0;
+  // 直接设置inventory和inventoryUsed的value属性
+  if (playerStore.inventory && typeof playerStore.inventory === 'object' && 'value' in playerStore.inventory) {
+    playerStore.inventory.value = [];
+  }
+  if (playerStore.inventoryUsed && typeof playerStore.inventoryUsed === 'object' && 'value' in playerStore.inventoryUsed) {
+    playerStore.inventoryUsed.value = 0;
+  }
 };
 
 // 添加随机物品
@@ -360,18 +376,30 @@ const applyScenario = (scenario) => {
   switch (scenario) {
     case 'early':
       gameStore.currentWeek = 5;
-      gameStore.player.money = 3000;
-      gameStore.player.debt = 4500;
+      if (playerStore.money && typeof playerStore.money === 'object' && 'value' in playerStore.money) {
+        playerStore.money.value = 3000;
+      }
+      if (playerStore.debt && typeof playerStore.debt === 'object' && 'value' in playerStore.debt) {
+        playerStore.debt.value = 4500;
+      }
       break;
     case 'mid':
       gameStore.currentWeek = 20;
-      gameStore.player.money = 50000;
-      gameStore.player.debt = 2000;
+      if (playerStore.money && typeof playerStore.money === 'object' && 'value' in playerStore.money) {
+        playerStore.money.value = 50000;
+      }
+      if (playerStore.debt && typeof playerStore.debt === 'object' && 'value' in playerStore.debt) {
+        playerStore.debt.value = 2000;
+      }
       break;
     case 'late':
       gameStore.currentWeek = 35;
-      gameStore.player.money = 200000;
-      gameStore.player.debt = 0;
+      if (playerStore.money && typeof playerStore.money === 'object' && 'value' in playerStore.money) {
+        playerStore.money.value = 200000;
+      }
+      if (playerStore.debt && typeof playerStore.debt === 'object' && 'value' in playerStore.debt) {
+        playerStore.debt.value = 0;
+      }
       break;
   }
 };

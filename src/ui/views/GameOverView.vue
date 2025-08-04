@@ -56,7 +56,7 @@
         <div v-if="player.purchasedHouses.length > 1" class="all-houses-container">
           <h3>全部房产</h3>
           <div class="houses-grid">
-            <div v-for="house in player.purchasedHouses" :key="house.houseId" class="mini-house-card">
+            <div v-for="house in player.purchasedHouses" :key="house.id || house.houseId" class="mini-house-card">
               <div class="mini-house-image">
                 <img :src="getHouseImage(house)" alt="房屋图片">
               </div>
